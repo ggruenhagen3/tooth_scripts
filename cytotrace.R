@@ -5,9 +5,9 @@ library("cowplot")
 library("CytoTRACE")
 
 combined <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/combined.Rds")
-epi      <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/epi.Rds")
-jpool    <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/jpool.Rds")
-tj       <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/tj.Rds")
+epi      <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/epi.rds")
+jpool    <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/jpool.rds")
+tj       <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/tj.rds")
 
 obj <- epi
 results <- CytoTRACE(as.matrix(obj@assays$RNA@counts))
