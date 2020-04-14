@@ -69,7 +69,7 @@ for (obj in all_obj) {
       celsr1_cluster_p <- "NA"
       try(celsr1_cluster_p <- t.test(results$CytoTRACE[celsr1_cluster], results$CytoTRACE[this_cells])$p.value, silent = TRUE)
       
-      vlndata <- rbind(vlndata, t(c( rep(obj_str, length(celsr1_cluster)), rep(cond, length(celsr1_cluster)), rep(cluster, length(celsr1_cluster)), rep("Celsr1", length(celsr1_cluster)), results$CytoTRACE[celsr1_cluster] )))
+      vlndata <- rbind(vlndata, data.frame( rep(obj_str, length(celsr1_cluster)), rep(cond, length(celsr1_cluster)), rep(cluster, length(celsr1_cluster)), rep("Celsr1", length(celsr1_cluster)), results$CytoTRACE[celsr1_cluster] ))
       
       all_results_cluster <- rbind(all_results_cluster, t(c( obj_str, cond, cluster, mean(results$CytoTRACE[celsr1_cluster]), mean(results$CytoTRACE[this_cells]), celsr1_cluster_p )))
     }
