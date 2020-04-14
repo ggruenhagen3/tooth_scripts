@@ -9,6 +9,7 @@ epi      <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/epi.rds")
 jpool    <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/jpool.rds")
 tj       <- readRDS("/nv/hp10/ggruenhagen3/scratch/d_tooth/data/tj.rds")
 
+epi$cond[is.na(epi$cond)] <- "INJR"
 combined$dataset <- "mesenchyme"
 epi$dataset      <- "epithelium"
 jpool$dataset    <- "jaw"
