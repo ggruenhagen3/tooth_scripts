@@ -58,6 +58,7 @@ for (obj in all_obj) {
   conds <- unique(obj$cond)
   num_clusters <- as.numeric(tail(levels(obj@meta.data$seurat_clusters), n=1))
   for (cond in conds) {
+    Idents(obj) <- "cond"
     this_cond_cells <- WhichCells(obj, idents = c(cond))
     Idents(obj) <- "seurat_clusters"
     for (cluster in 0:num_clusters) {
