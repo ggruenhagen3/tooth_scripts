@@ -26,8 +26,7 @@ all_obj <- list(combined, epi, jpool, tj)
 #   
 #   this_result <- data.frame()
 #   for (gene in genes) {
-#     expr <- FetchData(object = obj, vars = gene, slot = "counts")
-#     gene_cells <- colnames(obj@assays$RNA@counts[, which(x = expr > 0)])
+#     gene_cells <- names(obj@assays$RNA@counts[gene,which(obj@assays$RNA@counts[gene,] != 0)])
 #     if (length(gene_cells) > 30) {
 #       gene_p <- "NA"
 #       try(gene_p <- t.test(results$CytoTRACE[gene_cells], results$CytoTRACE)$p.value, silent = TRUE)
@@ -44,6 +43,7 @@ all_obj <- list(combined, epi, jpool, tj)
 all_celsr1 <- c()
 all_results <- c()
 all_results_cluster <- data.frame()
+vlndata <- data.frame()
 for (obj in all_obj) {
   obj_str <- unique(obj$dataset)
   results <- CytoTRACE(as.matrix(obj@assays$RNA@counts))
@@ -68,11 +68,22 @@ for (obj in all_obj) {
       celsr1_cluster <- celsr1_cells[which(celsr1_cells %in% this_cells)]
       celsr1_cluster_p <- "NA"
       try(celsr1_cluster_p <- t.test(results$CytoTRACE[celsr1_cluster], results$CytoTRACE[this_cells])$p.value, silent = TRUE)
+      
+      vlndata <- rbind(vlndata, t(c( datset, cond, cluster, rep("Celsr1", length(celsr1_cluster)), results$CytoTRACE[celsr1_cluster] )))
+      
       all_results_cluster <- rbind(all_results_cluster, t(c( obj_str, cond, cluster, mean(results$CytoTRACE[celsr1_cluster]), mean(results$CytoTRACE[this_cells]), celsr1_cluster_p )))
     }
   }
   # # plotCytoTRACE(results, emb = obj@reductions$umap@cell.embeddings[,1:2], outputDir = "/nv/hp10/ggruenhagen3/scratch/d_tooth/results/")
 }
+colnames(vlndata) <- c("dataset", "cond", "cluster", "isCelsr1", "cyto")
+filename <-  "/nv/hp10/ggruenhagen3/scratch/d_tooth/results/test.png"
+png(filename, width = 1800, height = 1200, res = 150)
+p <- ggplot(vlndata[which(vlndata$dataset == "epithelium" & vlndata == "INJR"),], aes(x=cluster, y=cyto, fill=isCelsr1)) + geom_violin(position=position_dodge(1))
+print(p)
+dev.off()
+system(paste("rclone copy ", filename, " dropbox:BioSci-Streelman/George/laptop_backup/d_tooth/results/", sep=""))
+  
 colnames(all_results_cluster) <- c("dataset", "cond", "cluster", "mean_of_celsr1_in_cluster", "mean_of_cluster", "p")
 all_results_cluster$p_sig_greater <- as.vector(all_results_cluster$mean_of_celsr1_in_cluster) > as.vector(all_results_cluster$mean_of_cluster) & as.vector(all_results_cluster$p) < 0.05
 write.table(all_results_cluster, "/nv/hp10/ggruenhagen3/scratch/d_tooth/results/celsr1_cluster.tsv", sep="\t", quote = FALSE, row.names = FALSE)
