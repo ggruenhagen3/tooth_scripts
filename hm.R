@@ -111,30 +111,31 @@ jaw   = readRDS("~/scratch/d_tooth/data/jpool.rds")
 # incsr.deg = incsr.deg[which(incsr.deg$p_val_adj < 0.05),]
 # incsr.deg = convertMouseDataFrameToHgnc(incsr.deg, 7)
 
-Idents(im) = im$annot
-im.all = FindAllMarkers(im)
-saveRDS(im.all, "~/scratch/d_tooth/data/im_deg_all_unfiltered.rds")
-im.deg = im.all[which(im.all$avg_logFC > 0),]
-im.deg = im.deg[which(im.deg$p_val_adj < 0.05),]
+# Idents(im) = im$annot
+# im.all = FindAllMarkers(im)
+# saveRDS(im.all, "~/scratch/d_tooth/data/im_deg_all_unfiltered.rds")
+# im.deg = im.all[which(im.all$avg_logFC > 0),]
+# im.deg = im.deg[which(im.deg$p_val_adj < 0.05),]
 
-Idents(hm$their_clusters)
+Idents(hm) = hm$their_clusters
 hm.all = FindAllMarkers(hm)
 saveRDS(hm.all, "~/scratch/d_tooth/data/hm_deg_all_unfiltered.rds")
 hm.deg = hm.all[which(hm.all$avg_logFC > 0),]
 hm.deg = hm.deg[which(hm.deg$p_val_adj < 0.05),]
 # hm_deg = readRDS("~/scratch/d_tooth/data/hm_deg.rds")
+print("Done HM")
 
-tj.all = FindAllMarkers(tj)
-saveRDS(tj.all, "~/scratch/d_tooth/data/tj_deg_all_unfiltered.rds")
-tj.deg = tj.all[which(tj.all$avg_logFC > 0),]
-tj.deg = tj.deg[which(tj.deg$p_val_adj < 0.05),]
-tj.deg = hgncMzebraInPlace(tj.deg, 7, rownames(tj))
-
-jaw.all = FindAllMarkers(jaw)
-saveRDS(jaw.all, "~/scratch/d_tooth/data/jaw_deg_all_unfiltered.rds")
-jaw.deg = jaw.all[which(jaw.all$avg_logFC > 0),]
-jaw.deg = jaw.deg[which(jaw.deg$p_val_adj < 0.05),]
-jaw.deg = hgncMzebraInPlace(jaw.deg, 7, rownames(jaw))
+# tj.all = FindAllMarkers(tj)
+# saveRDS(tj.all, "~/scratch/d_tooth/data/tj_deg_all_unfiltered.rds")
+# tj.deg = tj.all[which(tj.all$avg_logFC > 0),]
+# tj.deg = tj.deg[which(tj.deg$p_val_adj < 0.05),]
+# tj.deg = hgncMzebraInPlace(tj.deg, 7, rownames(tj))
+# 
+# jaw.all = FindAllMarkers(jaw)
+# saveRDS(jaw.all, "~/scratch/d_tooth/data/jaw_deg_all_unfiltered.rds")
+# jaw.deg = jaw.all[which(jaw.all$avg_logFC > 0),]
+# jaw.deg = jaw.deg[which(jaw.deg$p_val_adj < 0.05),]
+# jaw.deg = hgncMzebraInPlace(jaw.deg, 7, rownames(jaw))
 
 dfs = list(incsr.deg, im.deg, hm_deg, tj.deg, jaw.deg)
 samples = samples=c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Tooth", "Cichlid Jaw")
