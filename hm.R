@@ -104,12 +104,12 @@ tj    = readRDS("~/scratch/d_tooth/data/tj.rds")
 jaw   = readRDS("~/scratch/d_tooth/data/jpool.rds")
 
 # Find DEGs and Put them in HGNC format for cross-species comparison
-Idents(incsr) = incsr$annot
-incsr.all = FindAllMarkers(incsr)
-saveRDS(incsr.all, "~/scratch/d_tooth/data/incsr_deg_all_unfiltered.rds")
-incsr.deg = incsr.all[which(incsr.all$avg_logFC > 0),]
-incsr.deg = incsr.deg[which(incsr.deg$p_val_adj < 0.05),]
-incsr.deg = convertMouseDataFrameToHgnc(incsr.deg, 7)
+# Idents(incsr) = incsr$annot
+# incsr.all = FindAllMarkers(incsr)
+# saveRDS(incsr.all, "~/scratch/d_tooth/data/incsr_deg_all_unfiltered.rds")
+# incsr.deg = incsr.all[which(incsr.all$avg_logFC > 0),]
+# incsr.deg = incsr.deg[which(incsr.deg$p_val_adj < 0.05),]
+# incsr.deg = convertMouseDataFrameToHgnc(incsr.deg, 7)
 
 Idents(im) = im$annot
 im.all = FindAllMarkers(im)
