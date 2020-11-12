@@ -83,7 +83,16 @@
 # hm.deg = FindAllMarkers(hm, only.pos = T)
 # hm.deg = hm.deg[which(hm.deg$p_val_adj < 0.05),]
 
+rownames(test) = gsub("-", ".", rownames(test))
+rownames(test)[which(startsWith(rownames(test), "human_germinectomy"))] = paste0("germ_", rownames(test)[which(startsWith(rownames(test), "human_germinectomy"))])
+rownames(test)[which(startsWith(rownames(test), "No5"))] = paste0("y24_", rownames(test)[which(startsWith(rownames(test), "No5"))])
+rownames(test)[which(startsWith(rownames(test), "human_molar_healthy_2_one_"))] = paste0("h2_", rownames(test)[which(startsWith(rownames(test), "human_molar_healthy_2_one_"))])
+rownames(test)[which(startsWith(rownames(test), "human_molar_healthy_1_one_"))] = paste0("h1_", rownames(test)[which(startsWith(rownames(test), "human_molar_healthy_1_one_"))])
+rownames(test)[which(startsWith(rownames(test), "human_molar_pulp_old_10_one_"))] = paste0("plpo_", rownames(test)[which(startsWith(rownames(test), "human_molar_pulp_old_10_one_"))])
+rownames(test)[which(startsWith(rownames(test), "human_molar_pulp_4_one_"))] = paste0("plpy_", rownames(test)[which(startsWith(rownames(test), "human_molar_pulp_4_one_"))])
+rownames(test)[which(startsWith(rownames(test), "human_germ_molar_apical_papilla_female_15yo_one_"))] = paste0("y15_", rownames(test)[which(startsWith(rownames(test), "human_germ_molar_apical_papilla_female_15yo_one_"))])
 
+length(rownames(test) %in% colnames(hm))
 ########################################
 # Huge Matrix: Human v Mouse v Cichlid #
 ########################################
@@ -107,69 +116,255 @@ jaw   = readRDS("~/scratch/d_tooth/data/jpool.rds")
 # Idents(incsr) = incsr$annot
 # incsr.all = FindAllMarkers(incsr)
 # saveRDS(incsr.all, "~/scratch/d_tooth/data/incsr_deg_all_unfiltered.rds")
+incsr.all = readRDS("~/scratch/d_tooth/data/incsr_deg_all_unfiltered.rds")
 # incsr.deg = incsr.all[which(incsr.all$avg_logFC > 0),]
-# incsr.deg = incsr.deg[which(incsr.deg$p_val_adj < 0.05),]
-# incsr.deg = convertMouseDataFrameToHgnc(incsr.deg, 7)
+incsr.deg = incsr.all
+incsr.deg = incsr.deg[which(incsr.deg$p_val_adj < 0.05),]
+incsr.deg$orig = 0
+for (cluster in unique(incsr.deg$cluster)) {
+  this_cluster_rows = nrow(incsr.deg[which(incsr.deg$cluster == cluster),])
+  incsr.deg$orig[which(incsr.deg$cluster == cluster)] = this_cluster_rows
+}
+incsr.deg = convertMouseDataFrameToHgnc(incsr.deg, 7)
+incsr.deg$new = 0
+for (cluster in unique(incsr.deg$cluster)) {
+  this_cluster_rows = nrow(incsr.deg[which(incsr.deg$cluster == cluster),])
+  incsr.deg$new[which(incsr.deg$cluster == cluster)] = this_cluster_rows
+}
+incsr.deg$correction_factor = incsr.deg$orig/incsr.deg$new
 
 # Idents(im) = im$annot
 # im.all = FindAllMarkers(im)
 # saveRDS(im.all, "~/scratch/d_tooth/data/im_deg_all_unfiltered.rds")
+im.all = readRDS("~/scratch/d_tooth/data/im_deg_all_unfiltered.rds")
 # im.deg = im.all[which(im.all$avg_logFC > 0),]
-# im.deg = im.deg[which(im.deg$p_val_adj < 0.05),]
+im.deg = im.all
+im.deg = im.deg[which(im.deg$p_val_adj < 0.05),]
+im.deg$correction_factor = 1
 
-Idents(hm) = hm$their_clusters
-hm.all = FindAllMarkers(hm)
-saveRDS(hm.all, "~/scratch/d_tooth/data/hm_deg_all_unfiltered.rds")
-hm.deg = hm.all[which(hm.all$avg_logFC > 0),]
+# Idents(hm) = hm$their_clusters
+# hm.all = FindAllMarkers(hm)
+# saveRDS(hm.all, "~/scratch/d_tooth/data/hm_deg_all_unfiltered.rds")
+hm.all = readRDS("~/scratch/d_tooth/data/hm_deg_all_unfiltered.rds")
+# hm.deg = hm.all[which(hm.all$avg_logFC > 0),]
+hm.deg = hm.all
 hm.deg = hm.deg[which(hm.deg$p_val_adj < 0.05),]
+hm.deg$correction_factor = 1
 # hm_deg = readRDS("~/scratch/d_tooth/data/hm_deg.rds")
-print("Done HM")
 
 # tj.all = FindAllMarkers(tj)
 # saveRDS(tj.all, "~/scratch/d_tooth/data/tj_deg_all_unfiltered.rds")
+tj.all = readRDS("~/scratch/d_tooth/data/tj_deg_all_unfiltered.rds")
 # tj.deg = tj.all[which(tj.all$avg_logFC > 0),]
-# tj.deg = tj.deg[which(tj.deg$p_val_adj < 0.05),]
-# tj.deg = hgncMzebraInPlace(tj.deg, 7, rownames(tj))
-# 
+tj.deg = tj.all
+tj.deg = tj.deg[which(tj.deg$p_val_adj < 0.05),]
+tj.deg$orig = 0
+for (cluster in unique(tj.deg$cluster)) {
+  this_cluster_rows = nrow(tj.deg[which(tj.deg$cluster == cluster),])
+  tj.deg$orig[which(tj.deg$cluster == cluster)] = this_cluster_rows
+}
+tj.deg = hgncMzebraInPlace(tj.deg, 7, rownames(tj), onPACE = T)
+tj.deg$new = 0
+for (cluster in unique(tj.deg$cluster)) {
+  this_cluster_rows = nrow(tj.deg[which(tj.deg$cluster == cluster),])
+  tj.deg$new[which(tj.deg$cluster == cluster)] = this_cluster_rows
+}
+tj.deg$correction_factor = tj.deg$orig/tj.deg$new
+
 # jaw.all = FindAllMarkers(jaw)
 # saveRDS(jaw.all, "~/scratch/d_tooth/data/jaw_deg_all_unfiltered.rds")
+jaw.all = readRDS("~/scratch/d_tooth/data/jaw_deg_all_unfiltered.rds")
 # jaw.deg = jaw.all[which(jaw.all$avg_logFC > 0),]
-# jaw.deg = jaw.deg[which(jaw.deg$p_val_adj < 0.05),]
-# jaw.deg = hgncMzebraInPlace(jaw.deg, 7, rownames(jaw))
+jaw.deg = jaw.all
+jaw.deg = jaw.deg[which(jaw.deg$p_val_adj < 0.05),]
+jaw.deg$orig = 0
+for (cluster in unique(jaw.deg$cluster)) {
+  this_cluster_rows = nrow(jaw.deg[which(jaw.deg$cluster == cluster),])
+  jaw.deg$orig[which(jaw.deg$cluster == cluster)] = this_cluster_rows
+}
+jaw.deg = hgncMzebraInPlace(jaw.deg, 7, rownames(jaw), onPACE = T)
+jaw.deg$new = 0
+for (cluster in unique(jaw.deg$cluster)) {
+  this_cluster_rows = nrow(jaw.deg[which(jaw.deg$cluster == cluster),])
+  jaw.deg$new[which(jaw.deg$cluster == cluster)] = this_cluster_rows
+}
+jaw.deg$correction_factor = jaw.deg$orig/jaw.deg$new
 
-dfs = list(incsr.deg, im.deg, hm_deg, tj.deg, jaw.deg)
-samples = samples=c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Tooth", "Cichlid Jaw")
+dfs = list(incsr.deg, im.deg, hm.deg, tj.deg, jaw.deg)
+samples = c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Tooth", "Cichlid Jaw")
+source("~/scratch/brain/brain_scripts/all_f.R")
+rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc", "~/scratch/d_tooth/mvhvc/")
 
-heatmapComparisonMulti(dfs = dfs, samples=samples, filename="mvhvc", "~/scratch/d_tooth/results/mvhvc/")
+# Single Comparisons
+rs = heatmapComparison(incsr.deg, tj.deg, "Mouse Incisor", "Cichlid Tooth",         "mi_v_ct", "~/scratch/d_tooth/mvhvc/")
+write.table(rs[[2]], file="~/scratch/d_tooth/mvhvc/mi_v_ct_genes.txt", sep="\t", quote = F)
+rs = heatmapComparison(incsr.deg, hm.deg, "Mouse Incisor", "Human Molar",           "mi_v_hm", "~/scratch/d_tooth/mvhvc/")
+write.table(rs[[2]], file="~/scratch/d_tooth/mvhvc/mi_v_hm_genes.txt", sep="\t", quote = F)
+rs = heatmapComparison(incsr.deg, im.deg, "Mouse Incisor", "Mouse Incisor & Molar", "mi_v_im", "~/scratch/d_tooth/mvhvc/")
+write.table(rs[[2]], file="~/scratch/d_tooth/mvhvc/mi_v_im_genes.txt", sep="\t", quote = F)
 
-## Random from PACE ##
-tj = readRDS("~/scratch/d_tooth/data/tj.rds")
-tj.deg = FindAllMarkers(tj, only.pos = T)
-tj.deg = tj.deg[which(tj.deg$p_val_adj < 0.05),]
-tj.deg = hgncMzebraInPlace(tj.deg, 7, rownames(tj))
+# rs = heatmapComparison(incsr.deg, tj.deg,  "Mouse Incisor", "Cichlid Tooth",       "mi_v_ct", "C:/Users/miles/Downloads/d_tooth/results/mvhvc/")
+# rs = heatmapComparison(incsr.deg, jaw.deg, "Mouse Incisor", "Cichlid Jaw",         "mi_v_cj", "C:/Users/miles/Downloads/d_tooth/results/mvhvc/")
+# write.table(rs[[2]], file="C:/Users/miles/Downloads/d_tooth/results/mvhvc/mi_v_cj_genes.txt", sep="\t", quote = F)
+# write.table(rs[[2]], file="C:/Users/miles/Downloads/d_tooth/results/mvhvc/mi_v_ct_genes.txt", sep="\t", quote = F)
+#######################
+# Expression Heatmaps #
+#######################
+incsr_hgnc = convertToHgncObj(incsr, "mouse")
+tj_hgnc = convertToHgncObj(tj, "mzebra")
+jaw_hgnc = convertToHgncObj(jaw, "mzebra")
 
-  source("~/scratch/brain/brain_scripts/all_f.R")
-  hgncMzebra <- function(genes, gene_names) {
-    pat <- read.table("~/scratch/m_zebra_ref/MZ_treefam_annot_umd2a_ENS_2.bash", header = FALSE, fill = TRUE)
-    valid_genes <- validGenes(genes, gene_names)
-    all_hgnc <- convertToHgnc(gene_names)
-    ind <- match(genes,pat$V2)
-    ind <- ind[! is.na(ind)]
-    found_names <- as.vector(pat$V7[ind])
-    found_names <- found_names[!is.na(found_names)]
-    found_names_hgnc <- as.vector(pat$V8[ind])
-    found_names_hgnc <- found_names_hgnc[!is.na(found_names_hgnc)]
-    
-    df1 <- setNames(as.data.frame(found_names_hgnc), c("hgnc"))
-    found_names_hgnc <- inner_join(df1, all_hgnc, by = "hgnc")
-    
-    pseudo_hgnc <- toupper(genes)
-    df1 <- setNames(as.data.frame(pseudo_hgnc), c("hgnc"))
-    found_mzebra <- inner_join(df1, all_hgnc, by = "hgnc")
-    
-    found_mzebra <- found_mzebra[,2:1]
-    found_names_hgnc <- found_names_hgnc[,2:1]
-    good_df <- rbind(all_hgnc, setNames(found_names, names(all_hgnc)), setNames(found_mzebra, names(all_hgnc)), setNames(found_names_hgnc, names(all_hgnc)))
-    good_df <- unique(good_df)
-    return(good_df)
+saveRDS(incsr_hgnc, "~/scratch/d_tooth/data/incsr_hgnc.rds")
+saveRDS(tj_hgnc,    "~/scratch/d_tooth/data/tj_hgnc.rds")
+saveRDS(jaw_hgnc,   "~/scratch/d_tooth/data/jaw_hgnc.rds")
+
+incsr_hgnc = readRDS("~/scratch/d_tooth/data/incsr_hgnc.rds")
+tj_hgnc    = readRDS("~/scratch/d_tooth/data/tj_hgnc.rds")
+jaw_hgnc   = readRDS("~/scratch/d_tooth/data/jaw_hgnc.rds")
+
+incsr_hgnc$project = "Mouse Incisor"
+im$project = "Mouse Incisor+Molar"
+hm$project = "Human Molar"
+tj_hgnc$project = "Cichlid Tooth"
+jaw_hgnc$project = "Cichlid Jaw"
+
+incsr_hgnc$my_seurat_clusters = incsr_hgnc$seurat_clusters
+im$my_seurat_clusters = im$seurat_clusters
+hm$my_seurat_clusters = hm$seurat_clusters
+
+incsr_hgnc$seurat_clusters = incsr_hgnc$annot
+im$seurat_clusters = im$annot
+hm$seurat_clusetrs = hm$their_clusters
+
+source("~/scratch/brain/brain_scripts/all_f.R")
+objs = list(incsr_hgnc, im, hm, tj_hgnc, jaw_hgnc)
+expressionDend(objs = objs)
+
+#############
+# CytoTRACE #
+#############
+library("Seurat")
+library("Matrix")
+library("reticulate")
+library("cowplot")
+library("CytoTRACE")
+library("ggplot2")
+library("RColorBrewer")
+library("tidyverse")
+
+incsr_results = readRDS("C:/Users/miles/Downloads/d_tooth/data/incsr_cyto.rds")
+im_results    = readRDS("C:/Users/miles/Downloads/d_tooth/data/im_cyto.rds")
+hm_results    = readRDS("C:/Users/miles/Downloads/d_tooth/data/hm_cyto.rds")
+
+incsr_data = readRDS("C:/Users/miles/Downloads/d_tooth/data/incisor_data.rds")
+incsr_umap = incsr_data$emb # this is actually tsne
+incsr_data = "hi"
+
+im_data = readRDS("C:/Users/miles/Downloads/d_tooth/data/incisor_molar_data.rds")
+im_umap = im_data$UMAP
+im_data = "hi"
+
+hm_data = readRDS("C:/Users/miles/Downloads/d_tooth/data/human_data.rds")
+hm_umap = hm_data$umap
+hm_data = "hi"
+
+rownames(im_umap) = colnames(im)
+
+hm_umap = readRDS("~/scratch/d_tooth/data/hm_umap.rds")
+goodnames = substr(colnames(hm), 5, 1000L)
+new_hm_umap = data.frame()
+for (i in 1:nrow(hm_umap)) {
+  cell = rownames(hm_umap)[i]
+  new_cell = str_replace(cell, "-", ".")
+  if (grepl("24_yo", new_cell)) {
+    rownames(hm_umap)[i] = paste0("y24", "_", new_cell)
+  } else if (grepl("15yo", new_cell)) {
+    rownames(hm_umap)[i] = paste0("y15", "_", new_cell)
+  } else if (grepl("germinectomy", new_cell)) {
+    rownames(hm_umap)[i] = paste0("germ", "_", new_cell)
+  } else if (grepl("human_molar_pulp_4", new_cell)) {
+    rownames(hm_umap)[i] = paste0("plpy", "_", new_cell)
+  } else if (grepl("human_molar_pulp_old", new_cell)) {
+    rownames(hm_umap)[i] = paste0("plpo", "_", new_cell)
+  } else if (grepl("human_molar_healthy_1", new_cell)) {
+    rownames(hm_umap)[i] = paste0("h1", "_", new_cell)
+  } else if (grepl("human_molar_healthy_2", new_cell)) {
+    rownames(hm_umap)[i] = paste0("h2", "_", new_cell)
   }
+  # if (new_cell %in% goodnames) {
+  #   newRow = data.frame(UMAP_1 = hm_umap[i,1], UMAP_2 = hm_umap[i,2])
+  #   new_hm_umap = rbind(new_hm_umap, newRow)
+  # }
+}
+# test = hm_umap[match(rownames(hm_umap), substr(head(colnames(hm)), 5, 1000L)),]
+hm_umap = hm_umap[which(rownames(hm_umap) %in% colnames(hm)),]
+
+plotCytoTRACE(incsr_results, emb = incsr_umap, outputDir = "C:/Users/miles/Downloads/d_tooth/results/")
+plotCytoTRACE(im_results, emb = im_umap, outputDir = "C:/Users/miles/Downloads/d_tooth/results/")
+plotCytoTRACE(hm_results, emb = new_hm_umap, outputDir = "C:/Users/miles/Downloads/d_tooth/results/")
+plotCytoTRACE(results, emb = new_hm_umap, outputDir = "/nv/hp10/ggruenhagen3/scratch/d_tooth/results/")
+
+incsr_epi = subset(incsr, cells = names(epi_data$clusters))
+incsr_epi$their_clusters = epi_data$clusters
+Idents(incsr_epi) = incsr_epi$their_clusters
+incsr_epi@reductions$umap@cell.embeddings = as.matrix(epi_data_emb[,2:3])
+colnames(incsr_epi@reductions$umap@cell.embeddings) = c("UMAP_1", "UMAP_2")
+rownames(incsr_epi@reductions$umap@cell.embeddings) = colnames(incsr_epi)
+plotCyto(incsr_epi)
+cytoScoreByIdent(incsr_epi) + ggtitle("Igor Incisor Epithelium")
+res = cytoBINdeg(incsr_epi)
+res[[1]] + ggtitle("Number of Cells in CytoBINs per Cluster - Igor Incisor Epi")
+res[[2]] + ggtitle("Percent of Cells in CytoBINs per Cluster - Igor Incisor Epi")
+write.table(res[[3]], "C:/Users/miles/Downloads/d_tooth/results/igor_epi_cytoBIN_deg.tsv", sep="\t", row.names = F, quote = F)
+
+
+#########
+# Conos #
+#########
+library("SeuratWrappers")
+library("Seurat")
+library("conos")
+quickPlot = function(p, width = 800, height = 800, res = 100, suffix = "test") {
+  png(paste0("/mnt/c/Users/miles/Downloads/", suffix, ".png"), width = width, height = height, res = res)
+  print(p)
+  dev.off()
+}
+# incsr = readRDS("/mnt/c/Users/miles/Downloads/d_tooth/data/igor_incsr.rds")
+# incsr = readRDS("/mnt/c/Users/miles/Downloads/incsr_hgnc.rds")
+im = readRDS("/mnt/c/Users/miles/Downloads/d_tooth/data/igor_incsr_molar.rds")
+hm = readRDS("/mnt/c/Users/miles/Downloads/d_tooth/data/hm.rds")
+tj = readRDS("/mnt/c/Users/miles/Downloads/tj_hgnc.rds")
+jaw = readRDS("/mnt/c/Users/miles/Downloads/jaw_hgnc.rds")
+
+# incsr$sample = "INCSR"
+im$sample = "Mouse Incisor + Molar"
+hm$sample = "Human Molar"
+tj$sample = "Cichlid Tooth"
+jaw$sample = "Cichlid Jaw"
+tj$annot = tj$seurat_clusters
+jaw$annot = jaw$seurat_clusters
+# incsr$sample_annot = paste(incsr$sample, incsr$annot)
+im$sample_annot = paste(im$sample, im$annot)
+hm$sample_annot = paste(hm$sample, hm$annot)
+
+all_list = list()
+# all_list[["INCSR"]] =  NormalizeData(incsr) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose = F)
+all_list[["IM"]] =  NormalizeData(im) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose = F)
+all_list[["HM"]] =  NormalizeData(hm) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose = F)
+all_list[["TJ"]] =  NormalizeData(tj) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose = F)
+all_list[["JAW"]] =  NormalizeData(jaw) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose = F)
+all <- Conos$new(all_list)
+all$buildGraph(k = 15, k.self = 5, space = "PCA", ncomps = 25, n.odgenes = 2000, matching.method = "mNN", metric = "angular", score.component.variance = TRUE, verbose = TRUE)
+all$findCommunities()
+all$embedGraph()
+all_s = as.Seurat(all)
+
+p = DimPlot(all_s, reduction = "largeVis", split.by = "sample")
+quickPlot(p, width = 1600)
+Idents(all_s) = all_s$sample_annot
+p = DimPlot(all_s, reduction = "largeVis", split.by = "sample", label = T)
+quickPlot(p, width = 1600, suffix = "test_sample_annot")
+
+Idents(all_s) = all_s$annot
+p = DimPlot(all_s, reduction = "largeVis", split.by = "sample", label = T)
+quickPlot(p, width = 1600, suffix = "test_annot")
