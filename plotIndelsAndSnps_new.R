@@ -7,6 +7,7 @@
 library("Cairo")
 library("stringr")
 library("RColorBrewer")
+library("ggplot2")
 library("fdrtool")
 
 # *** Specify the path to Fst File ***
@@ -96,19 +97,50 @@ print(length(which(p.adjust(2*pnorm(-abs(indels_data$Zfst)), method="BH") < 0.05
 
 
 # Pit v Castle
-fst_pc$id = 1:nrow(fst_pc)
-fst_pc$Zfst <- (( fst_pc$WEIR_AND_COCKERHAM_FST - mean(fst_pc$WEIR_AND_COCKERHAM_FST) ) / sd(fst_pc$WEIR_AND_COCKERHAM_FST)) + 1
 
-fst_pc$CHROM <- sub("^NW.*", "unplaced", fst_pc$CHROM)
-fst_pc$CHROM <- sub("^NC_027944.1", "unplaced", fst_pc$CHROM)
-image_name <- "~/scratch/brain/pvc_c/pc.png"
+fst = fst_rc
+fst$id = 1:nrow(fst)
+# fst$Zfst <- (( fst$WEIR_AND_COCKERHAM_FST - mean(fst$WEIR_AND_COCKERHAM_FST) ) / sd(fst$WEIR_AND_COCKERHAM_FST)) + 1
+fst$WEIGHTED_FST[which(fst$WEIGHTED_FST < 0)] = 0
+fst$Zfst <- (( fst$WEIGHTED_FST - mean(fst$WEIGHTED_FST) ) / sd(fst$WEIGHTED_FST)) + 1
+
+fst$CHROM <- sub("^NW.*", "unplaced", fst$CHROM)
+fst$CHROM <- sub("^NC_027944.1", "unplaced", fst$CHROM)
+fst$CHROM <- gsub(".1$", "", fst$CHROM)
+
+test = sample(1:nrow(fst), 5000)
+my_breaks = which(! duplicated(fst$CHROM))
+
+image_name <- "~/scratch/brain/fst/rc.png"
 png(image_name, type="cairo", width = 12, height = 4, units = 'in', res=300)
-# p = ggplot(fst_pc, aes(id, Zfst, color = CHROM)) + geom_point() + theme_classic() + scale_color_manual(values = brewer.pal(n=8,name="Dark2"))
-p = ggplot(fst_pc, aes(id, Zfst, color = CHROM)) + geom_point() + theme_classic() + scale_color_manual(values = rep(wes_palette(n=5, name="Darjeeling1"), 6))
+p = ggplot(fst, aes(id, Zfst, color = CHROM)) + geom_point(alpha = 0.7, size = 1) + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$CHROM), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 print(p)
 dev.off()
+system(paste0("rclone copy ", image_name, " dropbox:BioSci-Streelman/George/Brain/fst/"))
 
+image_name <- "~/scratch/brain/fst/pc_hist.png"
+png(image_name, type="cairo", width = 6, height = 4, units = 'in', res=300)
+hist(fst_pc_unbin$WEIR_AND_COCKERHAM_FST, main = "Pit-Castle", xlab = "FST", breaks = 50)
+dev.off()
+system(paste0("rclone copy ", image_name, " dropbox:BioSci-Streelman/George/Brain/fst/"))
 
-test = sample(1:nrow(fst_pc), 5000)
-my_breaks = which(! duplicated(fst_pc$CHROM))
-p = ggplot(fst_pc, aes(id, Zfst, color = CHROM)) + geom_point() + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst_pc$CHROM), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+# Pit v Castle Tang
+
+fst = read.table("C:/Users/miles/Downloads/fst_pc_tang_10kb.windowed.weir.fst", sep="\t", header=TRUE)
+fst$id = 1:nrow(fst)
+# fst$Zfst <- (( fst$WEIR_AND_COCKERHAM_FST - mean(fst$WEIR_AND_COCKERHAM_FST) ) / sd(fst$WEIR_AND_COCKERHAM_FST)) + 1
+fst$WEIGHTED_FST[which(fst$WEIGHTED_FST < 0)] = 0
+fst$Zfst <- (( fst$WEIGHTED_FST - mean(fst$WEIGHTED_FST) ) / sd(fst$WEIGHTED_FST)) + 1
+
+fst$CHROM <- sub("^NW.*", "unplaced", fst$CHROM)
+fst$CHROM <- sub("^NC_027944.1", "unplaced", fst$CHROM)
+fst$CHROM <- gsub(".1$", "", fst$CHROM)
+
+test = sample(1:nrow(fst), 5000)
+my_breaks = which(! duplicated(fst$CHROM))
+
+image_name <- "C:/Users/miles/Downloads/tang_pc.png"
+png(image_name, type="cairo", width = 12, height = 4, units = 'in', res=300)
+p = ggplot(fst, aes(id, Zfst, color = CHROM)) + geom_point(alpha = 0.7, size = 1) + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$CHROM), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ggtitle("Pit vs Castle in Tanganyka")
+print(p)
+dev.off()

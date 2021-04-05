@@ -213,26 +213,29 @@ length(pct.sim.bi[which(pct.sim.bi==1)])/length(pct.sim.bi)
 # DEGS ##
 ##########
 
-im_table = table(im_degs_sig$gene)
-im_degs_sig$n_gene_appears = im_table[match(im_degs_sig$gene, names(im_table))]
+deg_table = table(deg$gene)
+deg$n_gene_appears = deg_table[match(deg$gene, names(deg_table))]
 
 appears = data.frame()
-for (gene in unique(im_degs_sig$gene)) {
-  rows = im_degs_sig[which(im_degs_sig$gene == gene),]
+for (gene in unique(deg$gene)) {
+  rows = deg[which(deg$gene == gene),]
   appears = rbind(appears, t(c(gene, paste(rows$cluster, collapse = ", ") )))
 }
-im_degs_sig$DEG_in = appears$V2[match(im_degs_sig$gene, appears$V1)]
-write.csv(im_degs_sig, "C:/Users/miles/Downloads/d_tooth/results/incsr_degs.csv")
+deg$DEG_in = appears$V2[match(deg$gene, appears$V1)]
+write.csv(deg, "C:/Users/miles/Downloads/d_tooth/results/hm_pos_degs.csv")
+write.csv(deg, "~/scratch/d_tooth/results/hm_pos_degs.csv")
 
 top = data.frame(row.names = 1:100)
 top_unique = data.frame(row.names = 1:100)
-for (cluster in levels(Idents(incsr))) {
-  rows = im_degs_sig[which(im_degs_sig$cluster == cluster),]
+for (cluster in levels(Idents(hm))) {
+  rows = deg[which(deg$cluster == cluster),]
   rows_unique = rows[which(rows$n_gene_appears == 1),]
   top = cbind(top, rows$gene[1:100])
   top_unique = cbind(top_unique, rows_unique$gene[1:100])
 }
-colnames(top) = levels(Idents(incsr))
-colnames(top_unique) = levels(Idents(incsr))
+colnames(top) = levels(Idents(hm))
+colnames(top_unique) = levels(Idents(hm))
+write.table(top, "~/scratch/d_tooth/data/hm_100.tsv", sep="\t", quote=F, row.names=F)
+write.table(top_unique, "~/scratch/d_tooth/data/hm_unique_100.tsv", sep="\t", quote=F, row.names=F)
 write.xlsx(top, "C:/Users/miles/Downloads/incsr_100.xlsx", row.names = F)
 write.xlsx(top_unique, "C:/Users/miles/Downloads/incsr_unique_100.xlsx", row.names = F)

@@ -190,17 +190,75 @@ for (cluster in unique(jaw.deg$cluster)) {
 }
 jaw.deg$correction_factor = jaw.deg$orig/jaw.deg$new
 
+incsr.deg = read.table("~/scratch/d_tooth/results/igor/incsr_sig_degs_hgnc.tsv", sep="\t", header = T, stringsAsFactors = F)
+im.deg = read.table("~/scratch/d_tooth/results/igor/im_sig_degs.tsv", sep="\t", header = T, stringsAsFactors = F)
+hm.deg = read.table("~/scratch/d_tooth/results/igor/hm_sig_degs.tsv", sep="\t", header = T, stringsAsFactors = F)
+tj.deg = read.table("~/scratch/d_tooth/results/igor/tj_sig_degs_hgnc.tsv", sep="\t", header = T, stringsAsFactors = F)
+jaw.deg = read.table("~/scratch/d_tooth/results/igor/jaw_sig_degs_hgnc.tsv", sep="\t", header = T, stringsAsFactors = F)
+
 dfs = list(incsr.deg, im.deg, hm.deg, tj.deg, jaw.deg)
 samples = c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Tooth", "Cichlid Jaw")
-source("~/scratch/brain/brain_scripts/all_f.R")
-rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc", "~/scratch/d_tooth/mvhvc/")
 
+rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc", "~/scratch/d_tooth/results/igor/")
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+system(paste0("rclone copy ~/scratch/brain/results/bb_j_sig_cor.csv dropbox:BioSci-Streelman/George/Brain/bb/results/coexp/"))
+
+incsr.deg2 = na.omit(plyr::ldply(unique(incsr.deg$cluster), function(x) my_var = incsr.deg[which(incsr.deg$cluster == x)[1:100],]))
+im.deg2    = na.omit(plyr::ldply(unique(im.deg$cluster),    function(x) my_var = im.deg[which(im.deg$cluster       == x)[1:100],]))
+hm.deg2    = na.omit(plyr::ldply(unique(hm.deg$cluster),    function(x) my_var = hm.deg[which(hm.deg$cluster       == x)[1:100],]))
+tj.deg2    = na.omit(plyr::ldply(unique(tj.deg$cluster),    function(x) my_var = tj.deg[which(tj.deg$cluster       == x)[1:100],]))
+jaw.deg2   = na.omit(plyr::ldply(unique(jaw.deg$cluster),   function(x) my_var = jaw.deg[which(jaw.deg$cluster     == x)[1:100],]))
+dfs2 = list(incsr.deg2, im.deg2, hm.deg2, tj.deg2, jaw.deg2)
+source("~/scratch/brain/brain_scripts/all_f.R")
+rs = heatmapComparisonMulti(dfs = dfs2, samples=samples,  filename="mvhvc100", "~/scratch/d_tooth/results/igor/")
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc100_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# my_var = incsr.deg[which(incsr.deg$cluster == x),]; my_var[1:50,]
 # Single Comparisons
-rs = heatmapComparison(incsr.deg, tj.deg, "Mouse Incisor", "Cichlid Tooth",         "mi_v_ct", "~/scratch/d_tooth/mvhvc/")
-write.table(rs[[2]], file="~/scratch/d_tooth/mvhvc/mi_v_ct_genes.txt", sep="\t", quote = F)
-rs = heatmapComparison(incsr.deg, hm.deg, "Mouse Incisor", "Human Molar",           "mi_v_hm", "~/scratch/d_tooth/mvhvc/")
+# TJ vs INCSR
+rs = heatmapComparison(incsr.deg, tj.deg, "Mouse Incisor", "Cichlid Tooth",         "mi_v_ct", "~/scratch/d_tooth/results/igor/")
+write.table(rs[[2]], file="~/scratch/d_tooth//results/igor/mi_v_ct_genes.txt", sep="\t", quote = F)
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mi_v_ct_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mi_v_ct_genes.txt dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# TJ vs IM
+rs = heatmapComparison(im.deg, tj.deg, "Mouse Incisor+Molar", "Cichlid Tooth",         "im_v_ct", "~/scratch/d_tooth/results/igor/")
+write.table(rs[[2]], file="~/scratch/d_tooth//results/igor/im_v_ct_genes.txt", sep="\t", quote = F)
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/im_v_ct_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/im_v_ct_genes.txt dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# TJ vs HM
+rs = heatmapComparison(hm.deg, tj.deg, "Human Molar", "Cichlid Tooth",         "hm_v_ct", "~/scratch/d_tooth/results/igor/")
+write.table(rs[[2]], file="~/scratch/d_tooth//results/igor/hm_v_ct_genes.txt", sep="\t", quote = F)
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/hm_v_ct_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/hm_v_ct_genes.txt dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# Jaw vs INCSR
+rs = heatmapComparison(incsr.deg, jaw.deg, "Mouse Incisor", "Cichlid Jaw",         "mi_v_cj", "~/scratch/d_tooth/results/igor/")
+write.table(rs[[2]], file="~/scratch/d_tooth//results/igor/mi_v_cj_genes.txt", sep="\t", quote = F)
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mi_v_cj_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mi_v_cj_genes.txt dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mi_v_cj_pct_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# Jaw vs IM
+rs = heatmapComparison(im.deg, jaw.deg, "Mouse Incisor+Molar", "Cichlid Jaw",         "im_v_cj", "~/scratch/d_tooth/results/igor/")
+write.table(rs[[2]], file="~/scratch/d_tooth//results/igor/im_v_cj_genes.txt", sep="\t", quote = F)
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/im_v_cj_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/im_v_cj_genes.txt dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/im_v_cj_pct_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# Jaw vs HM
+rs = heatmapComparison(hm.deg, jaw.deg, "Human Molar", "Cichlid Jaw",         "hm_v_cj", "~/scratch/d_tooth/results/igor/")
+write.table(rs[[2]], file="~/scratch/d_tooth//results/igor/hm_v_cj_genes.txt", sep="\t", quote = F)
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/hm_v_cj_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/hm_v_cj_genes.txt dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/hm_v_cj_pct_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+#
+rs = heatmapComparison(incsr.deg, hm.deg, "Mouse Incisor", "Human Molar",           "mi_v_hm", "~/scratch/d_tooth/results/igor/")
 write.table(rs[[2]], file="~/scratch/d_tooth/mvhvc/mi_v_hm_genes.txt", sep="\t", quote = F)
-rs = heatmapComparison(incsr.deg, im.deg, "Mouse Incisor", "Mouse Incisor & Molar", "mi_v_im", "~/scratch/d_tooth/mvhvc/")
+rs = heatmapComparison(incsr.deg, im.deg, "Mouse Incisor", "Mouse Incisor & Molar", "mi_v_im", "~/scratch/d_tooth/results/igor/")
 write.table(rs[[2]], file="~/scratch/d_tooth/mvhvc/mi_v_im_genes.txt", sep="\t", quote = F)
 
 # rs = heatmapComparison(incsr.deg, tj.deg,  "Mouse Incisor", "Cichlid Tooth",       "mi_v_ct", "C:/Users/miles/Downloads/d_tooth/results/mvhvc/")
@@ -368,3 +426,410 @@ quickPlot(p, width = 1600, suffix = "test_sample_annot")
 Idents(all_s) = all_s$annot
 p = DimPlot(all_s, reduction = "largeVis", split.by = "sample", label = T)
 quickPlot(p, width = 1600, suffix = "test_annot")
+
+
+# Incsr vs Molar
+im$anatomy.annot = paste(im$anatomy, im$annot)
+Idents(im) = im$anatomy.annot
+all_deg = data.frame()
+for (this_annot in unique(im$annot)) {
+  this_deg = FindMarkers(im, ident.1 = paste("Incisor", this_annot), ident.2 = paste("Molar", this_annot))
+  this_deg$gene = rownames(this_deg)
+  this_deg$annot = this_annot
+  all_deg = rbind(all_deg, this_deg)
+}
+all_deg_sig = all_deg[which(all_deg$p_val_adj < 0.05),]
+
+all_deg_sig$rank = 0
+for (this_annot in unique(im$annot)) {
+  print(this_annot)
+  all_deg_sig$rank[which(all_deg_sig$annot == this_annot)] = 1:length(which(all_deg_sig$annot == this_annot))
+  # all_deg_sig$rank[which(all_deg_sig$annot == this_annot)] = 1
+}
+write.csv(all_deg_sig, "C:/Users/miles/Downloads/d_tooth/results/im_incsr_vs_molar_sig_cluster.csv")
+
+# Incisor Epi Markers in Our Datasets
+incsr_epi_markers = data.frame(Cell_Type = "SI_progenitors", Genes = toupper(c("Cdh6", "Lrp11", "Cpne5")), Color = "red")
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "SR", Genes = toupper(c("Vat1l", "Fam19a4", "Hey2")), Color = "red"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Preameloblasts", Genes = toupper(c("Col22a1", "Vwde", "Kif5c")), Color = "red"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Am_secr", Genes = toupper(c("Enam", "Amelx", "Ctnna2")), Color = "yellow"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Am_ryr2", Genes = toupper(c("Ryr2", "Mylk", "Sox5")), Color = "blue"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Am_mat", Genes = toupper(c("Klk4", "Gpr155", "Slc34a2")), Color = "blue"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Am_post_mat", Genes = toupper(c("Gm17660", "Slc5a8", "Ptpn22")), Color = "blue"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "SI", Genes = toupper(c("Psmb10", "C1qb", "Ibsp")), Color = "green"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "SI", Genes = toupper(c("Rab3il1", "Pmch", "Cyp2s1")), Color = "green"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Cuboidal", Genes = toupper(c("Thbd", "Gnrh1", "Jph4")), Color = "yellow"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "OEE", Genes = toupper(c("Slc04a1", "Th", "Amer1")), Color = "green"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Lgr5_SC", Genes = toupper(c("Lrig1", "Disc1", "Fez1")), Color = "orange"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "Sfrp5_prog", Genes = toupper(c("Sfrp5", "Grp", "Rhoc")), Color = "orange"))
+incsr_epi_markers = rbind(incsr_epi_markers, 
+                          data.frame(Cell_Type = "OEE_prog", Genes = toupper(c("Fos", "Egr1", "Vrtn")), Color = "orange"))
+
+tj <- readRDS("C:/Users/miles/Downloads/d_tooth/tooth_scripts/tj_shiny/data/tj.rds")
+jaw <- readRDS("C:/Users/miles/Downloads/d_tooth/tooth_scripts/pool_shiny/data/jpool.rds")
+tj_cyto  <- readRDS("C:/Users/miles/Downloads/d_tooth/data/tooth_cyto.rds")
+jaw_cyto <- readRDS("C:/Users/miles/Downloads/d_tooth/data/jaw_cyto.rds")
+tj$cyto = tj_cyto$CytoTRACE
+jaw$cyto = jaw_cyto$CytoTRACE
+
+obj = jaw
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+pal = colorRampPalette(temp)
+cell_type_df = data.frame()
+for (i in 1:nrow(incsr_epi_markers)) {
+  hgnc = as.vector(incsr_epi_markers[i, "Genes"])
+  cell_type = as.vector(incsr_epi_markers[i, "Cell_Type"])
+  color = as.vector(incsr_epi_markers[i, "Color"])
+  gene = gene_info$ens[match(hgnc, gene_info$human)]
+  gene_pos = c()
+  if (hgnc %in% rownames(obj))
+    gene = hgnc
+  if (tolower(hgnc) %in% rownames(obj))
+    gene = tolower(hgnc)
+  if (! is.na(gene) & gene %in% rownames(obj) ) 
+    gene_pos = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
+  if ( length(gene_pos) > 0 ) {
+    newRow = data.frame(CytoTRACE = as.numeric(as.vector(obj$cyto[gene_pos])), Genes = gene, Cell_Type = cell_type, Color = color)
+    cell_type_df = rbind(cell_type_df, newRow) 
+  }
+}
+rownames(cell_type_df) <- NULL
+
+pdf("C:/Users/miles/Downloads/d_tooth/results/incsr_epi_markers_in_jaw.pdf", width = 5.50, height = 7.50)
+print(ggplot(cell_type_df, aes(x=Genes, y=CytoTRACE)) + geom_boxplot(alpha=0.8, aes(fill=Cell_Type)) + ylim(0,1) + geom_jitter(position=position_dodge2(width=0.5), alpha=0.5, aes(color = CytoTRACE)) + coord_flip() + theme_classic() + scale_color_gradientn(colors = pal(50)) + guides(color = F) + ggtitle("Igor Incsr Epi Markers in Cichlid Jaw") + scale_fill_manual(values = as.vector(sapply(levels(cell_type_df$Cell_Type), function(x) cell_type_df$Color[which(cell_type_df$Cell_Type == x)[1]]))))
+dev.off()
+
+# Paint Genes in Igor Incsr Mes
+igor_incsr_mes = readRDS("C:/Users/miles/Downloads/d_tooth/data/igor_incsr_mes.rds")
+FeaturePlot(igor_incsr_mes, "Celsr1", order = T, label = T, pt.size = 1.5)
+FeaturePlot(igor_incsr_mes, "Gli1", order = T, label = T, pt.size = 1.5)
+FeaturePlot(igor_incsr_mes, "Thy1", order = T, label = T, pt.size = 1.5)
+FeaturePlot(igor_incsr_mes, "Ng2", order = T, label = T, pt.size = 1.1)
+
+incsr_results = readRDS("C:/Users/miles/Downloads/d_tooth/data/incsr_cyto.rds")
+
+# I'm suppose to re-run it, not take the original
+# igor_incsr_mes$cyto = incsr_results$CytoTRACE[match(colnames(igor_incsr_mes), names(incsr_results$CytoTRACE))]
+# 
+# igor_incsr_mes$bin <- igor_incsr_mes$cyto
+# igor_incsr_mes$bin[which(igor_incsr_mes$cyto < quantile(igor_incsr_mes$cyto, 0.33))] <- "relative_low"
+# igor_incsr_mes$bin[which(igor_incsr_mes$cyto > quantile(igor_incsr_mes$cyto, 0.33) & igor_incsr_mes$cyto < quantile(igor_incsr_mes$cyto, 0.66))] <- "relative_medium"
+# igor_incsr_mes$bin[which(igor_incsr_mes$cyto > quantile(igor_incsr_mes$cyto, 0.66))] <- "relative_high"
+# 
+# Idents(igor_incsr_mes) <- igor_incsr_mes$bin
+# igor_incsr_mes_cyto_deg <- FindAllMarkers(igor_incsr_mes)
+# write.csv(igor_incsr_mes_cyto_deg, "C:/Users/miles/Downloads/d_tooth/results/igor_incsr_mes_cyto_deg_raw.csv")
+# igor_incsr_mes_cyto_deg_sig = igor_incsr_mes_cyto_deg[which(igor_incsr_mes_cyto_deg$p_val_adj < 0.05),]
+# write.csv(igor_incsr_mes_cyto_deg_sig, "C:/Users/miles/Downloads/d_tooth/results/igor_incsr_mes_cyto_deg_sig.csv")
+# FeaturePlot(igor_incsr_mes, "cyto", order = T, label = T) + scale_color_gradientn(colors = pal(50))
+
+igor_incsr_mes_cyto2 = CytoTRACE::CytoTRACE(mat = as.matrix(igor_incsr_mes@assays$RNA@counts))
+igor_incsr_mes$cyto2 = igor_incsr_mes_cyto2$CytoTRACE
+FeaturePlot(igor_incsr_mes, "cyto2", order = T, label = T) + scale_color_gradientn(colors = pal(50))
+
+igor_incsr_mes$bin2 <- igor_incsr_mes$cyto2
+igor_incsr_mes$bin2[which(igor_incsr_mes$cyto2 <= quantile(igor_incsr_mes$cyto2, 0.33))] <- "relative_low"
+igor_incsr_mes$bin2[which(igor_incsr_mes$cyto2 > quantile(igor_incsr_mes$cyto2, 0.33) & igor_incsr_mes$cyto2 < quantile(igor_incsr_mes$cyto2, 0.66))] <- "relative_medium"
+igor_incsr_mes$bin2[which(igor_incsr_mes$cyto2 >= quantile(igor_incsr_mes$cyto2, 0.66))] <- "relative_high"
+
+Idents(igor_incsr_mes) <- igor_incsr_mes$bin2
+igor_incsr_mes_cyto_deg <- FindAllMarkers(igor_incsr_mes)
+write.csv(igor_incsr_mes_cyto_deg, "C:/Users/miles/Downloads/d_tooth/results/igor_incsr_mes_cyto_deg_raw.csv")
+igor_incsr_mes_cyto_deg_sig = igor_incsr_mes_cyto_deg[which(igor_incsr_mes_cyto_deg$p_val_adj < 0.05),]
+write.csv(igor_incsr_mes_cyto_deg_sig, "C:/Users/miles/Downloads/d_tooth/results/igor_incsr_mes_cyto_deg_sig.csv")
+
+#===================================================================================================
+# Quiescence 03/25/2021 ============================================================================
+#===================================================================================================
+# Using quiescent CytoTRACE range (0.6-0.7) from CytoTRACE paper to find quiescent cells
+obj_list = list()
+obj_list[[1]] = incsr
+obj_list[[2]] = tj
+obj_list[[3]] = jaw
+sig_qui_deg_list = list()
+for (i in 1:length(obj_list)) {
+  obj = obj_list[[i]]
+  obj$qui = "none"
+  obj$qui[which(obj$cyto >= 0.6)] = "qui"
+  obj$qui[which(obj$cyto > 0.7)] = "high"
+  
+  Idents(obj) = obj$qui
+  qui_deg = FindMarkers(obj, ident.1 = "qui", ident.2 = "high")
+  qui_deg$gene = rownames(qui_deg)
+  sig_qui_deg_list[[i]] = qui_deg[which(qui_deg$p_val_adj < 0.05),] 
+}
+
+write.csv(sig_qui_deg_list[[1]], "~/scratch/d_tooth/results/incsr_qui_60_70_v_high.csv")
+write.csv(sig_qui_deg_list[[2]], "~/scratch/d_tooth/results/tj_qui_60_70_v_high.csv")
+
+# 03/30/2021
+# Take Hoxb5+ and Mki67- population (See CytoTRACE paper Fig 3). Find the CytoTRACE Range.
+qui_pop = colnames(hm)[which(hm@assays$RNA@counts["HOXB5",] > 0 & hm@assays$RNA@counts["MKI67",] == 0)]
+hm$cyto = hm_results$CytoTRACE
+hm$qui_pop = factor(colnames(hm) %in% qui_pop)
+hm$qui_pop = plyr::revalue(hm$qui_pop, replace = c("TRUE" = "Qui", "FALSE" = "Other"))
+Idents(hm) = hm$qui_pop
+cytoScoreByIdent(hm)
+range(hm$cyto[which(hm$qui_pop == "Qui")])
+# df = data.frame(cell = colnames(hm), qui_pop = colnames(hm) %in% qui_pop, cyto = hm$cyto)
+
+# Split Igor's Human Molar into Epithelium and Mesenchyme. Then do that, see how it matches in Igor's Mouse Incisor, then split our data into epi and mes, and finally identify a quiescent population.
+hm_epi = hm$
+
+#===================================================================================================
+# Growing vs Adult =================================================================================
+#===================================================================================================
+hm$age = hm$sample
+hm$age[which(hm$age %in% c("germ", "y15"))] = "grow"
+hm$age[which(hm$age != "grow")] = "adult"
+
+Idents(hm) = hm$age
+age_deg = FindMarkers(hm, ident.1 = "grow", ident.2 = "adult")
+age_deg = age_deg[which(age_deg$p_val_adj < 0.05),]
+age_deg$gene = rownames(age_deg)
+write.csv(age_deg, "C:/Users/miles/Downloads/d_tooth/results/hm_grow_v_adult_deg_sig.csv")
+
+Idents(hm) = hm$annot
+for (i in 1:100) {
+  gene = age_deg$gene[i]
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/hm_grow_v_adult/", gene, ".png"), width = 1000, height = 500, res = 80)
+  print(myFeaturePlot(hm, gene, my.split.by = "age", my.title = paste0(gene, " - #", i)))
+  dev.off()
+}
+
+# As a control test other samples vs each other
+hm$ctrl_age = hm$sample
+hm$ctrl_age[which(hm$ctrl_age %in% c("h1", "plpy"))] = "ctrl_grow"
+hm$ctrl_age[which(hm$ctrl_age %in% c("h2", "plpo"))] = "ctrl_adult"
+Idents(hm) = hm$ctrl_age
+ctrl_deg = FindMarkers(hm, ident.1 = "ctrl_grow", ident.2 = "ctrl_adult")
+ctrl_deg = ctrl_deg[which(ctrl_deg$p_val_adj < 0.05),]
+
+hm$ctrl_age2 = hm$sample
+hm$ctrl_age2[which(hm$ctrl_age2 %in% c("germ"))] = "ctrl_grow"
+hm$ctrl_age2[which(hm$ctrl_age2 %in% c("y15"))] = "ctrl_adult"
+Idents(hm) = hm$ctrl_age2
+ctrl_deg2 = FindMarkers(hm, ident.1 = "ctrl_grow", ident.2 = "ctrl_adult")
+ctrl_deg2 = ctrl_deg2[which(ctrl_deg2$p_val_adj < 0.05),]
+
+#===================================================================================================
+# Neural Recruitment Genes in Paul's Mes and Cluster Proportion ====================================
+#===================================================================================================
+# BoxPlots of Genes
+mes <- readRDS("C:/Users/miles/Downloads/rna/data/combined.rds")
+stem = c("Celsr1", "Gli1", "Sox2", "Sox9")
+neuro_genes = c("Tnfrsf1b", "Ntf5", "Ntf3", "Ntrk1", "Ngf", "Bdnf", "Gdnf", "Sema3f", "Cxcr4", "Cxcl12", "Epha4", "Ret", "Gnao1", "Gnai2", "Stx7", "Rtn1", "Strap", "Nefh")
+for (gene in stem) {
+  values = mes@assays$RNA@data[gene,]
+  df = data.frame(values = values, gene = rep(gene, length(values)), cond = mes$cond, cluster = mes$seurat_clusters, sample = mes$cond)
+  
+  col_pal = c("#F2444A","#0077b6")
+  p = ggplot(df, aes(x=1, y = values, fill=sample, color=sample)) + geom_split_violin(alpha=0.6) + stat_summary(fun = mean, fun.min = mean, fun.max = mean, geom = "crossbar", width = 0.25, position = position_dodge(width = .25)) + scale_color_manual(values=col_pal, name = "Condition") + scale_fill_manual(values=col_pal, name = "Condition") + ylab("Normalized Expression") + xlab("") + ggtitle(gene) + theme(plot.title = element_text(hjust = 0.5), axis.text.x=element_blank(), axis.ticks=element_blank())
+  p1 = ggplot(df, aes(x=cluster, y = values, fill=sample, color=sample)) + geom_split_violin(alpha=0.6) + stat_summary(fun = mean, fun.min = mean, fun.max = mean, geom = "crossbar", width = 0.25, position = position_dodge(width = .25)) + scale_color_manual(values=col_pal, name = "Condition") + scale_fill_manual(values=col_pal, name = "Condition") + ylab("Normalized Expression") + xlab("Cluster") + ggtitle(gene) + theme(plot.title = element_text(hjust = 0.5))
+  p2 = myFeaturePlot(mes, gene, my.split.by = "cond", my.col.pal = pal, na.blank = T, my.title = gene)
+  
+  pdf(paste0("C:/Users/miles/Downloads/d_tooth/results/painting/stem/", gene, "_cond.pdf"), width = 6, height = 7.5)
+  print(p)
+  dev.off()
+  
+  pdf(paste0("C:/Users/miles/Downloads/d_tooth/results/painting/stem/", gene, "_cond_cluster.pdf"), width = 15, height = 5)
+  print(p1)
+  dev.off()
+  
+  pdf(paste0("C:/Users/miles/Downloads/d_tooth/results/painting/stem/", gene, ".pdf"), width = 10, height = 5)
+  print(p2)
+  dev.off()
+}
+
+#Volcano plot
+res = FindMarkers(mes, ident.1 = "CTRL", ident.2 = "CLIPP", min.pct = 0.01, logfc.threshold = 0.1)
+library("scales")
+sig_deg = read.csv("C:/Users/miles/Downloads/d_tooth/results/paul_mes_ctrl_v_clipp_deg_sig.csv")
+res$plot_p = -log(res$p_val_adj, base = 10)
+res$label = rownames(res)
+res$sig = as.character(res$label %in% sig_deg$gene)
+res[stem, "sig"] = "Stem"
+res$sig = plyr::revalue(res$sig, replace = c("TRUE" = "sig", "FALSE" = "non-sig", "Stem" = "Stem"))
+res = res[order(res$sig, decreasing = F),]
+ggplot(res, aes(x = avg_logFC, y = plot_p, color = sig)) + geom_point(alpha = 1, pt.size = 1.5) + geom_text_repel(data = res[stem,],aes(label = label), color = "black") + ylab("-Log Adjusted P") + scale_color_manual(values = rev(hue_pal()(3)))
+
+# Find the Pct Diff and Average Log Change for Every Gene between CTRL and CLIPP
+clipp_cells = colnames(mes)[which(mes$cond == "CLIPP")]
+ctrl_cells = colnames(mes)[which(mes$cond == "CTRL")]
+df_dif_logFC = pct_dif_avg_logFC(mes, cells.1 = ctrl_cells, cells.2 = clipp_cells)
+
+df_dif_logFC$list = "non_sig"
+df_dif_logFC$list[which(df_dif_logFC$genes %in% sig_deg$gene)] = "sig"
+df_dif_logFC[neuro2, "list"] = "list_axon"
+df_dif_logFC = df_dif_logFC[order(df_dif_logFC$list, decreasing = T),]
+ggplot(df_dif_logFC, aes(x = pct_dif, y = avg_logFC, color=list)) + geom_point(alpha = 0.7) + geom_text_repel(data = df_dif_logFC[neuro2,], aes(label = genes), color = "black") + ggtitle("Axon") + labs(color = "Color")
+
+growth = c("Tmod2", "Pacs1", "Rtn1", "Stx7", "Gnai2", "Gnao1", "Fabp7", "Cotl1", "Cap1", "Capzb", "Sept2", "Strap", "Clptm1", "Cyfip1", "Crmp1", "Farp2", "Cxcl12")
+neuro2 = c("Bdnf", "Gdnf", "Ngf", "Sema3f", "Ntf3", "Ntf5", "Ntrk1", "Tnfrsf1b")
+colnames(df_dif_logFC)[c(3,4)] = c("CTRL", "CLIPP")
+plot_df = melt(df_dif_logFC[neuro2,c("genes", "CTRL", "CLIPP")], id = "genes")
+colnames(plot_df)[2] = "Condition"
+ggplot(plot_df, aes(x=genes, y = value, color = Condition, fill = Condition)) + geom_bar(stat = "identity", alpha = 0.8, position = "dodge") + ylab("% Cells")
+
+# Find Differences in Cluster Proportion in Paul's Mes
+df_prop = data.frame(cluster = levels(mes$seurat_clusters), clipp = 0, ctrl = 0, clipp_of_cluster = 0, ctrl_of_cluster = 0, cluster_of_clipp = 0, cluster_of_ctrl = 0)
+for (cluster in levels(mes$seurat_clusters)) {
+  this_cells = colnames(mes)[which(mes$seurat_clusters == cluster)]
+  this_clipp = this_cells[which(this_cells %in% clipp_cells)]
+  this_ctrl = this_cells[which(this_cells %in% ctrl_cells)]
+  
+  clipp_of_cluster = length(this_clipp) / length(this_cells)
+  ctrl_of_cluster = length(this_ctrl) / length(this_cells)
+  cluster_of_clipp = length(this_clipp) / length(clipp_cells)
+  cluster_of_ctrl = length(this_ctrl) / length(ctrl_cells)
+  
+  df_prop[which(df_prop$cluster == cluster),] = c(cluster, length(this_clipp), length(this_ctrl), 
+                                                  clipp_of_cluster, ctrl_of_cluster, 
+                                                  cluster_of_clipp, cluster_of_ctrl)
+}
+
+plot_prop = melt(df_prop[,c("cluster", "clipp_of_cluster", "ctrl_of_cluster")], id = "cluster")
+plot_prop$value = as.numeric(as.vector(plot_prop$value))
+plot_prop$cluster = factor(plot_prop$cluster, levels = levels(mes$seurat_clusters))
+ggplot(plot_prop, aes(x = cluster, y = value, fill = variable)) + geom_bar(stat = "identity", position = "dodge") + ylab("% of Cluster")
+plot_prop = melt(df_prop[,c("cluster", "cluster_of_clipp", "cluster_of_ctrl")], id = "cluster")
+plot_prop$value = as.numeric(as.vector(plot_prop$value))
+plot_prop$cluster = factor(plot_prop$cluster, levels = levels(mes$seurat_clusters))
+ggplot(plot_prop, aes(x = cluster, y = value, fill = variable)) + geom_bar(stat = "identity", position = "dodge") + ylab("% of Condition")
+
+#==================================================================================
+# Attempt to find Epi Stem Markers in Our Epi 03/31/2021 ==========================
+#==================================================================================
+epi_stem_Lgr5 = c("Pknox2", "Spock1", "Sfrp5", "Grp", "Arhgef33", "Ccdc80", "Pcp4", "Pla2g4a", "Cd27", "Vsig2", "Trpm5", "Lgr5", "Gm1110", "Clcnkb", "Fez1", "Icam2", "Prob1", "Disc1", "Zscan10", "Slc35f3")
+epi_stem_Sox2 = c("Gjb3", "Sox2", "Ccdc112", "Trpm4", "Gstm2", "AA465934", "Mex3a", "Myh10", "Cks1b", "Moxd1", "Bex1", "Mdk", "Ccdc34", "Dlgap5", "Uhrf1", "Rfc4", "Rrm2", "Gins2", "Rad54b", "Dtl")
+epi_stem = c(epi_stem_Lgr5, epi_stem_Sox2, "Lrig1")
+incsr_epi = readRDS("C:/Users/miles/Downloads/d_tooth/data/igor_incsr_epi.rds")
+incsr_epi$stem_score = colSums(incsr_epi@assays$RNA@data[epi_stem,])
+FeaturePlot(incsr_epi, "stem_score", order = T, label = T, pt.size = 3) + scale_color_gradientn(colors = pal(50))
+myFeaturePlot(incsr_epi, "stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epithelial Stem Markers in Igor Incisor Epithelium")
+blind_epi_stem_cells = colnames(incsr_epi)[which(incsr_epi$stem_score >= quantile(incsr_epi$stem_score, 0.95))]
+DimPlot(incsr_epi, cells.highlight = blind_epi_stem_cells, label = T, pt.size = 3, sizes.highlight = 3)
+
+mz_epi_stem = convertHgncDataFrameToMzebra(data.frame(toupper(epi_stem)), 1, rownames(tj), na.rm = T, return_vect = T)
+tj$epi_stem_score = colSums(tj@assays$RNA@data[mz_epi_stem,])
+jaw$epi_stem_score = colSums(jaw@assays$RNA@data[mz_epi_stem,])
+FeaturePlot(tj, "epi_stem_score", order = T, label = T, pt.size = 2) + scale_color_gradientn(colors = pal(50))
+FeaturePlot(jaw, "epi_stem_score", order = T, label = T, pt.size = 2) + scale_color_gradientn(colors = pal(50))
+myFeaturePlot(tj, "epi_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epithelial Stem Markers in Cichlid Jaw")
+myFeaturePlot(jaw, "epi_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epithelial Stem Markers in Cichlid Tooth")
+tj_blind_epi_stem_cells = colnames(tj)[which(tj$epi_stem_score >= quantile(tj$epi_stem_score, 0.95))]
+jaw_blind_epi_stem_cells = colnames(jaw)[which(jaw$epi_stem_score >= quantile(jaw$epi_stem_score, 0.95))]
+DimPlot(tj,  cells.highlight = tj_blind_epi_stem_cells,  label = T, pt.size = 2, sizes.highlight = 2)
+DimPlot(jaw, cells.highlight = jaw_blind_epi_stem_cells, label = T, pt.size = 2, sizes.highlight = 2)
+
+tj_epi = subset(tj, idents = c(2,3,4))
+tj_epi$epi_stem_score = colSums(tj@assays$RNA@data[mz_epi_stem,])
+FeaturePlot(tj_epi, "epi_stem_score", order = T, label = T, pt.size = 2) + scale_color_gradientn(colors = pal(50))
+myFeaturePlot(tj_epi, "epi_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epithelial Stem Markers in Cichlid Tooth Epithelium")
+tj_epi$epi_stem_score2 = colSums(tj@assays$RNA@counts[mz_epi_stem,])
+myFeaturePlot(tj_epi, "epi_stem_score2", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Number of Epithelial Stem Markers Expressed in Cichlid Tooth Epithelium")
+
+tj_jaw$epi_stem_score = colSums(tj_jaw@assays$RNA@data[mz_epi_stem,])
+mat = tj_jaw@assays$RNA@counts[mz_epi_stem,]
+mat[which(mat > 0)] = 1
+tj_jaw$epi_stem_score2 = colSums(mat)
+myFeaturePlot(tj_jaw, "epi_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epithelial Stem Markers in Cichlid Tooth and Jaw")
+myFeaturePlot(tj_jaw, "epi_stem_score2", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Number of Epithelial Stem Markers Expressed in Cichlid Tooth and Jaw")
+tj_jaw_epi_stem_cells = colnames(tj_jaw)[which(tj_jaw$epi_stem_score >= quantile(tj_jaw$epi_stem_score, 0.95))]
+DimPlot(tj_jaw, cells.highlight = setNames(list(jaw_blind_epi_stem_cells), "95th"), label = T, pt.size = 2, sizes.highlight = 2) + ggtitle("Cells in 95th quantile of expression of Epi Stem Markers")
+
+# Epi + Mes Stem
+mz_mes_stem = c("celsr1a", "gli1", "ENSMZEG00005018875")
+mz_epi_mes_stem = c(mz_epi_stem, mz_mes_stem)
+mat = tj_jaw@assays$RNA@counts[mz_epi_mes_stem,]
+mat[which(mat > 0)] = 1
+tj_jaw$epi_mes_stem_score = colSums(tj_jaw@assays$RNA@data[mz_epi_mes_stem,])
+tj_jaw$epi_mes_stem_score2 = colSums(mat)
+myFeaturePlot(tj_jaw, "epi_mes_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epi+Mes Stem Markers in Cichlid Tooth and Jaw")
+myFeaturePlot(tj_jaw, "epi_mes_stem_score2", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Number of Epi+Mes Stem Markers Expressed in Cichlid Tooth and Jaw")
+tj_jaw_epi_mes_stem_cells = colnames(tj_jaw)[which(tj_jaw$epi_mes_stem_score >= quantile(tj_jaw$epi_mes_stem_score, 0.95))]
+DimPlot(tj_jaw, cells.highlight = setNames(list(tj_jaw_epi_mes_stem_cells), "95th"), label = T, pt.size = 2, sizes.highlight = 2) + ggtitle("Cells in 95th quantile of expression of Epi+Mes Stem Markers")
+
+# Find Mes Markers that are similar in expression to Gli1 and Thy1
+igor_incsr_mes = readRDS("C:/Users/miles/Downloads/d_tooth/data/igor_incsr_mes.rds")
+mes_stem = c("Celsr1", "Gli1", "Thy1")
+igor_incsr_mes$mes_stem_score = colSums(igor_incsr_mes@assays$RNA@data[mes_stem,])
+top_cells = colnames(igor_incsr_mes)[which(igor_incsr_mes$mes_stem_score > quantile(igor_incsr_mes$mes_stem_score, 0.95))]
+myFeaturePlot(igor_incsr_mes, "mes_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Celsr1, Gli1 and Thy1 in Incisor Mes")
+DimPlot(igor_incsr_mes, cells.highlight = setNames(list(top_cells), "95th"), label = T, pt.size = 2, sizes.highlight = 2) + ggtitle("95th quantile of expression of Celsr1, Gli1 and Thy1")
+
+igor_incsr_mes$mes_stem = "Other"
+igor_incsr_mes$mes_stem[top_cells] = "Stem"
+Idents(igor_incsr_mes) = igor_incsr_mes$mes_stem
+mes_stem_deg = FindMarkers(igor_incsr_mes, ident.1 = "Stem", ident.2 = "Other")
+mes_stem_deg_sig = mes_stem_deg[which(mes_stem_deg$p_val_adj < 0.05),]
+
+# Figure of Coexpression
+mes_stem_deg_sig = read.csv("C:/Users/miles/Downloads/d_tooth/results/igor_incsr_mes_gli1_thy1_cells_deg_sig.csv", stringsAsFactors = F)
+mes_stem_deg_sig_pos = as.vector(mes_stem_deg_sig$gene[which(mes_stem_deg_sig$avg_logFC > 0)])
+mat = as.matrix(igor_incsr_mes@assays$RNA@data[mes_stem_deg_sig_pos,])
+mat = mat[, order(igor_incsr_mes$mes_stem_score, decreasing = T)]
+
+igor_incsr_mes = ScaleData(igor_incsr_mes, features = mes_stem_deg_sig_pos)
+mat2 = as.matrix(igor_incsr_mes@assays$RNA@scale.data[mes_stem_deg_sig_pos,])
+mat2 = mat2[, order(igor_incsr_mes$mes_stem_score, decreasing = T)]
+
+test_genes = as.vector(mes_stem_deg_sig$gene[which(mes_stem_deg_sig$pct.2 < 0.55 & mes_stem_deg_sig$avg_logFC > 0)])
+pheatmap::pheatmap(mat[1:10,], cluster_rows = F, cluster_cols = F, show_colnames = F)
+pheatmap::pheatmap(mat[mes_stem2,], cluster_rows = F, cluster_cols = F, show_colnames = F, main = "Markers Used")
+pheatmap::pheatmap(mat[test_genes[1:10],], cluster_rows = F, cluster_cols = F, show_colnames = F)
+pheatmap::pheatmap(mat[cor_genes[1:10],], cluster_rows = F, cluster_cols = F, show_colnames = F, main = "Markers Most Correlated with Gli1+Thy1")
+
+pheatmap::pheatmap(mat2[1:10,], cluster_rows = F, cluster_cols = F, show_colnames = F)
+pheatmap::pheatmap(mat2[mes_stem2,], cluster_rows = F, cluster_cols = F, show_colnames = F)
+pheatmap::pheatmap(mat2[test_genes[1:10],], cluster_rows = F, cluster_cols = F, show_colnames = F)
+
+test_cor = c()
+for (gene in test_genes) {
+  test_cor = c(test_cor, cor(igor_incsr_mes@assays$RNA@data[gene,], igor_incsr_mes$mes_stem_score))
+}
+names(test_cor) = test_genes
+cor_genes = names(test_cor)[order(test_cor, decreasing = T)]
+
+# common_genes = mes_stem_deg_sig$gene[which(mes_stem_deg_sig$gene %in% mes_stem_deg_sig_backup$gene)]
+# test = data.frame(common = common_genes)
+# mes_stem_deg_sig_backup$rank = 1:nrow(mes_stem_deg_sig_backup)
+# mes_stem_deg_sig$rank = 1:nrow(mes_stem_deg_sig)
+# test$no_celsr1 = mes_stem_deg_sig[common_genes, "rank"]
+# test$w_celsr1 = mes_stem_deg_sig_backup[common_genes, "rank"]
+# test$avg_rank = test$no_celsr1 + test$w_celsr1
+# test$avg_rank = test$avg_rank / 2
+# mes_stem2 = as.vector(test$common[which(test$no_celsr1 < 20 & test$w_celsr1 < 20)])
+
+mes_stem2 = mes_stem_deg_sig[which(mes_stem_deg_sig$avg_logFC > 0)[1:10],"gene"]
+mes_stem2 = c("Thy1", "Gli1", "Foxd1", "Bcl2", "Fgf10", "Rimbp2", "Gem", "Hs3st6", "Etv5", "Ptn")
+mz_mes_stem2 = convertHgncDataFrameToMzebra(data.frame(toupper(mes_stem2)), 1, gene_names = rownames(tj), return_vect = T, na.rm = T)
+
+for (gene in mes_stem2) {
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_mes_stem/", gene, ".png"), width = 600, height = 485)
+  print(FeaturePlot(igor_incsr_mes, gene, order = T, label = T, pt.size = 3))
+  dev.off()
+}
+
+mz_epi_mes_stem = c(mz_epi_stem, mz_mes_stem2)
+mat = tj_jaw@assays$RNA@counts[mz_epi_mes_stem,]
+mat[which(mat > 0)] = 1
+tj_jaw$epi_mes_stem_score = colSums(tj_jaw@assays$RNA@data[mz_epi_mes_stem,])
+tj_jaw$epi_mes_stem_score2 = colSums(mat)
+myFeaturePlot(tj_jaw, "epi_mes_stem_score", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Expression of Epi+Mes Stem Markers in Cichlid Tooth and Jaw")
+myFeaturePlot(tj_jaw, "epi_mes_stem_score2", my.col.pal = pal, na.blank = T, my.pt.size = 3) + ggtitle("Number of Epi+Mes Stem Markers Expressed in Cichlid Tooth and Jaw")
+tj_jaw_epi_mes_stem_cells = colnames(tj_jaw)[which(tj_jaw$epi_mes_stem_score >= quantile(tj_jaw$epi_mes_stem_score, 0.95))]
+DimPlot(tj_jaw, cells.highlight = setNames(list(tj_jaw_epi_mes_stem_cells), "95th"), label = T, pt.size = 2, sizes.highlight = 2) + ggtitle("Cells in 95th quantile of expression of Epi+Mes Stem Markers")

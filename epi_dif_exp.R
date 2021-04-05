@@ -708,3 +708,55 @@ length(celsr_p_0)
 head(celsr_j[which(celsr_p == 0)])
 celsr_r = jaccard.rahman(celsr_j)
 head(sort(celsr_r))
+
+#===================================================================================================
+# Epi CTRL v INJR DEGs 03/26/2021 ==================================================================
+#===================================================================================================
+epi$cond_cluster = paste0(epi$cond, "_", epi$seurat_clusters)
+Idents(epi) = epi$cond_cluster
+all_cond_cluster_deg = data.frame()
+for (cluster in levels(epi$seurat_clusters)) {
+  print(cluster)
+  if (paste0("CTRL_", cluster) %in% levels(Idents(epi)) && paste0("INJR_", cluster) %in% levels(Idents(epi)) && 
+      length(WhichCells(epi, idents = paste0("CTRL_", cluster))) > 10 && length(WhichCells(epi, idents = paste0("INJR_", cluster))) > 10) {
+    this_deg = FindMarkers(epi, ident.1 = paste0("CTRL_", cluster), ident.2 = paste0("INJR_", cluster))
+    this_deg$gene = rownames(this_deg)
+    this_deg$cluster = cluster
+    this_deg$num_ctrl_cluster_cells = length(WhichCells(epi, idents = paste0("CTRL_", cluster)))
+    this_deg$num_injr_cluster_cells = length(WhichCells(epi, idents = paste0("INJR_", cluster)))
+    this_deg$pct_ctrl_cluster_cells = this_deg$num_ctrl_cluster_cells / (this_deg$num_ctrl_cluster_cells + this_deg$num_injr_cluster_cells)
+    rownames(this_deg) = paste0(this_deg$gene, "_", cluster)
+    all_cond_cluster_deg = rbind(all_cond_cluster_deg, this_deg)
+  }
+}
+all_cond_cluster_deg$upCTRL = all_cond_cluster_deg$avg_logFC > 0
+all_cond_cluster_deg = all_cond_cluster_deg[which(all_cond_cluster_deg$p_val_adj < 0.05),]
+write.csv(all_cond_cluster_deg, "C:/Users/miles/Downloads/d_tooth/results/paul_epi_ctrl_v_injr_cluster_deg_sig.csv")
+
+#===================================================================================================
+# Mes CTRL v CLIPP DEGs 03/26/2021 =================================================================
+#===================================================================================================
+mes$cond_cluster = paste0(mes$cond, "_", mes$seurat_clusters)
+Idents(mes) = mes$cond_cluster
+all_cond_cluster_deg = data.frame()
+for (cluster in levels(mes$seurat_clusters)) {
+  print(cluster)
+  if (paste0("CTRL_", cluster) %in% levels(Idents(mes)) && paste0("CLIPP_", cluster) %in% levels(Idents(mes)) && 
+      length(WhichCells(mes, idents = paste0("CTRL_", cluster))) > 10 && length(WhichCells(mes, idents = paste0("CLIPP_", cluster))) > 10) {
+    this_deg = FindMarkers(mes, ident.1 = paste0("CTRL_", cluster), ident.2 = paste0("CLIPP_", cluster))
+    this_deg$gene = rownames(this_deg)
+    this_deg$cluster = cluster
+    this_deg$num_ctrl_cluster_cells = length(WhichCells(mes, idents = paste0("CTRL_", cluster)))
+    this_deg$num_CLIPP_cluster_cells = length(WhichCells(mes, idents = paste0("CLIPP_", cluster)))
+    this_deg$pct_ctrl_cluster_cells = this_deg$num_ctrl_cluster_cells / (this_deg$num_ctrl_cluster_cells + this_deg$num_CLIPP_cluster_cells)
+    rownames(this_deg) = paste0(this_deg$gene, "_", cluster)
+    all_cond_cluster_deg = rbind(all_cond_cluster_deg, this_deg)
+  }
+}
+all_cond_cluster_deg$upCTRL = all_cond_cluster_deg$avg_logFC > 0
+all_cond_cluster_deg = all_cond_cluster_deg[which(all_cond_cluster_deg$p_val_adj < 0.05),]
+write.csv(all_cond_cluster_deg, "C:/Users/miles/Downloads/d_tooth/results/paul_mes_ctrl_v_CLIPP_cluster_deg_sig.csv")
+
+all_cond_cluster_deg$annot = df$annot[match(all_cond_cluster_deg$cluster, df$cluster)]
+test = all_cond_cluster_deg[, c(colnames(all_cond_cluster_deg)[1:7], "annot", colnames(all_cond_cluster_deg)[8:11])]
+write.csv(test, "C:/Users/miles/Downloads/d_tooth/results/paul_mes_ctrl_v_CLIPP_cluster_deg_sig.csv")

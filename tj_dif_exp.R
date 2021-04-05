@@ -388,16 +388,18 @@ EnhancedVolcano(tj_deg, lab = "gene", x="avg_logFC", y="p_val_adj")
 
 # tal = readxl::read_excel("C:/Users/miles/Downloads/Specific and enriched Dental Genes.xlsx")
 # tal = tal[,which(! startsWith(colnames(tal), "..."))]
-tal = readxl::read_excel("C:/Users/miles/Downloads/d_tooth/results/incsr_unique_100.xlsx")
+# tal = readxl::read_excel("C:/Users/miles/Downloads/d_tooth/results/incsr_unique_100.xlsx")
+# tal = readxl::read_excel("C:/Users/miles/Downloads/d_tooth/results/im_unique_100.xlsx", skip = 1)
+tal = readxl::read_excel("C:/Users/miles/Downloads/d_tooth/results/hm_unique_100.xlsx", skip = 1)
 
 for (i in 1:ncol(tal)) {
   name = str_replace(colnames(tal)[i], "/", "_")
   name_ns = str_replace(name, " ", "_")
   print(name)
   
-  # cur_list = hgncGood(as.data.frame(tal[which(! is.na(tal[,i])), i])[,1], rownames(tj), as_df = T)
-  # write.table(cur_list, paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/", name_ns, ".tsv"), sep="\t", quote = F, row.names = F)
-  cur_list = read.table(paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/", name_ns, ".tsv"), sep="\t", header=T)
+  cur_list = hgncGood(as.data.frame(tal[which(! is.na(tal[,i])), i])[,1], rownames(tj), as_df = T)
+  write.table(cur_list, paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/hm/", name_ns, ".tsv"), sep="\t", quote = F, row.names = F)
+  cur_list = read.table(paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/hm/", name_ns, ".tsv"), sep="\t", header=T)
 
   res = markersInDEGUpDown(tj_deg_all, cur_list$mzebra)
   res_pct = markersInDEGUpDown(tj_deg_all, cur_list$mzebra, pct=T)[[2]]
@@ -407,59 +409,59 @@ for (i in 1:ncol(tal)) {
   dot_bin_weight = dot_res[[3]]
 
   # UMAP plot of Expression of Markers per Cell
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_exp_per_cell.png"), width = 500, height = 400)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_exp_per_cell.png"), width = 500, height = 400)
   print(markerExpPerCell(tj, cur_list$mzebra) + ggtitle(paste0("Expression of ", name, " Markers per Cell in Cichlid Tooth")))
   dev.off()
 
   # Boxplot of Genes per Cell per Cluster - Corrected
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_avg_genes_per_cell_per_cluster_correct.png"), width = 600, height = 400)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_avg_genes_per_cell_per_cluster_correct.png"), width = 600, height = 400)
   print(markerExpPerCellPerCluster(tj, cur_list$mzebra, correct = T)[[1]] + ggtitle(paste0("Average Number of ", name, " Markers per Cell per Cluster in Cichlid Tooth - Corrected")))
   dev.off()
 
   # Boxplot of Expression of Genes per Cell per Cluster - Corrected
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_exp_per_cell_per_cluster_correct.png"), width = 600, height = 400)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_exp_per_cell_per_cluster_correct.png"), width = 600, height = 400)
   print(markerExpPerCellPerCluster(tj, cur_list$mzebra, correct = T, n_markers = F)[[1]] + ggtitle(paste0("Average Expression of ", name, " Markers per Cell per Cluster in Cichlid Tooth - Corrected")))
   dev.off()
 
   # Barplot of Total Number of Cells per Cluster Expressing a Marker - Corrected
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_num_cell_per_cluster_correct.png"), width = 600, height = 400)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_num_cell_per_cluster_correct.png"), width = 600, height = 400)
   print(markerCellPerCluster(tj, cur_list$mzebra) + ggtitle(paste("Normalized Total Number of Cells per Expressing Expressing", name, "Markers in Cichlid Tooth")))
   dev.off()
 
   # Heatmap of Expression per Cluster
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_heatmap.png"), width = 1200, height = 1200, res=100)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_heatmap.png"), width = 1200, height = 1200, res=100)
   print(markerHeatmap(tj, cur_list$mzebra) + ggtitle(paste0(name, " Markers in Cichlid Tooth")))
   dev.off()
 
   # DotPlot of Expression per Cluster
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_dotplot.png"), width = 800, height = 1600, res=100)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_dotplot.png"), width = 800, height = 1600, res=100)
   print(dot_plot + ggtitle(paste0(name, " Markers in Cichlid Tooth")) + coord_flip())
   dev.off()
 
   # DotPlot BIN per Cluster
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_dotplot_bin.png"), width = 800, height = 400)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_dotplot_bin.png"), width = 800, height = 400)
   print(dot_bin)
   dev.off()
 
   # DotPlot BIN per Cluster - Weighted
-  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_dotplot_bin_weight.png"), width = 800, height = 400)
+  png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_dotplot_bin_weight.png"), width = 800, height = 400)
   print(dot_bin_weight)
   dev.off()
 
   # DEGs in Markers
   if (! is.null(res[[2]])) {
     # Number of DEGs
-    png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_deg.png"), width = 500, height = 400)
+    png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_deg.png"), width = 500, height = 400)
     print(res[[2]] + ggtitle(paste0(name, " Markers in Cichlid Tooth")))
     dev.off()
 
     # LogFC
-    png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_deg_logFC.png"), width = 500, height = 400)
+    png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_deg_logFC.png"), width = 500, height = 400)
     print(res[[3]] + ggtitle(paste0(name, " Markers in Cichlid Tooth")))
     dev.off()
 
     # % DEGs in Markers
-    png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_deg_pct.png"), width = 500, height = 400)
+    png(paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_deg_pct.png"), width = 500, height = 400)
     print(res_pct + ggtitle(paste0(name, " Markers in Cichlid Tooth")))
     dev.off()
   }
@@ -469,7 +471,7 @@ for (i in 1:ncol(tal)) {
   colnames(found_genes) = c("mzebra", "cluster", "avg_logFC", "isPos")
   found_genes = left_join(found_genes, cur_list, by = "mzebra")
   found_genes = found_genes[,c("hgnc", "mzebra", "cluster", "avg_logFC", "isPos")]
-  write.table(found_genes, paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/tj_", name_ns, "_deg.tsv"), sep="\t", quote = F, row.names = F)
+  write.table(found_genes, paste0("C:/Users/miles/Downloads/d_tooth/results/igor_markers/hm/tj_", name_ns, "_deg.tsv"), sep="\t", quote = F, row.names = F)
 }
 
 
@@ -479,8 +481,8 @@ for (i in 1:ncol(tal)) {
   print(name)
   
   # cur_list = hgncGood(as.data.frame(tal[which(! is.na(tal[,i])), i])[,1], rownames(jaw), as_df = T)
-  # write.table(cur_list, paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/", name_ns, ".tsv"), sep="\t", quote = F, row.names = F)
-  cur_list = read.table(paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/", name_ns, ".tsv"), sep="\t", header=T)
+  # write.table(cur_list, paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/im/", name_ns, ".tsv"), sep="\t", quote = F, row.names = F)
+  cur_list = read.table(paste0("C:/Users/miles/Downloads/d_tooth/data/markers/igor/im/", name_ns, ".tsv"), sep="\t", header=T)
   
   res = markersInDEGUpDown(jaw_deg_all, cur_list$mzebra)
   res_pct = markersInDEGUpDown(jaw_deg_all, cur_list$mzebra, pct=T)[[2]]
