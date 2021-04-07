@@ -89,7 +89,7 @@ for (jaw_clust in 0:num_jaw_clusters) {
 for (tj_clust in 0:num_tj_clusters) {
   tj_jaw <- SetIdent(tj_jaw, cells=WhichCells(tj, idents = tj_clust), value=paste("tj", tj_clust, sep="_"))
 }
-DimPlot(tj_jaw, reduction = "umap", split.by = "project", label = TRUE)
+DimPlot(tj_jaw, reduction = "umap", split.by = "project", label = TRUE, pt.size = 2)
 
 #####################
 # Cell Trajectories #
