@@ -144,3 +144,67 @@ png(image_name, type="cairo", width = 12, height = 4, units = 'in', res=300)
 p = ggplot(fst, aes(id, Zfst, color = CHROM)) + geom_point(alpha = 0.7, size = 1) + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$CHROM), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ggtitle("Pit vs Castle in Tanganyka")
 print(p)
 dev.off()
+
+#=======================================================================================
+# Plot PCA =============================================================================
+#=======================================================================================
+fst = read.table("~/scratch/msc/pace_backup/snp_no_window.fst", sep = "\t", header = T)
+vcf = read.table("~/scratch/msc/pace_backup/whole_filter_rm_SNP_biallelic_08_31_20.vcf", sep = "\t")
+fst_pos = paste0(fst[,1], "_", fst[,2])
+vcf_pos = paste0(vcf[,1], "_", vcf[,2])
+sample_names = c("1619", "1818", "1860", "1863", "1912", "1983", "2162", "2241", "2277", "2298", "2302", "2319", "2320", "2332", "403", "404",  "493", "494", "495")
+fst[,sample_names] = vcf[match(fst_pos, vcf_pos), 10:28]
+write.table(fst, "~/scratch/msc/pace_backup/biallelic_snp_no_window_w_vcf.fst", sep = "\t", row.names = F)
+
+# Start Here
+sample_df = data.frame(samples = sample_names,
+                       groups = c("bi", "bi", "bi", "bi", "bi", "bi", "tri", "tri", "bi", "tri", "tri", "tri", "bi", "tri", "tri", "tri", "tri", "tri", "tri"),
+                       species = c("MZ", "MG", "MP", "MP", "PC", "PC", "PN", "PN", "ML", "LF", "LT", "LF", "ML", "PN", "LF", "LF", "LF", "LF", "LF"))
+# PCA Method from: https://comppopgenworkshop2019.readthedocs.io/en/latest/contents/03_pca/pca.html
+fst_simple = fst[1:3]
+for (i in sample_names) {
+  allele1 = substr(fst[,i], 0, 1)
+  allele2 = substr(fst[,i], 3, 3)
+  
+  isRef1 = allele1 == 0
+  isHomo = allele1 == allele2
+  isMissing1 = allele1 == "."
+  
+  score = rep(-1, nrow(fst_simple)) # no score should be -1, if any is at the end, something went wrong
+  score[which(isMissing1)] = 9
+  score[which(!isMissing1 & isHomo & isRef1)] = 2
+  score[which(!isMissing1 & isHomo & !isRef1)] = 0
+  score[which(!isMissing1 & !isHomo )] = 1
+  
+  fst_simple = cbind(fst_simple, score)
+}
+colnames(fst_simple) = colnames(fst)
+res.pca <- prcomp(t(fst_simple[,sample_names]))
+
+fst_simple_lg5 = fst_simple[which(fst_simple$CHROM == "NC_036784.1"),]
+res.pca.lg5 = prcomp(t(fst_simple_lg5[,sample_names]))
+
+fst_simple_bhlhe40 = fst_simple[which(fst_simple$POS > (7528132 - 25000) & fst_simple$POS < (7531739 + 25000)),]
+res.pca.bhlhe40 = prcomp(t(fst_simple_bhlhe40[,sample_names]))
+
+library(factoextra)
+png("~/scratch/d_tooth/results/ts_ms_pca_all_biallelic_snp.png", width = 500, height = 500)
+fviz_pca_ind(res.pca, col.ind = sample_df$groups, palette = c("#00AFBB", "#FC4E07"), addEllipses = TRUE, ellipse.type = "confidence", legend.title = "Groups", repel = FALSE, max.overlaps = Inf)
+dev.off()
+png("~/scratch/d_tooth/results/ts_ms_pca_all_biallelic_snp_species.png", width = 500, height = 500)
+fviz_pca_ind(res.pca, col.ind = sample_df$species, addEllipses = TRUE, ellipse.type = "confidence", legend.title = "Groups", repel = FALSE, max.overlaps = Inf)
+dev.off()
+
+png("~/scratch/d_tooth/results/ts_ms_pca_bhlhe40_biallelic_snp.png", width = 500, height = 500)
+fviz_pca_ind(res.pca.bhlhe40, col.ind = sample_df$groups, palette = c("#00AFBB", "#FC4E07"), addEllipses = TRUE, ellipse.type = "confidence", legend.title = "Groups", repel = FALSE, max.overlaps = Inf)
+dev.off()
+png("~/scratch/d_tooth/results/ts_ms_pca_bhlhe40_biallelic_snp_species.png", width = 500, height = 500)
+fviz_pca_ind(res.pca.bhlhe40, col.ind = sample_df$species, addEllipses = TRUE, ellipse.type = "confidence", legend.title = "Groups", repel = FALSE, max.overlaps = Inf)
+dev.off()
+
+png("~/scratch/d_tooth/results/ts_ms_pca_lg5_biallelic_snp.png", width = 500, height = 500)
+fviz_pca_ind(res.pca.lg5, col.ind = sample_df$groups, palette = c("#00AFBB", "#FC4E07"), addEllipses = TRUE, ellipse.type = "confidence", legend.title = "Groups", repel = FALSE, max.overlaps = Inf)
+dev.off()
+png("~/scratch/d_tooth/results/ts_ms_pca_lg5_biallelic_snp_species.png", width = 500, height = 500)
+fviz_pca_ind(res.pca.lg5, col.ind = sample_df$species, addEllipses = TRUE, ellipse.type = "confidence", legend.title = "Groups", repel = FALSE, max.overlaps = Inf)
+dev.off()
