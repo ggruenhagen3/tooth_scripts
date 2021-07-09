@@ -1661,3 +1661,186 @@ splitGenebyCytoBIN = function(obj, gene, rm.low = FALSE) {
   
   return(list(p, p1, bin_deg_sig))
 }
+
+
+
+library("circlize")
+test = read.csv("C:/Users/miles/Downloads/test.csv")
+chord_df = test[, c("df1_cluster", "df2_cluster", "ovlp")]
+colnames(chord_df) = c("from", "to", "value")
+# chord_df = chord_df[which( (startsWith(chord_df$from, "(CT)") | startsWith(chord_df$from, "(HM)")) & (startsWith(chord_df$to, "(CT)") | startsWith(chord_df$to, "(HM)")) ),]
+# chord_df = chord_df[which( (startsWith(chord_df$from, "(CT)")) & (startsWith(chord_df$to, "(HM)")) ),]
+# chord_df = chord_df[which( startsWith(chord_df$from, "(CT)") & ! startsWith(chord_df$to, "(CT)") ),]
+
+# TJ vs MIM
+chord_df = test[, c("df1_cluster", "df2_cluster", "ovlp")]
+colnames(chord_df) = c("from", "to", "value")
+chord_df = chord_df[which( (startsWith(chord_df$from, "(CT)")) & (startsWith(chord_df$to, "(MIM)")) ),]
+paste(chord_df$to, collapse = "'='gray', '")
+grid.col = c("(CT) Mesenchymal" = "red", "(CT) Endothelial" = "blue", "(CT) Epithelial" = "green", "(CT) Glia" = "orange", "(CT) Immune" = "purple", '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells' = 'gray' )
+lty_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MIM) Pulp cells", "(MIM) Endothelial cells", "(MIM) Epithelial cells", "(MIM) Pulp cells", "(MIM) Macrophages"), c(2,2,2, 2, 2))
+lwd_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MIM) Pulp cells", "(MIM) Endothelial cells", "(MIM) Epithelial cells", "(MIM) Pulp cells", "(MIM) Macrophages"), c(2, 2, 2, 2, 2))
+border_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MIM) Pulp cells", "(MIM) Endothelial cells", "(MIM) Epithelial cells", "(MIM) Pulp cells", "(MIM) Macrophages"), c(1, 1, 1, 1, 1))
+chordDiagram(chord_df, grid.col = grid.col, link.lty = lty_df, link.lwd = lwd_df, link.border = border_df)
+
+# TJ vs HM
+chord_df = test[, c("df1_cluster", "df2_cluster", "ovlp")]
+colnames(chord_df) = c("from", "to", "value")
+chord_df = chord_df[which( (startsWith(chord_df$from, "(CT)")) & (startsWith(chord_df$to, "(HM)")) ),]
+paste(chord_df$to, collapse = "'='gray', '")
+grid.col = c("(CT) Mesenchymal" = "red", "(CT) Endothelial" = "blue", "(CT) Epithelial" = "green", "(CT) Glia" = "orange", "(CT) Immune" = "purple", '(HM) Pulp cells'='gray', '(HM) Perivascular cells'='gray', '(HM) Endothelial cells'='gray', '(HM) Glial cells'='gray', '(HM) Odontoblasts'='gray', '(HM) Immune cells'='gray', '(HM) PDL'='gray', '(HM) Pulp cells'='gray', '(HM) Perivascular cells'='gray', '(HM) Endothelial cells'='gray', '(HM) Glial cells'='gray', '(HM) Odontoblasts'='gray', '(HM) Immune cells'='gray', '(HM) PDL'='gray', '(HM) Pulp cells'='gray', '(HM) Perivascular cells'='gray', '(HM) Endothelial cells'='gray', '(HM) Glial cells'='gray', '(HM) Odontoblasts'='gray', '(HM) Immune cells'='gray', '(HM) PDL'='gray', '(HM) Pulp cells'='gray', '(HM) Perivascular cells'='gray', '(HM) Endothelial cells'='gray', '(HM) Glial cells'='gray', '(HM) Odontoblasts'='gray', '(HM) Immune cells'='gray', '(HM) PDL'='gray', '(HM) Pulp cells'='gray', '(HM) Perivascular cells'='gray', '(HM) Endothelial cells'='gray', '(HM) Glial cells'='gray', '(HM) Odontoblasts'='gray', '(HM) Immune cells'='gray', '(HM) PDL' = 'gray' )
+lty_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(HM) Pulp cells", "(HM) Endothelial cells", "(HM) Endothelial cells", "(HM) Pulp cells", "(HM) Immune cells"), c(2,2,2, 2, 2))
+lwd_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(HM) Pulp cells", "(HM) Endothelial cells", "(HM) Endothelial cells", "(HM) Pulp cells", "(HM) Immune cells"), c(2, 2, 2, 2, 2))
+border_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(HM) Pulp cells", "(HM) Endothelial cells", "(HM) Endothelial cells", "(HM) Pulp cells", "(HM) Immune cells"), c(1, 1, 1, 1, 1))
+png("C:/Users/miles/Downloads/ct_v_hm_chord.png", width = 1500, height = 1500, res = 150)
+chordDiagram(chord_df, grid.col = grid.col, link.lty = lty_df, link.lwd = lwd_df, link.border = border_df)
+dev.off()
+circos.clear()
+
+# TJ vs MIM
+chord_df = test[, c("df1_cluster", "df2_cluster", "ovlp")]
+colnames(chord_df) = c("from", "to", "value")
+chord_df = chord_df[which( (startsWith(chord_df$from, "(CT)")) & (startsWith(chord_df$to, "(MIM)")) ),]
+paste(chord_df$to, collapse = "'='gray', '")
+grid.col = c("(CT) Mesenchymal" = "red", "(CT) Endothelial" = "blue", "(CT) Epithelial" = "green", "(CT) Glia" = "orange", "(CT) Immune" = "purple", '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells'='gray', '(MIM) Pulp cells'='gray', '(MIM) PDL'='gray', '(MIM) Macrophages'='gray', '(MIM) Pericytes'='gray', '(MIM) Endothelial cells'='gray', '(MIM) Glia'='gray', '(MIM) Epithelial cells' = 'gray' )
+lty_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MIM) Pulp cells", "(MIM) Endothelial cells", "(MIM) Epithelial cells", "(MIM) Pulp cells", "(MIM) Macrophages"), c(2,2,2, 2, 2))
+lwd_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MIM) Pulp cells", "(MIM) Endothelial cells", "(MIM) Epithelial cells", "(MIM) Pulp cells", "(MIM) Macrophages"), c(2, 2, 2, 2, 2))
+border_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MIM) Pulp cells", "(MIM) Endothelial cells", "(MIM) Epithelial cells", "(MIM) Pulp cells", "(MIM) Macrophages"), c(1, 1, 1, 1, 1))
+png("C:/Users/miles/Downloads/ct_v_mim_chord.png", width = 1500, height = 1500, res = 150)
+chordDiagram(chord_df, grid.col = grid.col, link.lty = lty_df, link.lwd = lwd_df, link.border = border_df)
+dev.off()
+circos.clear()
+
+# TJ vs MI
+chord_df = test[, c("df1_cluster", "df2_cluster", "ovlp")]
+colnames(chord_df) = c("from", "to", "value")
+chord_df = chord_df[which( (startsWith(chord_df$from, "(CT)")) & (startsWith(chord_df$to, "(MI)")) ),]
+paste(chord_df$to, collapse = "'='gray', '")
+grid.col = c("(CT) Mesenchymal" = "red", "(CT) Endothelial" = "blue", "(CT) Epithelial" = "green", "(CT) Glia" = "orange", "(CT) Immune" = "purple", '(MI) Endothelial'='gray', '(MI) Maturing pulp'='gray', '(MI) Glia'='gray', '(MI) Lymphocytes'='gray', '(MI) Distal pulp'='gray', '(MI) Perivascular'='gray', '(MI) Apical pulp'='gray', '(MI) Lyve1 Macrophages'='gray', '(MI) Macrophages'='gray', '(MI) Pre-odontoblasts'='gray', '(MI) SI + SR'='gray', '(MI) Dental follicle 1'='gray', '(MI) Dental follicle 2'='gray', '(MI) OEE'='gray', '(MI) Alveolar osteo.'='gray', '(MI) Ameloblasts'='gray', '(MI) Innate leukocytes'='gray', '(MI) Endothelial'='gray', '(MI) Maturing pulp'='gray', '(MI) Glia'='gray', '(MI) Lymphocytes'='gray', '(MI) Distal pulp'='gray', '(MI) Perivascular'='gray', '(MI) Apical pulp'='gray', '(MI) Lyve1 Macrophages'='gray', '(MI) Macrophages'='gray', '(MI) Pre-odontoblasts'='gray', '(MI) SI + SR'='gray', '(MI) Dental follicle 1'='gray', '(MI) Dental follicle 2'='gray', '(MI) OEE'='gray', '(MI) Alveolar osteo.'='gray', '(MI) Ameloblasts'='gray', '(MI) Innate leukocytes'='gray', '(MI) Endothelial'='gray', '(MI) Maturing pulp'='gray', '(MI) Glia'='gray', '(MI) Lymphocytes'='gray', '(MI) Distal pulp'='gray', '(MI) Perivascular'='gray', '(MI) Apical pulp'='gray', '(MI) Lyve1 Macrophages'='gray', '(MI) Macrophages'='gray', '(MI) Pre-odontoblasts'='gray', '(MI) SI + SR'='gray', '(MI) Dental follicle 1'='gray', '(MI) Dental follicle 2'='gray', '(MI) OEE'='gray', '(MI) Alveolar osteo.'='gray', '(MI) Ameloblasts'='gray', '(MI) Innate leukocytes'='gray', '(MI) Endothelial'='gray', '(MI) Maturing pulp'='gray', '(MI) Glia'='gray', '(MI) Lymphocytes'='gray', '(MI) Distal pulp'='gray', '(MI) Perivascular'='gray', '(MI) Apical pulp'='gray', '(MI) Lyve1 Macrophages'='gray', '(MI) Macrophages'='gray', '(MI) Pre-odontoblasts'='gray', '(MI) SI + SR'='gray', '(MI) Dental follicle 1'='gray', '(MI) Dental follicle 2'='gray', '(MI) OEE'='gray', '(MI) Alveolar osteo.'='gray', '(MI) Ameloblasts'='gray', '(MI) Innate leukocytes'='gray', '(MI) Endothelial'='gray', '(MI) Maturing pulp'='gray', '(MI) Glia'='gray', '(MI) Lymphocytes'='gray', '(MI) Distal pulp'='gray', '(MI) Perivascular'='gray', '(MI) Apical pulp'='gray', '(MI) Lyve1 Macrophages'='gray', '(MI) Macrophages'='gray', '(MI) Pre-odontoblasts'='gray', '(MI) SI + SR'='gray', '(MI) Dental follicle 1'='gray', '(MI) Dental follicle 2'='gray', '(MI) OEE'='gray', '(MI) Alveolar osteo.'='gray', '(MI) Ameloblasts'='gray', '(MI) Innate leukocytes'='gray' )
+lty_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MI) Maturing pulp", "(MI) Endothelial", "(MI) OEE", "(MI) Maturing pulp", "(MI) Macrophages"), c(2,2,2, 2, 2))
+lwd_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MI) Maturing pulp", "(MI) Endothelial", "(MI) OEE", "(MI) Maturing pulp", "(MI) Macrophages"), c(2, 2, 2, 2, 2))
+border_df = data.frame(c("(CT) Mesenchymal", "(CT) Endothelial", "(CT) Epithelial", "(CT) Glia", "(CT) Immune"), c("(MI) Maturing pulp", "(MI) Endothelial", "(MI) OEE", "(MI) Maturing pulp", "(MI) Macrophages"), c(1, 1, 1, 1, 1))
+png("C:/Users/miles/Downloads/ct_v_mi_chord.png", width = 2000, height = 2000, res = 150)
+chordDiagram(chord_df, grid.col = grid.col, link.lty = lty_df, link.lwd = lwd_df, link.border = border_df)
+dev.off()
+circos.clear()
+
+# test_mat = acast(test, df1_cluster ~ df2_cluster, value.var = "pct_same_dir")
+# test_mat2 = acast(chord_df, to ~ from)
+# test_mat2 = scale(t(test_mat2)) ** 2
+# chordDiagram(test_mat2)
+
+png("C:/Users/miles/Downloads/chord_diagram.png", width = 1000, height = 1000)
+chordDiagram(chord_df)
+dev.off()
+circos.clear()
+
+scaleValues = function(values) {
+  values_norm = (values - min(values)) / (max(values) - min(values))
+  # col_fun <- colorRamp(viridis(100))
+  col_fun = colorRamp(rev(brewer.pal(11, "RdYlBu")))
+  cols <- col_fun(values_norm)
+  cols = rgb(cols[,1], cols[,2], cols[,3], maxColorValue = 255)
+  return(cols)
+}
+
+bb_df = data.frame(cluster = 0:14, col = convert15$col[match(0:14, convert15$old)], new = convert15$new.full[match(0:14, convert15$old)], num_cells = aggregate(nCount_RNA ~ seuratclusters15, bb@meta.data, length)[,2], ieg = aggregate(ieg_score ~ seuratclusters15, bb@meta.data, mean)[,2])
+bb_df = bb_df[which(bb_df$num_cells > 100),]
+bb_df$ieg_col = scaleValues(bb_df$ieg)
+circos.par("gap.degree" = 0, cell.padding = c(0, 0, 0, 0))
+circos.initialize(bb_df$cluster, xlim = c(0, 1), sector.width = bb_df$num_cells)
+circos.track(ylim = c(0, 1), panel.fun = function(x, y) {
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[1] - mm_y(2),
+              CELL_META$sector.index, facing = "clockwise", niceFacing = TRUE,
+              adj = c(1, 0.5), cex = 0.6)
+  # print(xlim[0])
+  print(CELL_META$sector.index)
+  circos.rect(0, 0, 1, 1, col = bb_df$col[which(bb_df$cluster == as.numeric(CELL_META$sector.index))])
+}, bg.border = 1, track.height = 0.15)
+circos.track(ylim = c(0, 1), panel.fun = function(x, y) {
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[1] - mm_y(2),
+              CELL_META$sector.index, facing = "clockwise", niceFacing = TRUE,
+              adj = c(1, 0.5), cex = 0.6)
+  # print(xlim[0])
+  print(CELL_META$sector.index)
+  circos.rect(0, 0, 1, 1, col = bb_df$ieg_col[which(bb_df$cluster == as.numeric(CELL_META$sector.index))])
+}, bg.border = 1, track.height = 0.15)
+circos.clear()
+
+circos.initialize(bb_df$cluster, xlim = c(0, 1), sector.width = bb_df$num_cells)
+circos.track(ylim = c(0, 1), panel.fun = function(x, y) {
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[1] - mm_y(2),
+              CELL_META$sector.index, facing = "clockwise", niceFacing = TRUE,
+              adj = c(1, 0.5), cex = 0.6)
+  # print(xlim[0])
+  print(CELL_META$sector.index)
+  circos.rect(0, 0, 1, 1, col = bb_df$col[which(bb_df$cluster == as.numeric(CELL_META$sector.index))])
+}, bg.border = 1, track.height = 0.15)
+circos.clear()
+
+bb = ScaleData(bb, features = c("LOC106675461", "egr1"))
+bb$aroma = bb@assays$RNA@scale.data["LOC106675461",]
+bb_df = data.frame(sample = unique(bb$sample), col = c("#9d0208", "#d00000", "#dc2f02", "#e85d04", "#f4b906", "#03045e", "#023e8a", "#0077b6", "#0096c7", "#00b4d8"), cond = c(rep("BHVE", 5), rep("CTRL", 5)), num_cells = aggregate(nCount_RNA ~ sample, bb@meta.data, length)[,2], depth = aggregate(depth ~ sample, bb@meta.data, mean)[,2], aroma = aggregate(aroma ~ sample, bb@meta.data, mean)[,2] )
+bb_df$prop13 = unlist(sapply(bb_df$sample, function(x) length(which(bb$seuratclusters53 == 13 & bb$sample == x)) ))
+bb_df$prop13 = unlist(sapply(bb_df$sample, function(x) bb_df$prop13[which(bb_df$sample == x)] /length(which(bb$seuratclusters15 == 0 & bb$sample == x)) ))
+# bb_df$prop13 = bb_df$prop13 / bb_df$num_cells
+bb_df$sample = factor(bb_df$sample, levels = c("c4", "c5", "b5", "b4", "b3", "b2", "b1", "c1", "c2", "c3"))
+bb_df$aroma_col = scaleValues(bb_df$aroma)
+# bb_df$depth[which(bb_df$cond == "CTRL")] = F
+
+pdf("C:/Users/miles/Downloads/test2.pdf", width =  10, height = 10)
+circos.par("gap.degree" = 0, cell.padding = c(0, 0, 0, 0), "start.degree" = -18.25)
+circos.initialize(bb_df$sample, xlim = c(0, 1))
+
+# Depth
+track1_breaks = pretty(bb_df$depth, n = 3)
+circos.track(ylim = c(0, max(track1_breaks)), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
+  for (tb in track1_breaks) {
+    circos.segments(0, tb, 1, tb, col = "gray90")
+  }
+  
+  value = bb_df$depth[which(bb_df$sample == CELL_META$sector.index)]
+  circos.barplot(value, CELL_META$xcenter, col = bb_df$col[which(bb_df$sample == CELL_META$sector.index)], bar_width = 0.2, border = NA)
+})
+circos.yaxis(at = track1_breaks, sector.index = "b1", track.index = 1, side = "right")
+
+# Proportion
+track2_breaks = pretty(bb_df$prop13, n = 1)
+circos.track(ylim = c(0, max(track2_breaks)), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
+  for (tb in track2_breaks) {
+    circos.segments(0, tb, 1, tb, col = "gray90")
+  }
+  
+  value = bb_df$prop13[which(bb_df$sample == CELL_META$sector.index)]
+  circos.barplot(value, CELL_META$xcenter, col = bb_df$col[which(bb_df$sample == CELL_META$sector.index)], bar_width = 0.2, border = NA)
+  
+})
+circos.yaxis(at=track2_breaks, sector.index = "b1", track.index = 2, side = "right")
+
+# Aromatase
+# track3_breaks = pretty(bb_df$aroma, n = 3)
+# circos.track(ylim = c(min(track3_breaks), max(track3_breaks)), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
+#   # Negative zone
+#   circos.rect(0, min(track3_breaks), 1, 0, col = "gray70", border = NULL)
+#   
+#   for (tb in track3_breaks) {
+#     circos.segments(0, tb, 1, tb, col = "gray90")
+#   }
+#   
+#   value = bb_df$aroma[which(bb_df$sample == CELL_META$sector.index)]
+#   circos.barplot(value, CELL_META$xcenter, col = bb_df$aroma_col[which(bb_df$sample == CELL_META$sector.index)], bar_width = 0.2, border = NA)
+# })
+# circos.yaxis(at=track3_breaks, sector.index = "b1", track.index = 3, side = "right")
+
+# Sample
+circos.track(ylim = c(0, 1), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[1] - mm_y(2),
+              CELL_META$sector.index, facing = "clockwise", niceFacing = TRUE,
+              adj = c(1, 0.5), cex = 0.6)
+  circos.rect(0, 0, 1, 1, col = bb_df$col[which(bb_df$sample == CELL_META$sector.index)], border = NA)
+})
+dev.off()
