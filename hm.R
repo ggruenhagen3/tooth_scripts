@@ -226,6 +226,27 @@ samples = c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Toot
 rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc", "~/scratch/d_tooth/results/igor/")
 system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
 
+# Big Heatmap - Tooth and Jaw Separate - Remove Mouse Incsior
+dfs = list(im.deg, hm.deg, tj.deg, jaw.deg)
+samples = c("Mouse Incisor+Molar", "Human Molar", "Cichlid Tooth", "Cichlid Jaw")
+rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc5", "~/scratch/d_tooth/results/igor/")
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc5_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+heat_df = rs[[1]]
+heat_df = heat_df[which( startsWith(as.vector(heat_df$df1_cluster), "Cichlid") & (startsWith(as.vector(heat_df$df2_cluster), "Human") | startsWith(as.vector(heat_df$df2_cluster), "Mouse")) ),]
+heat_mat = reshape2::acast(heat_df, df2_cluster ~ df1_cluster, value.var = "pct_same_dir")
+rownames(heat_mat) = str_replace(rownames(heat_mat), "Mouse Incisor\\+Molar", "(MIM)")
+rownames(heat_mat) = str_replace(rownames(heat_mat), "Mouse Incisor", "(MI)")
+rownames(heat_mat) = str_replace(rownames(heat_mat), "Human Molar", "(HM)")
+pdf("~/scratch/d_tooth/results/igor/test_col.pdf", width = 10, height = 10)
+pheatmap::pheatmap(heat_mat, scale = "column", cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(rev(brewer.pal(n = 11, name = "Spectral")))(100))
+dev.off()
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/test_col.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+pdf("~/scratch/d_tooth/results/igor/test2_col.pdf", width = 10, height = 10)
+pheatmap::pheatmap(heat_mat, scale = "column", cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(rev(brewer.pal(n = 11, name = "Spectral")))(100))
+dev.off()
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/test2_col.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
 # Big Heatmap - Tooth and Jaw Combined
 dfs = list(incsr.deg, im.deg, hm.deg, tj_jaw.deg)
 samples = c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Tooth+Jaw")
@@ -268,6 +289,60 @@ samples = c("Mouse Incisor", "Mouse Incisor+Molar", "Human Molar", "Cichlid Jaw"
 rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc3_unique", "~/scratch/d_tooth/results/igor/")
 system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc3_unique_ovlp.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
 system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc3_unique_pct.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
+
+# Big Heatmap - TJ and Jaw Annot Separate
+tj.annot.deg  = read.csv("~/scratch/d_tooth/results/igor/tj_annot_cluster_deg_sig_clean_2.csv")
+jaw.annot.deg = read.csv("~/scratch/d_tooth/results/igor/jaw_annot_cluster_deg_sig_clean_no_tb_no_pigmented_2.csv")
+incsr.deg = incsr.deg[order(incsr.deg$cluster),]
+im.deg = im.deg[order(im.deg$cluster),]
+hm.deg = hm.deg[order(hm.deg$cluster),]
+jaw.annot.deg = jaw.annot.deg[order(jaw.annot.deg$cluster),]
+tj.annot.deg = tj.annot.deg[order(tj.annot.deg$cluster),]
+dfs = list(incsr.deg, im.deg, hm.deg, jaw.annot.deg, tj.annot.deg)
+samples = c("(MI)", "(MIM)", "(HM)", "(CJ)", "(CT)")
+rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc_figure", "~/scratch/d_tooth/results/igor/")
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure_pct_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure_pct_same_dir.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+
+# Find common DEGs across Cichlid Tooth, Mouse Incisor + Molar, Human Molar
+tj.annot.deg.pos$gene[which(tj.annot.deg.pos$cluster == "Mesenchymal" & tj.annot.deg.pos$gene %in% im.deg.pos$gene[which(im.deg.pos$cluster %in% c("Pulp cell","PDL") )] & tj.annot.deg.pos$gene %in% hm.deg.pos$gene[which(hm.deg.pos$cluster %in% c("Pulp cell","PDL","Odontoblasts") )] )]
+tj.annot.deg.pos$gene[which(tj.annot.deg.pos$cluster == "Endothelial" & tj.annot.deg.pos$gene %in% im.deg.pos$gene[which(im.deg.pos$cluster %in% c("Endothelial cells") )] & tj.annot.deg.pos$gene %in% hm.deg.pos$gene[which(hm.deg.pos$cluster %in% c("Endothelial cells") )] )]
+tj.annot.deg.pos$gene[which(tj.annot.deg.pos$cluster == "Glia" & tj.annot.deg.pos$gene %in% im.deg.pos$gene[which(im.deg.pos$cluster %in% c("Glia") )] & tj.annot.deg.pos$gene %in% hm.deg.pos$gene[which(hm.deg.pos$cluster %in% c("Glial cells") )] )]
+
+heat_df = rs[[1]]
+heat_mat = reshape2::acast(heat_df, df2_cluster ~ df1_cluster, value.var = "pct_same_dir")
+heat_mat = heat_mat[,which( startsWith(colnames(heat_mat), "(CT)") |  startsWith(colnames(heat_mat), "(CJ)") )]
+heat_mat_mi = heat_mat[which( startsWith(rownames(heat_mat), "(MI)") ),]
+heat_mat_mi = heat_mat_mi[order(rownames(heat_mat_mi), decreasing = T),]
+p = pheatmap::pheatmap(heat_mat_mi, scale = "column", border_color = NA, cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(viridis(n = 11))(100))
+p_df = melt(p$gtable$grobs[[1]]$children[[1]]$gp$fill)
+p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = T)])
+p2 = ggplot(p_df, aes(x = Var2, y = Var1, fill = value)) + geom_raster() + scale_fill_identity() + coord_fixed() + theme_classic() + theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+pdf("~/scratch/d_tooth/results/igor/heat_figure_mi.pdf", width = 10, height = 10)
+print(p2)
+dev.off()
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_mi.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+heat_mat_hm = heat_mat[which( startsWith(rownames(heat_mat), "(HM)") ),]
+heat_mat_hm = heat_mat_hm[order(rownames(heat_mat_hm), decreasing = T),]
+p = pheatmap::pheatmap(heat_mat_hm, scale = "column", border_color = NA, cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(viridis(n = 11))(100))
+p_df = melt(p$gtable$grobs[[1]]$children[[1]]$gp$fill)
+p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = T)])
+p2 = ggplot(p_df, aes(x = Var2, y = Var1, fill = value)) + geom_raster() + scale_fill_identity() + coord_fixed() + theme_classic() + theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+pdf("~/scratch/d_tooth/results/igor/heat_figure_hm.pdf", width = 10, height = 5)
+print(p2)
+dev.off()
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_hm.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+heat_mat_mim = heat_mat[which( startsWith(rownames(heat_mat), "(MIM)") ),]
+heat_mat_mim = heat_mat_mim[order(rownames(heat_mat_mim), decreasing = T),]
+p = pheatmap::pheatmap(heat_mat_mim, scale = "column", border_color = NA, cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(viridis(n = 11))(100))
+p_df = melt(p$gtable$grobs[[1]]$children[[1]]$gp$fill)
+p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = T)])
+p2 = ggplot(p_df, aes(x = Var2, y = Var1, fill = value)) + geom_raster() + scale_fill_identity() + coord_fixed() + theme_classic() + theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+pdf("~/scratch/d_tooth/results/igor/heat_figure_mim.pdf", width = 10, height = 5)
+print(p2)
+dev.off()
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_mim.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
 
 # Big Heatmap - TJ and Jaw Annot Separate
 dfs = list(incsr.deg, im.deg, hm.deg, tj.deg, jaw.deg)
@@ -1418,74 +1493,162 @@ mz_ccl2 = "ENSMZEG00005000472"
 #==================================================================================================
 # Celsr1 by CytoBIN ===============================================================================
 #==================================================================================================
+# Load Single Cell Datasets
 incsr = readRDS("~/research/tooth/data/igor_incsr.rds")
 im = readRDS("~/research/tooth/data/igor_incsr_molar.rds")
 hm = readRDS("~/research/tooth/data/hm.rds")
+igor_incsr_mes = readRDS("~/research/tooth/data/igor_incsr_mes.rds")
+igor_incsr_epi = readRDS("~/research/tooth/data/igor_incsr_epi.rds")
+tj_jaw = readRDS("~/research/tooth/data/tj_jaw.RDS")
+tj     = readRDS("~/research/tooth/data/tj.rds")
+jaw    = readRDS("~/research/tooth/data/jpool.rds")
 
+# Load CytoTRACE data
 incsr_cyto = readRDS("~/research/tooth/data/incsr_cyto.rds")
 im_cyto = readRDS("~/research/tooth/data/im_cyto.rds")
 hm_cyto = readRDS("~/research/tooth/data/hm_cyto.rds")
+igor_incsr_epi_cyto = readRDS("~/research/tooth/data/igor_incsr_epi_cyto.rds")
+igor_incsr_mes_cyto = readRDS("~/research/tooth/data/igor_incsr_mes_cyto.rds")
+tj_jaw_cyto = CytoTRACE(as.matrix(tj_jaw@assays$RNA@counts))
+tj_cyto = CytoTRACE(as.matrix(tj@assays$RNA@counts))
+jaw_cyto = CytoTRACE(as.matrix(jaw@assays$RNA@counts))
 
+# Add CytoTRACE score as metadata
 incsr$cyto = incsr_cyto$CytoTRACE
 im$cyto = im_cyto$CytoTRACE
 hm$cyto = hm_cyto$CytoTRACE
+igor_incsr_epi$cyto = igor_incsr_epi_cyto$CytoTRACE
+igor_incsr_mes$cyto = igor_incsr_mes_cyto$CytoTRACE
+tj_jaw$cyto = tj_jaw_cyto$CytoTRACE
+tj$cyto = tj_cyto$CytoTRACE
+jaw$cyto = jaw_cyto$CytoTRACE
 
 incsr_celsr1_bin_res = splitGenebyCytoBIN(incsr, "Celsr1")
 im_celsr1_bin_res = splitGenebyCytoBIN(im, "CELSR1")
 hm_celsr1_bin_res = splitGenebyCytoBIN(hm, "CELSR1")
+igor_incsr_epi_celsr1_bin_res = splitGenebyCytoBIN(igor_incsr_epi, "Celsr1")
+jaw_celsr1_bin_res = splitGenebyCytoBIN(jaw, "celsr1a")
+tj_jaw_celsr1_bin_res = splitGenebyCytoBIN(tj_jaw, "celsr1a")
 
 incsr_celsr1_bin_deg = incsr_celsr1_bin_res[[3]]
 im_celsr1_bin_deg = im_celsr1_bin_res[[3]]
 hm_celsr1_bin_deg = hm_celsr1_bin_res[[3]]
+igor_incsr_epi_celsr1_bin_deg = igor_incsr_epi_celsr1_bin_res[[3]]
+igor_incsr_mes_celsr1_bin_deg = igor_incsr_mes_celsr1_bin_res[[3]]
 jaw_celsr1_bin_deg = jaw_celsr1_bin_res[[3]]
+tj_jaw_celsr1_bin_deg = tj_jaw_celsr1_bin_res[[3]]
 
 jaw_celsr1_bin_deg = degWithHgncAndDescription(jaw_celsr1_bin_deg, rownames(tj))
 
 write.csv(incsr_celsr1_bin_deg, "~/research/tooth/results/incsr_celsr1_cytoBIN_deg.csv")
 write.csv(im_celsr1_bin_deg, "~/research/tooth/results/im_celsr1_cytoBIN_deg.csv")
 write.csv(hm_celsr1_bin_deg, "~/research/tooth/results/hm_celsr1_cytoBIN_deg.csv")
+write.csv(igor_incsr_epi_celsr1_bin_deg, "~/research/tooth/results/igor_incsr_epi_celsr1_cytoBIN_deg.csv")
+write.csv(igor_incsr_mes_celsr1_bin_deg, "~/research/tooth/results/igor_incsr_mes_celsr1_cytoBIN_deg.csv")
 write.csv(jaw_celsr1_bin_deg, "~/research/tooth/results/jaw_celsr1_cytoBIN_deg.csv")
 
 incsr_celsr1_bin_deg_pos = incsr_celsr1_bin_deg[which(incsr_celsr1_bin_deg$avg_logFC > 0),]
 im_celsr1_bin_deg_pos = im_celsr1_bin_deg[which(im_celsr1_bin_deg$avg_logFC > 0),]
 hm_celsr1_bin_deg_pos = hm_celsr1_bin_deg[which(hm_celsr1_bin_deg$avg_logFC > 0),]
+igor_incsr_epi_celsr1_bin_deg_pos = igor_incsr_epi_celsr1_bin_deg[which(igor_incsr_epi_celsr1_bin_deg$avg_logFC > 0),]
+igor_incsr_mes_celsr1_bin_deg_pos = igor_incsr_mes_celsr1_bin_deg[which(igor_incsr_mes_celsr1_bin_deg$avg_logFC > 0),]
 jaw_celsr1_bin_deg_pos = jaw_celsr1_bin_deg[which(jaw_celsr1_bin_deg$avg_logFC > 0),]
+tj_jaw_celsr1_bin_deg_pos = tj_jaw_celsr1_bin_deg[which(tj_jaw_celsr1_bin_deg$avg_logFC > 0),]
 
 write.csv(incsr_celsr1_bin_deg_pos, "~/research/tooth/results/incsr_celsr1_cytoBIN_deg_pos.csv")
 write.csv(im_celsr1_bin_deg_pos, "~/research/tooth/results/im_celsr1_cytoBIN_deg_pos.csv")
 write.csv(hm_celsr1_bin_deg_pos, "~/research/tooth/results/hm_celsr1_cytoBIN_deg_pos.csv")
 write.csv(jaw_celsr1_bin_deg_pos, "~/research/tooth/results/jaw_celsr1_cytoBIN_deg_pos.csv")
+write.csv(tj_jaw_celsr1_bin_deg_pos, "~/research/tooth/results/tj_jaw_celsr1_cytoBIN_deg_pos.csv")
+write.csv(igor_incsr_epi_celsr1_bin_deg_pos, "~/research/tooth/results/igor_incsr_epi_celsr1_cytoBIN_deg_pos.csv")
+write.csv(igor_incsr_mes_celsr1_bin_deg_pos, "~/research/tooth/results/igor_incsr_mes_celsr1_cytoBIN_deg_pos.csv")
 
 jaw_celsr1_bin_deg_pos$im_cluster = im_celsr1_bin_deg_pos$cluster[match(jaw_celsr1_bin_deg_pos$hgnc, im_celsr1_bin_deg_pos$gene)]
 jaw_celsr1_bin_deg_pos$incsr_cluster = incsr_celsr1_bin_deg_pos$cluster[match(jaw_celsr1_bin_deg_pos$hgnc, toupper(incsr_celsr1_bin_deg_pos$gene))]
+jaw_celsr1_bin_deg_pos$igor_incsr_epi_cluster = igor_incsr_epi_celsr1_bin_deg_pos$cluster[match(jaw_celsr1_bin_deg_pos$hgnc, toupper(igor_incsr_epi_celsr1_bin_deg_pos$gene))]
+jaw_celsr1_bin_deg_pos$igor_incsr_mes_cluster = igor_incsr_mes_celsr1_bin_deg_pos$cluster[match(jaw_celsr1_bin_deg_pos$hgnc, toupper(igor_incsr_mes_celsr1_bin_deg_pos$gene))]
+
+tj_jaw_celsr1_bin_deg_pos$im_cluster = im_celsr1_bin_deg_pos$cluster[match(tj_jaw_celsr1_bin_deg_pos$hgnc, im_celsr1_bin_deg_pos$gene)]
+tj_jaw_celsr1_bin_deg_pos$incsr_cluster = incsr_celsr1_bin_deg_pos$cluster[match(tj_jaw_celsr1_bin_deg_pos$hgnc, toupper(incsr_celsr1_bin_deg_pos$gene))]
+tj_jaw_celsr1_bin_deg_pos$igor_incsr_epi_cluster = igor_incsr_epi_celsr1_bin_deg_pos$cluster[match(tj_jaw_celsr1_bin_deg_pos$hgnc, toupper(igor_incsr_epi_celsr1_bin_deg_pos$gene))]
+tj_jaw_celsr1_bin_deg_pos$igor_incsr_mes_cluster = igor_incsr_mes_celsr1_bin_deg_pos$cluster[match(tj_jaw_celsr1_bin_deg_pos$hgnc, toupper(igor_incsr_mes_celsr1_bin_deg_pos$gene))]
 
 incsr_high_toppgene = openxlsx::read.xlsx("~/research/tooth/results/incsr_celsr1_cytoBIN_deg_pos.xlsx", sheet = "high toppgene")
 im_high_toppgene = openxlsx::read.xlsx("~/research/tooth/results/im_celsr1_cytoBIN_deg_pos.xlsx", sheet = "high toppgene")
 jaw_high_toppgene = openxlsx::read.xlsx("~/research/tooth/results/jaw_celsr1_cytoBIN_deg_pos.xlsx", sheet = "high toppgene")
+tj_jaw_high_toppgene = openxlsx::read.xlsx("~/research/tooth/results/tj_jaw_celsr1_cytoBIN_deg_pos.xlsx", sheet = "high toppgene")
+igor_incsr_epi_high_toppgene = openxlsx::read.xlsx("~/research/tooth/results/igor_incsr_epi_celsr1_cytoBIN_deg_pos.xlsx", sheet = "high toppgene")
 
 jaw_high_toppgene$inIncsr = jaw_high_toppgene$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component") & jaw_high_toppgene$Name %in% incsr_high_toppgene$Name
 jaw_high_toppgene$inIM = jaw_high_toppgene$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component") & jaw_high_toppgene$Name %in% im_high_toppgene$Name
+
+tj_jaw_high_toppgene$inIncsr = tj_jaw_high_toppgene$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component") & tj_jaw_high_toppgene$Name %in% incsr_high_toppgene$Name
+tj_jaw_high_toppgene$inIM = tj_jaw_high_toppgene$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component") & tj_jaw_high_toppgene$Name %in% im_high_toppgene$Name
+tj_jaw_high_toppgene$inEpi = tj_jaw_high_toppgene$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component") & tj_jaw_high_toppgene$Name %in% igor_incsr_epi_high_toppgene$Name
 
 length(which(jaw_high_toppgene$inIncsr))
 length(which(jaw_high_toppgene$inIM))
 length(which(jaw_high_toppgene$inIncsr & jaw_high_toppgene$inIM))
 
-splitGenebyCytoBIN = function(obj, gene) {
+length(which(tj_jaw_high_toppgene$inIncsr))
+length(which(tj_jaw_high_toppgene$inIM))
+length(which(tj_jaw_high_toppgene$inIncsr & tj_jaw_high_toppgene$inIM))
+
+
+# Do the same, except remove the low CytoBIN
+incsr_celsr1_bin_no_low_res = splitGenebyCytoBIN(incsr, "Celsr1", rm.low = T)
+im_celsr1_bin_no_low_res = splitGenebyCytoBIN(im, "CELSR1", rm.low = T)
+hm_celsr1_bin_no_low_res = splitGenebyCytoBIN(hm, "CELSR1", rm.low = T)
+igor_incsr_epi_celsr1_bin_no_low_res = splitGenebyCytoBIN(igor_incsr_epi, "Celsr1", rm.low = T)
+igor_incsr_mes_celsr1_bin_no_low_res = splitGenebyCytoBIN(igor_incsr_mes, "Celsr1", rm.low = T)
+jaw_celsr1_bin_no_low_res = splitGenebyCytoBIN(jaw, "celsr1a", rm.low = T)
+
+incsr_celsr1_bin_no_low_deg = incsr_celsr1_bin_no_low_res[[3]]
+im_celsr1_bin_no_low_deg = im_celsr1_bin_no_low_res[[3]]
+hm_celsr1_bin_no_low_deg = hm_celsr1_bin_no_low_res[[3]]
+igor_incsr_epi_celsr1_bin_no_low_deg = igor_incsr_epi_celsr1_bin_no_low_res[[3]]
+igor_incsr_mes_celsr1_bin_no_low_deg = igor_incsr_mes_celsr1_bin_no_low_res[[3]]
+jaw_celsr1_bin_no_low_deg = jaw_celsr1_bin_no_low_res[[3]]
+
+incsr_celsr1_bin_no_low_deg_pos = incsr_celsr1_bin_no_low_deg[which(incsr_celsr1_bin_no_low_deg$avg_logFC > 0),]
+im_celsr1_bin_no_low_deg_pos = im_celsr1_bin_no_low_deg[which(im_celsr1_bin_no_low_deg$avg_logFC > 0),]
+hm_celsr1_bin_no_low_deg_pos = hm_celsr1_bin_no_low_deg[which(hm_celsr1_bin_no_low_deg$avg_logFC > 0),]
+igor_incsr_epi_celsr1_bin_no_low_deg_pos = igor_incsr_epi_celsr1_bin_no_low_deg[which(igor_incsr_epi_celsr1_bin_no_low_deg$avg_logFC > 0),]
+igor_incsr_mes_celsr1_bin_no_low_deg_pos = igor_incsr_mes_celsr1_bin_no_low_deg[which(igor_incsr_mes_celsr1_bin_no_low_deg$avg_logFC > 0),]
+jaw_celsr1_bin_no_low_deg_pos = jaw_celsr1_bin_no_low_deg[which(jaw_celsr1_bin_no_low_deg$avg_logFC > 0),]
+
+write.csv(incsr_celsr1_bin_no_low_deg_pos, "~/research/tooth/results/incsr_celsr1_cytoBIN_no_low_deg_pos.csv")
+write.csv(im_celsr1_bin_no_low_deg_pos, "~/research/tooth/results/im_celsr1_cytoBIN_no_low_deg_pos.csv")
+write.csv(hm_celsr1_bin_no_low_deg_pos, "~/research/tooth/results/hm_celsr1_cytoBIN_no_low_deg_pos.csv")
+write.csv(igor_incsr_epi_celsr1_bin_no_low_deg_pos, "~/research/tooth/results/igor_incsr_epi_celsr1_cytoBIN_no_low_deg_pos.csv")
+write.csv(igor_incsr_mes_celsr1_bin_no_low_deg_pos, "~/research/tooth/results/igor_incsr_mes_celsr1_cytoBIN_no_low_deg_pos.csv")
+write.csv(jaw_celsr1_bin_no_low_deg_pos, "~/research/tooth/results/jaw_celsr1_cytoBIN_no_low_deg_pos.csv")
+
+
+splitGenebyCytoBIN = function(obj, gene, rm.low = FALSE) {
   #' Split Gene+ cells by cells with relative high, medium, and low CytoTRACE scores.
   #' Find DEGs between the BINs.
   #' @param obj seurat object
   #' @param gene gene to subset by
+  #' @param rm.low remove low CytoBIN? ie only compare medium to high CytoBINs?
   #' @return 
   
   gene_pos_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
   gene_obj = subset(obj, cells = gene_pos_cells)
 
+  # Define the CytoBINs by the quantile of CytoTRACE score
   gene_obj$bin <- gene_obj$cyto
   gene_obj$bin[which(gene_obj$cyto <= quantile(gene_obj$cyto, 0.33))] <- "relative_low"
   gene_obj$bin[which(gene_obj$cyto > quantile(gene_obj$cyto, 0.33) & gene_obj$cyto <= quantile(gene_obj$cyto, 0.66))] <- "relative_medium"
   gene_obj$bin[which(gene_obj$cyto > quantile(gene_obj$cyto, 0.66))] <- "relative_high"
   
+  # Remove low CytoBIN if necessary
   Idents(gene_obj) = gene_obj$bin
+  if (rm.low) {
+    gene_obj = subset(gene_obj, idents = "relative_low", invert = T)
+  }
+  
+  # Find DEGs between CytoBINS
   bin_deg = FindAllMarkers(gene_obj)
   bin_deg_sig = bin_deg[which(bin_deg$p_val_adj < 0.05),]
   colnames(bin_deg_sig)[which(colnames(bin_deg_sig) == "avg_log2FC")] = "avg_logFC"
@@ -1494,7 +1657,7 @@ splitGenebyCytoBIN = function(obj, gene) {
   obj$gene_cyto = NA
   obj$gene_cyto[gene_pos_cells] = obj$cyto[gene_pos_cells]
   p = myFeaturePlot(obj, "gene_cyto", my.col.pal = pal, na.blank = T) + ggtitle("CytoTRACE in Celsr1+ Cells")
-  p1 = cytoScoreByIdent(gene_obj)
+  p1 = cytoScoreByIdent(gene_obj, pt.alpha = 0.2)
   
   return(list(p, p1, bin_deg_sig))
 }
