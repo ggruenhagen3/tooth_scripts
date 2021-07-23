@@ -14,9 +14,10 @@ library("fdrtool")
 # Remember that the path must have forward slashes, not backwards
 # path_to_snps <- "C:/Users/miles_000/Downloads/Research/Tooth/results/snps.fst"
 # path_to_indels <- "C:/Users/miles_000/Downloads/Research/Tooth/results/indels.fst"
-path_to_snps <- "C:/Users/miles/Downloads/d_tooth/data/snp.fst"
-path_to_indels <- "C:/Users/miles/Downloads/d_tooth/data/indel.fst"
-
+# path_to_snps <- "C:/Users/miles/Downloads/d_tooth/data/snp.fst"
+# path_to_indels <- "C:/Users/miles/Downloads/d_tooth/data/indel.fst"
+path_to_snps <- "~/research/tooth/data/snp.fst"
+path_to_indels <- "~/research/tooth/data/indel.fst"
 
 # Load the data
 snps_data <- read.table(path_to_snps, sep="\t", header=TRUE)
@@ -47,8 +48,44 @@ indels_data <- indels_data[indels_data$ID != 0,]
 # saveRDS(indels_data, file = "indels_data.rds")
 # Add a column for Zfst
 snps_data$Zfst <- (( snps_data$WEIGHTED_FST - mean(snps_data$WEIGHTED_FST) ) / sd(snps_data$WEIGHTED_FST)) + 1
-indels_data$Zfst <- -(( indels_data$WEIGHTED_FST - mean(indels_data$WEIGHTED_FST) ) / sd(indels_data$WEIGHTED_FST)+1)
+indels_data$Zfst <- (( indels_data$WEIGHTED_FST - mean(indels_data$WEIGHTED_FST) ) / sd(indels_data$WEIGHTED_FST)+1)
 
+# Circle
+# In the circle plot, make sure to change indels_data$Zfst to positive, but in the traditional plot, it should be negative
+total = snps_data
+colnames(total)[which(colnames(total) == "Zfst")] = "Snp"
+total$Indel = indels_data$Zfst[match(snps_data$ID, indels_data$ID)]
+total$LG <- sub("^NW.*", "Unplaced", total$CHROM)  # rename unplaced contigs
+total$LG <- sub("^NC_027944.1", "Unplaced", total$LG) # rename unplaced contigs
+total$LG <- sub("^NC_0", "", total$LG)
+total$LG[which(! is.na(as.numeric(total$LG)) )] = as.numeric(total$LG[which(! is.na(as.numeric(total$LG)) )]) - 36779.1
+total$LG[which(total$LG %in% c("21", "22"))] = as.character(as.numeric(total$LG[which(total$LG %in% c("21", "22"))]) + 1)
+total$LG = factor(total$LG, levels = c(as.character(1:20), 22:23, "Unplaced"))
+total$Snp[which(total$Snp < 0)] = 0
+total$Indel[which(total$Indel < 0)] = 0
+snp_cutoff = min(snps_data$Zfst[which(p.adjust(2*pnorm(-abs(snps_data$Zfst)), method="BH") < 0.05)])
+indel_cutoff = min(indels_data$Zfst[which(p.adjust(2*pnorm(-abs(indels_data$Zfst)), method="BH") < 0.05)])
+pal = rep(brewer.pal(n=8,name="Dark2"), 6)
+circos.par("gap.after" = 2, cell.padding = c(0, 0, 0, 0), "start.degree" = 90, track.margin = c(0.02, 0.02))
+circos.initialize(total$LG, xlim = cbind(rep(0, 23), aggregate(ID ~ LG, total, length)[,2]))
+circos.track(ylim = c(min(total$Snp), max(total$Snp)), track.height = 0.15, bg.border = "black", panel.fun = function(x, y) {
+  start_id = min(total$ID[which(total$LG == CELL_META$sector.index)])
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+  circos.points(total$ID[which(total$LG == CELL_META$sector.index)] - start_id, total$Snp[which(total$LG == CELL_META$sector.index)], col = paste0(pal[CELL_META$sector.numeric.index], "90"), pch = 20)
+  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[2] + mm_y(2),
+              CELL_META$sector.index, facing = "downward", niceFacing = TRUE,
+              adj = c(0.5, 0.5), cex = 0.6)
+  circos.segments(CELL_META$cell.xlim[1], snp_cutoff, CELL_META$cell.xlim[2], snp_cutoff, col = "gray60", lty = 2)
+})
+circos.track(ylim = c(min(total$Indel, na.rm = T), max(total$Indel, na.rm = T)), track.height = 0.15, bg.border = "black", panel.fun = function(x, y) {
+  start_id = min(total$ID[which(total$LG == CELL_META$sector.index)])
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+  circos.points(total$ID[which(total$LG == CELL_META$sector.index)] - start_id, total$Indel[which(total$LG == CELL_META$sector.index)], col = paste0(pal[CELL_META$sector.numeric.index], "90"), pch = 20)
+  circos.segments(CELL_META$cell.xlim[1], indel_cutoff, CELL_META$cell.xlim[2], indel_cutoff, col = "gray60", lty = 2)
+})
+
+# Traditional
+# In the traditional plot, make sure to change indels_data$Zfst to negative, but in the circle plot, it should be psotive
 total <- rbind(snps_data, indels_data)
 
 total$LG <- sub("^NW.*", "2", total$CHROM)  # rename unplaced contigs
