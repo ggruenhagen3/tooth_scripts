@@ -291,7 +291,9 @@ system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc3_unique_ovlp.png
 system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc3_unique_pct.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/"))
 
 # Big Heatmap - TJ and Jaw Annot Separate
-tj.annot.deg  = read.csv("~/scratch/d_tooth/results/igor/tj_annot_cluster_deg_sig_clean_2.csv")
+# tj.annot.deg  = read.csv("~/scratch/d_tooth/results/igor/tj_annot_cluster_deg_sig_clean_2.csv")
+# tj.annot.deg = read.table("~/scratch/d_tooth/results/igor/tj9_deg_hgnc2.tsv", sep="\t", header = T, stringsAsFactors = F)
+tj.annot.deg  = read.csv("~/scratch/d_tooth/results/igor/tj9_deg_hgnc.csv")
 jaw.annot.deg = read.csv("~/scratch/d_tooth/results/igor/jaw_annot_cluster_deg_sig_clean_no_tb_no_pigmented_2.csv")
 incsr.deg = incsr.deg[order(incsr.deg$cluster),]
 im.deg = im.deg[order(im.deg$cluster),]
@@ -300,10 +302,10 @@ jaw.annot.deg = jaw.annot.deg[order(jaw.annot.deg$cluster),]
 tj.annot.deg = tj.annot.deg[order(tj.annot.deg$cluster),]
 dfs = list(incsr.deg, im.deg, hm.deg, jaw.annot.deg, tj.annot.deg)
 samples = c("(MI)", "(MIM)", "(HM)", "(CJ)", "(CT)")
-rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc_figure", "~/scratch/d_tooth/results/igor/")
-system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
-system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure_pct_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
-system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure_pct_same_dir.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+rs = heatmapComparisonMulti(dfs = dfs, samples=samples,  filename="mvhvc_figure3", "~/scratch/d_tooth/results/igor/")
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure3_ovlp_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure3_pct_same_dir.png dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/mvhvc_figure3_pct_same_dir.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
 
 # Find common DEGs across Cichlid Tooth, Mouse Incisor + Molar, Human Molar
 tj.annot.deg.pos$gene[which(tj.annot.deg.pos$cluster == "Mesenchymal" & tj.annot.deg.pos$gene %in% im.deg.pos$gene[which(im.deg.pos$cluster %in% c("Pulp cell","PDL") )] & tj.annot.deg.pos$gene %in% hm.deg.pos$gene[which(hm.deg.pos$cluster %in% c("Pulp cell","PDL","Odontoblasts") )] )]
@@ -314,35 +316,35 @@ heat_df = rs[[1]]
 heat_mat = reshape2::acast(heat_df, df2_cluster ~ df1_cluster, value.var = "pct_same_dir")
 heat_mat = heat_mat[,which( startsWith(colnames(heat_mat), "(CT)") |  startsWith(colnames(heat_mat), "(CJ)") )]
 heat_mat_mi = heat_mat[which( startsWith(rownames(heat_mat), "(MI)") ),]
-heat_mat_mi = heat_mat_mi[order(rownames(heat_mat_mi), decreasing = T),]
+heat_mat_mi = heat_mat_mi[order(rownames(heat_mat_mi), decreasing = F),]
 p = pheatmap::pheatmap(heat_mat_mi, scale = "column", border_color = NA, cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(viridis(n = 11))(100))
 p_df = melt(p$gtable$grobs[[1]]$children[[1]]$gp$fill)
-p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = T)])
+p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = F)])
 p2 = ggplot(p_df, aes(x = Var2, y = Var1, fill = value)) + geom_raster() + scale_fill_identity() + coord_fixed() + theme_classic() + theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-pdf("~/scratch/d_tooth/results/igor/heat_figure_mi.pdf", width = 10, height = 10)
+pdf("~/scratch/d_tooth/results/igor/heat_figure_mi3.pdf", width = 10, height = 10)
 print(p2)
 dev.off()
-system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_mi.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_mi3.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
 heat_mat_hm = heat_mat[which( startsWith(rownames(heat_mat), "(HM)") ),]
-heat_mat_hm = heat_mat_hm[order(rownames(heat_mat_hm), decreasing = T),]
+heat_mat_hm = heat_mat_hm[order(rownames(heat_mat_hm), decreasing = F),]
 p = pheatmap::pheatmap(heat_mat_hm, scale = "column", border_color = NA, cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(viridis(n = 11))(100))
 p_df = melt(p$gtable$grobs[[1]]$children[[1]]$gp$fill)
-p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = T)])
+p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = F)])
 p2 = ggplot(p_df, aes(x = Var2, y = Var1, fill = value)) + geom_raster() + scale_fill_identity() + coord_fixed() + theme_classic() + theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-pdf("~/scratch/d_tooth/results/igor/heat_figure_hm.pdf", width = 10, height = 5)
+pdf("~/scratch/d_tooth/results/igor/heat_figure_hm2.pdf", width = 10, height = 5)
 print(p2)
 dev.off()
-system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_hm.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_hm2.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
 heat_mat_mim = heat_mat[which( startsWith(rownames(heat_mat), "(MIM)") ),]
-heat_mat_mim = heat_mat_mim[order(rownames(heat_mat_mim), decreasing = T),]
+heat_mat_mim = heat_mat_mim[order(rownames(heat_mat_mim), decreasing = F),]
 p = pheatmap::pheatmap(heat_mat_mim, scale = "column", border_color = NA, cluster_rows = F, cluster_cols = F, cellwidth = 20, cellheight = 20, angle_col = "45", color = colorRampPalette(viridis(n = 11))(100))
 p_df = melt(p$gtable$grobs[[1]]$children[[1]]$gp$fill)
-p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = T)])
+p_df$Var1 = factor(p_df$Var1 , levels = unique(p_df$Var1)[order(unique(p_df$Var1), decreasing = F)])
 p2 = ggplot(p_df, aes(x = Var2, y = Var1, fill = value)) + geom_raster() + scale_fill_identity() + coord_fixed() + theme_classic() + theme(axis.title.x=element_blank(), axis.title.y=element_blank(), axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-pdf("~/scratch/d_tooth/results/igor/heat_figure_mim.pdf", width = 10, height = 5)
+pdf("~/scratch/d_tooth/results/igor/heat_figure_mim2.pdf", width = 10, height = 5)
 print(p2)
 dev.off()
-system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_mim.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
+system(paste0("rclone copy ~/scratch/d_tooth/results/igor/heat_figure_mim2.pdf dropbox:BioSci-Streelman/George/Tooth/igor/results/heatmaps/annot/"))
 
 # Big Heatmap - TJ and Jaw Annot Separate
 dfs = list(incsr.deg, im.deg, hm.deg, tj.deg, jaw.deg)
@@ -1485,6 +1487,7 @@ DimPlot(tj_jaw, pt.size = 1.5, label = F) + coord_fixed()
 dev.off()
 
 mz_thy1  = "ENSMZEG00005018875"
+mz_gli1 = "gli1"
 mz_eng   = "ENSMZEG00005019543"
 mz_nt5e  = "nt5e"
 mz_mki67 = "ENSMZEG00005009812"
@@ -1523,12 +1526,13 @@ tj_jaw$cyto = tj_jaw_cyto$CytoTRACE
 tj$cyto = tj_cyto$CytoTRACE
 jaw$cyto = jaw_cyto$CytoTRACE
 
-incsr_celsr1_bin_res = splitGenebyCytoBIN(incsr, "Celsr1")
-im_celsr1_bin_res = splitGenebyCytoBIN(im, "CELSR1")
-hm_celsr1_bin_res = splitGenebyCytoBIN(hm, "CELSR1")
-igor_incsr_epi_celsr1_bin_res = splitGenebyCytoBIN(igor_incsr_epi, "Celsr1")
-jaw_celsr1_bin_res = splitGenebyCytoBIN(jaw, "celsr1a")
-tj_jaw_celsr1_bin_res = splitGenebyCytoBIN(tj_jaw, "celsr1a")
+incsr_celsr1_bin_res = splitGenebyCytoBIN2(incsr, "Celsr1", "mouse")
+im_celsr1_bin_res = splitGenebyCytoBIN2(im, "CELSR1", "human")
+hm_celsr1_bin_res = splitGenebyCytoBIN2(hm, "CELSR1", "human")
+igor_incsr_epi_celsr1_bin_res = splitGenebyCytoBIN2(igor_incsr_epi, "Celsr1", "mouse")
+igor_incsr_mes_celsr1_bin_res = splitGenebyCytoBIN2(igor_incsr_mes, "Celsr1", "mouse")
+jaw_celsr1_bin_res = splitGenebyCytoBIN2(jaw, "celsr1a")
+tj_jaw_celsr1_bin_res = splitGenebyCytoBIN2(tj_jaw, "celsr1a")
 
 incsr_celsr1_bin_deg = incsr_celsr1_bin_res[[3]]
 im_celsr1_bin_deg = im_celsr1_bin_res[[3]]
@@ -1555,13 +1559,13 @@ igor_incsr_mes_celsr1_bin_deg_pos = igor_incsr_mes_celsr1_bin_deg[which(igor_inc
 jaw_celsr1_bin_deg_pos = jaw_celsr1_bin_deg[which(jaw_celsr1_bin_deg$avg_logFC > 0),]
 tj_jaw_celsr1_bin_deg_pos = tj_jaw_celsr1_bin_deg[which(tj_jaw_celsr1_bin_deg$avg_logFC > 0),]
 
-write.csv(incsr_celsr1_bin_deg_pos, "~/research/tooth/results/incsr_celsr1_cytoBIN_deg_pos.csv")
-write.csv(im_celsr1_bin_deg_pos, "~/research/tooth/results/im_celsr1_cytoBIN_deg_pos.csv")
-write.csv(hm_celsr1_bin_deg_pos, "~/research/tooth/results/hm_celsr1_cytoBIN_deg_pos.csv")
-write.csv(jaw_celsr1_bin_deg_pos, "~/research/tooth/results/jaw_celsr1_cytoBIN_deg_pos.csv")
-write.csv(tj_jaw_celsr1_bin_deg_pos, "~/research/tooth/results/tj_jaw_celsr1_cytoBIN_deg_pos.csv")
-write.csv(igor_incsr_epi_celsr1_bin_deg_pos, "~/research/tooth/results/igor_incsr_epi_celsr1_cytoBIN_deg_pos.csv")
-write.csv(igor_incsr_mes_celsr1_bin_deg_pos, "~/research/tooth/results/igor_incsr_mes_celsr1_cytoBIN_deg_pos.csv")
+write.csv(incsr_celsr1_bin_deg_pos, "~/research/tooth/results/incsr_celsr1_cytoBIN_deg_pos2.csv")
+write.csv(im_celsr1_bin_deg_pos, "~/research/tooth/results/im_celsr1_cytoBIN_deg_pos2.csv")
+write.csv(hm_celsr1_bin_deg_pos, "~/research/tooth/results/hm_celsr1_cytoBIN_deg_pos2.csv")
+write.csv(jaw_celsr1_bin_deg_pos, "~/research/tooth/results/jaw_celsr1_cytoBIN_deg_pos2.csv")
+write.csv(tj_jaw_celsr1_bin_deg_pos, "~/research/tooth/results/tj_jaw_celsr1_cytoBIN_deg_pos2.csv")
+write.csv(igor_incsr_epi_celsr1_bin_deg_pos, "~/research/tooth/results/igor_incsr_epi_celsr1_cytoBIN_deg_pos2.csv")
+write.csv(igor_incsr_mes_celsr1_bin_deg_pos, "~/research/tooth/results/igor_incsr_mes_celsr1_cytoBIN_deg_pos2.csv")
 
 jaw_celsr1_bin_deg_pos$im_cluster = im_celsr1_bin_deg_pos$cluster[match(jaw_celsr1_bin_deg_pos$hgnc, im_celsr1_bin_deg_pos$gene)]
 jaw_celsr1_bin_deg_pos$incsr_cluster = incsr_celsr1_bin_deg_pos$cluster[match(jaw_celsr1_bin_deg_pos$hgnc, toupper(incsr_celsr1_bin_deg_pos$gene))]
@@ -1596,9 +1600,9 @@ length(which(tj_jaw_high_toppgene$inIncsr & tj_jaw_high_toppgene$inIM))
 
 
 # Do the same, except remove the low CytoBIN
-incsr_celsr1_bin_no_low_res = splitGenebyCytoBIN(incsr, "Celsr1", rm.low = T)
-im_celsr1_bin_no_low_res = splitGenebyCytoBIN(im, "CELSR1", rm.low = T)
-hm_celsr1_bin_no_low_res = splitGenebyCytoBIN(hm, "CELSR1", rm.low = T)
+incsr_celsr1_bin_no_low_res = splitGenebyCytoBIN2(incsr, "Celsr1", rm.low = T)
+im_celsr1_bin_no_low_res = splitGenebyCytoBIN2(im, "CELSR1", rm.low = T)
+hm_celsr1_bin_no_low_res = splitGenebyCytoBIN2(hm, "CELSR1", rm.low = T)
 igor_incsr_epi_celsr1_bin_no_low_res = splitGenebyCytoBIN(igor_incsr_epi, "Celsr1", rm.low = T)
 igor_incsr_mes_celsr1_bin_no_low_res = splitGenebyCytoBIN(igor_incsr_mes, "Celsr1", rm.low = T)
 jaw_celsr1_bin_no_low_res = splitGenebyCytoBIN(jaw, "celsr1a", rm.low = T)
@@ -1635,6 +1639,7 @@ splitGenebyCytoBIN = function(obj, gene, rm.low = FALSE) {
   
   gene_pos_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
   gene_obj = subset(obj, cells = gene_pos_cells)
+  gene_obj$cyto = CytoTRACE(as.matrix(gene_obj@assays$RNA@counts))$CytoTRACE
 
   # Define the CytoBINs by the quantile of CytoTRACE score
   gene_obj$bin <- gene_obj$cyto
@@ -1653,15 +1658,63 @@ splitGenebyCytoBIN = function(obj, gene, rm.low = FALSE) {
   bin_deg_sig = bin_deg[which(bin_deg$p_val_adj < 0.05),]
   colnames(bin_deg_sig)[which(colnames(bin_deg_sig) == "avg_log2FC")] = "avg_logFC"
   
-  # Visualize Gene and Cyto
-  obj$gene_cyto = NA
-  obj$gene_cyto[gene_pos_cells] = obj$cyto[gene_pos_cells]
-  p = myFeaturePlot(obj, "gene_cyto", my.col.pal = pal, na.blank = T) + ggtitle("CytoTRACE in Celsr1+ Cells")
-  p1 = cytoScoreByIdent(gene_obj, pt.alpha = 0.2)
-  
+  # # Visualize Gene and Cyto
+  # obj$gene_cyto = NA
+  # obj$gene_cyto[gene_pos_cells] = obj$cyto[gene_pos_cells]
+  # p = myFeaturePlot(obj, "gene_cyto", my.col.pal = pal, na.blank = T) + ggtitle("CytoTRACE in Celsr1+ Cells")
+  # p1 = cytoScoreByIdent(gene_obj, pt.alpha = 0.2)
+  p = NULL
+  p1 = NULL
   return(list(p, p1, bin_deg_sig))
 }
-
+splitGenebyCytoBIN2 = function(obj, gene, org, rm.low = FALSE) {
+  #' Split Gene+ cells by cells with relative high, medium, and low CytoTRACE scores.
+  #' Find DEGs between the BINs.
+  #' @param obj seurat object
+  #' @param gene gene to subset by
+  #' @param rm.low remove low CytoBIN? ie only compare medium to high CytoBINs?
+  #' @return 
+  
+  if (org == "mzebra" || org == "cichlid" || org == "mz") {
+    tac_markers = c("ENSMZEG00005009812", "vat1l", "hey2", "CDH6", "ENSMZEG00005004945", "cpne5a")
+  } else if (org == "mouse") {
+    tac_markers = c("Mki67", "Vat1l", "Fam19a4", "Hey2", "Cdh6", "Lrp11", "Cpne5")
+  } else if (org == "human") {
+    tac_markers = toupper(c("Mki67", "Vat1l", "Fam19a4", "Hey2", "Cdh6", "Lrp11", "Cpne5"))
+  } else {
+    print("Organism not recognized. Terminating.")
+    return(F)
+  }
+  
+  medium_low = 0.6
+  medium_high = 0.8
+  gene_pos_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
+  gene_obj = subset(obj, cells = gene_pos_cells)
+  # gene_obj$cyto = CytoTRACE(as.matrix(gene_obj@assays$RNA@counts))$CytoTRACE
+  gene_obj$bin <- "not"
+  # gene_obj$bin[which(gene_obj$cyto >= medium_low & gene_obj$cyto <= medium_high & colSums(gene_obj@assays$RNA@counts[tac_markers,]) == 0)] <- "qui"
+  # gene_obj$bin[which(colSums(gene_obj@assays$RNA@counts[tac_markers,]) == 0)] <- "qui"
+  gene_obj$bin[which(gene_obj$cyto >= medium_low & gene_obj$cyto <= medium_high)] <- "qui"
+  
+  # Remove low CytoBIN if necessary
+  Idents(gene_obj) = gene_obj$bin
+  if (rm.low) {
+    gene_obj = subset(gene_obj, idents = "relative_low", invert = T)
+  }
+  
+  # Find DEGs between CytoBINS
+  bin_deg = FindAllMarkers(gene_obj, only.pos = T)
+  bin_deg_sig = bin_deg[which(bin_deg$p_val_adj < 0.05),]
+  colnames(bin_deg_sig)[which(colnames(bin_deg_sig) == "avg_log2FC")] = "avg_logFC"
+  
+  # Visualize Gene and Cyto
+  # obj$gene_cyto = NA
+  # obj$gene_cyto[gene_pos_cells] = obj$cyto[gene_pos_cells]
+  # p = myFeaturePlot(obj, "gene_cyto", my.col.pal = pal, na.blank = T) + ggtitle("CytoTRACE in Celsr1+ Cells")
+  # p1 = cytoScoreByIdent(gene_obj, pt.alpha = 0.2)
+  
+  return(list(NULL, NULL, bin_deg_sig, gene_obj$cyto[which(gene_obj$bin == "relative_medium")]))
+}
 
 
 library("circlize")
@@ -1781,66 +1834,52 @@ circos.track(ylim = c(0, 1), panel.fun = function(x, y) {
 }, bg.border = 1, track.height = 0.15)
 circos.clear()
 
-bb = ScaleData(bb, features = c("LOC106675461", "egr1"))
-bb$aroma = bb@assays$RNA@scale.data["LOC106675461",]
-bb_df = data.frame(sample = unique(bb$sample), col = c("#9d0208", "#d00000", "#dc2f02", "#e85d04", "#f4b906", "#03045e", "#023e8a", "#0077b6", "#0096c7", "#00b4d8"), cond = c(rep("BHVE", 5), rep("CTRL", 5)), num_cells = aggregate(nCount_RNA ~ sample, bb@meta.data, length)[,2], depth = aggregate(depth ~ sample, bb@meta.data, mean)[,2], aroma = aggregate(aroma ~ sample, bb@meta.data, mean)[,2] )
-bb_df$prop13 = unlist(sapply(bb_df$sample, function(x) length(which(bb$seuratclusters53 == 13 & bb$sample == x)) ))
-bb_df$prop13 = unlist(sapply(bb_df$sample, function(x) bb_df$prop13[which(bb_df$sample == x)] /length(which(bb$seuratclusters15 == 0 & bb$sample == x)) ))
-# bb_df$prop13 = bb_df$prop13 / bb_df$num_cells
-bb_df$sample = factor(bb_df$sample, levels = c("c4", "c5", "b5", "b4", "b3", "b2", "b1", "c1", "c2", "c3"))
-bb_df$aroma_col = scaleValues(bb_df$aroma)
-# bb_df$depth[which(bb_df$cond == "CTRL")] = F
-
-pdf("C:/Users/miles/Downloads/test2.pdf", width =  10, height = 10)
-circos.par("gap.degree" = 0, cell.padding = c(0, 0, 0, 0), "start.degree" = -18.25)
-circos.initialize(bb_df$sample, xlim = c(0, 1))
-
-# Depth
-track1_breaks = pretty(bb_df$depth, n = 3)
-circos.track(ylim = c(0, max(track1_breaks)), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
-  for (tb in track1_breaks) {
-    circos.segments(0, tb, 1, tb, col = "gray90")
-  }
+# CJ and CT NS
+library(parallel)
+tj    = readRDS("~/scratch/d_tooth/data/tj.rds")
+tj$annot = tj$seurat_clusters
+Idents(tj) = tj$annot
+tj = RenameIdents(tj, '0' = "Immune", '1' = "Glia", '2' = "Epithelial", '3' = "Epithelial", '4' = "Epithelial", "5" = "Mesenchymal", "6" = "Endothelial", "7" = "Mesenchymal")
+jaw   = readRDS("~/scratch/d_tooth/data/jpool.rds")
+jaw$annot = jaw$seurat_clusters
+Idents(jaw) = jaw$annot
+jaw = RenameIdents(jaw, '0' = "Epithelial", '1' = "Epithelial", '2' = "Immune", '3' = "Epithelial", '4' = "Epithelial", "5" = "Pigmented", "6" = "Mesenchymal", "7" = "Epithelial", "8" = "Immune", "9" = "Immune", "10" = "Mature TB", "11" = "Immature TB")
+real_imp = data.frame()
+for (annot in levels(Idents(jaw))) {
+  print(annot)
+  real = read.csv(paste0("~/scratch/d_tooth/results/py_ns/cj_real_abs/", annot, "_1.csv"))
+  rownames(real) = real$X
+  real$X = NULL
+  colnames(real) = c("Dif")
   
-  value = bb_df$depth[which(bb_df$sample == CELL_META$sector.index)]
-  circos.barplot(value, CELL_META$xcenter, col = bb_df$col[which(bb_df$sample == CELL_META$sector.index)], bar_width = 0.2, border = NA)
-})
-circos.yaxis(at = track1_breaks, sector.index = "b1", track.index = 1, side = "right")
-
-# Proportion
-track2_breaks = pretty(bb_df$prop13, n = 1)
-circos.track(ylim = c(0, max(track2_breaks)), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
-  for (tb in track2_breaks) {
-    circos.segments(0, tb, 1, tb, col = "gray90")
-  }
+  print("Loading permutations 1-5k...")
+  perm = read.csv(paste0("~/scratch/d_tooth/results/py_ns/cj_perm_1_abs/", annot, "_1.csv"))
+  rownames(perm) = perm$X
+  perm$X = NULL
   
-  value = bb_df$prop13[which(bb_df$sample == CELL_META$sector.index)]
-  circos.barplot(value, CELL_META$xcenter, col = bb_df$col[which(bb_df$sample == CELL_META$sector.index)], bar_width = 0.2, border = NA)
+  print("Loading permutations 5k-10k...")
+  perm = cbind(perm, read.csv(paste0("~/scratch/d_tooth/results/py_ns/cj_perm_2_abs/", annot, "_2.csv")))
+  rownames(perm) = perm$X
+  perm$X = NULL
   
-})
-circos.yaxis(at=track2_breaks, sector.index = "b1", track.index = 2, side = "right")
+  print("Finding the test statistic")
+  test_stat = data.frame(gene = rownames(real), num_greater = 0, pct_greater = 0)
+  rownames(test_stat) = rownames(real)
+  test_stat = unlist(mclapply(rownames(real), function(x) length(which( perm[x, ] > real[x, "Dif"] )), mc.cores = detectCores() ))
+  real$num_greater = test_stat
+  real$pct_greater = test_stat / 10000
+  
+  # Calculating the number of cells in the cluster
+  print("Calculating the number of cells in the cluster")
+  jaw_mat = jaw@assays$RNA@counts[,which(Idents(jaw) == annot)]
+  jaw_mat[jaw_mat > 1] = 1
+  real$num_cells = rowSums(jaw_mat)
+  real$num_greater = as.numeric(as.vector(real$num_greater))
+  p_df = data.frame(low = 2*(abs(10000 - real$num_greater)/10000), high = 2* (1 - (abs(10000-real$num_greater)/10000)))
+  real$two.tail.p = apply(p_df, 1, FUN=min)
+  real$bh = p.adjust(real$two.tail.p, method = "BH")
+  real$annot = annot
+  ns_imp = rownames(real)[which(real$bh < 0.05 & real$Dif != 0 & real$num_cells > 10 & real$num_greater < 500)]
+  real_imp = rbind(real_imp, real[ns_imp])
+}
 
-# Aromatase
-# track3_breaks = pretty(bb_df$aroma, n = 3)
-# circos.track(ylim = c(min(track3_breaks), max(track3_breaks)), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
-#   # Negative zone
-#   circos.rect(0, min(track3_breaks), 1, 0, col = "gray70", border = NULL)
-#   
-#   for (tb in track3_breaks) {
-#     circos.segments(0, tb, 1, tb, col = "gray90")
-#   }
-#   
-#   value = bb_df$aroma[which(bb_df$sample == CELL_META$sector.index)]
-#   circos.barplot(value, CELL_META$xcenter, col = bb_df$aroma_col[which(bb_df$sample == CELL_META$sector.index)], bar_width = 0.2, border = NA)
-# })
-# circos.yaxis(at=track3_breaks, sector.index = "b1", track.index = 3, side = "right")
-
-# Sample
-circos.track(ylim = c(0, 1), bg.col = NA, bg.border = NA, track.height = 0.15, panel.fun = function(x, y) {
-  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
-  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[1] - mm_y(2),
-              CELL_META$sector.index, facing = "clockwise", niceFacing = TRUE,
-              adj = c(1, 0.5), cex = 0.6)
-  circos.rect(0, 0, 1, 1, col = bb_df$col[which(bb_df$sample == CELL_META$sector.index)], border = NA)
-})
-dev.off()
