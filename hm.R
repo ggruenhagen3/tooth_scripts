@@ -1883,3 +1883,28 @@ for (annot in levels(Idents(jaw))) {
   real_imp = rbind(real_imp, real[ns_imp])
 }
 
+# TODD CICHLID + MOUSE CYTOBIN IDEA
+tj_hgnc = readRDS("~/research/tooth/data/tj_hgnc.rds")
+jaw_hgnc = readRDS("~/research/tooth/data/jaw_hgnc.rds")
+incsr_hgnc = readRDS("~/research/tooth/data/incsr_hgnc.rds")
+im = readRDS("~/research/tooth/data/igor_incsr_molar.rds")
+
+tj_hgnc$cyto = CytoTRACE::CytoTRACE(as.matrix(tj_hgnc@assays$RNA@counts))$CytoTRACE
+jaw_hgnc$cyto = CytoTRACE::CytoTRACE(as.matrix(jaw_hgnc@assays$RNA@counts))$CytoTRACE
+incsr_hgnc$cyto = CytoTRACE::CytoTRACE(as.matrix(incsr_hgnc@assays$RNA@counts))$CytoTRACE
+im$cyto = CytoTRACE::CytoTRACE(as.matrix(im@assays$RNA@counts))$CytoTRACE
+
+# Method 1
+all_obj = merge(x=im, y = list(tj_hgnc, jaw_hgnc, incsr_hgnc), add.cell.ids=c("im", "tj", "jaw", "incsr"))
+all_obj_celsr1 = subset(all_obj, cells = colnames(all_obj)[which(all_obj@assays$RNA@counts["CELSR1",] > 0)])
+all_obj_celsr1$bin <- all_obj_celsr1$cyto
+all_obj_celsr1$bin[which(all_obj_celsr1$cyto <= quantile(all_obj_celsr1$cyto, 0.33))] <- "Low"
+all_obj_celsr1$bin[which(all_obj_celsr1$cyto > quantile(all_obj_celsr1$cyto, 0.33) & all_obj_celsr1$cyto <= quantile(all_obj_celsr1$cyto, 0.66))] <- "Medium"
+all_obj_celsr1$bin[which(all_obj_celsr1$cyto > quantile(all_obj_celsr1$cyto, 0.66))] <- "High"
+Idents(all_obj_celsr1) = all_obj_celsr1$bin
+all_obj_celsr1_deg = FindAllMarkers(all_obj_celsr1)
+all_obj_celsr1_deg = all_obj_celsr1_deg[which(all_obj_celsr1_deg$p_val_adj < 0.05),]
+cytoScoreByIdent(all_obj_celsr1)
+gene_cyto_df = data.frame(data = colSums(all_obj_celsr1@assays$RNA@data[all_obj_celsr1_deg$gene[1:200],]), cyto = all_obj_celsr1$cyto, bin = all_obj_celsr1$bin, gene = "Celsr1")
+gene_cyto_df$bin = factor(gene_cyto_df$bin, levels = c("High", "Medium", "Low"))
+ggplot(gene_cyto_df, aes(x = bin, y = data, fill = bin, color = bin)) + geom_boxplot(alpha = 0.6) + geom_jitter(alpha=0.1) + xlab("") + ylab("Expression of BIN DEGs") + theme(panel.grid.major.x = element_blank()) + theme_bw() + scale_color_manual(values = c(temp[10], "darkgoldenrod1", temp[2])) + scale_fill_manual(values = c(temp[10], "darkgoldenrod1", temp[2]))

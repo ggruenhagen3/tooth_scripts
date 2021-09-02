@@ -451,6 +451,9 @@ igor_incsr_celsr1_deg = createCytoBINsInGene(igor_incsr, "Celsr1")
 im_celsr1_deg = createCytoBINsInGene(im, "CELSR1")
 igor_incsr_epi_celsr1_deg = createCytoBINsInGene(igor_incsr_epi, "Gli1")
 
+hm_celsr1_deg_low = hm_celsr1_deg[which(hm_celsr1_deg$cluster == "Low"),]
+hm_celsr1_deg_medium = hm_celsr1_deg[which(hm_celsr1_deg$cluster == "Medium"),]
+hm_celsr1_deg_high = hm_celsr1_deg[which(hm_celsr1_deg$cluster == "High"),]
 im_celsr1_deg_low = im_celsr1_deg[which(im_celsr1_deg$cluster == "Low"),]
 im_celsr1_deg_medium = im_celsr1_deg[which(im_celsr1_deg$cluster == "Medium"),]
 im_celsr1_deg_high = im_celsr1_deg[which(im_celsr1_deg$cluster == "High"),]
@@ -643,11 +646,11 @@ createCytoBINsInGene = function(obj, gene) {
   gene_obj$bin[which(gene_obj$cyto <= 0.33)] <- "Low"
   gene_obj$bin[which(gene_obj$cyto > 0.33 & gene_obj$cyto <= 0.66)] <- "Medium"
   gene_obj$bin[which(gene_obj$cyto > 0.66)] <- "High"
-  return(gene_obj)
-  # Idents(gene_obj) = gene_obj$bin
-  # deg = FindAllMarkers(gene_obj, only.pos = F, logfc.threshold = 0)
-  # deg = deg[which(deg$p_val_adj < 0.05),]
-  # deg$cluster_sign = paste0(sign(deg$avg_log2FC), deg$cluster)
+  # return(gene_obj)
+  Idents(gene_obj) = gene_obj$bin
+  deg = FindAllMarkers(gene_obj, only.pos = F, logfc.threshold = 0)
+  deg = deg[which(deg$p_val_adj < 0.05),]
+  deg$cluster_sign = paste0(sign(deg$avg_log2FC), deg$cluster)
   return(deg)
 }
 
