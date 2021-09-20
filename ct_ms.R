@@ -438,15 +438,168 @@ dev.off()
 igor_incsr = readRDS("~/research/tooth/data/igor_incsr.rds")
 im = readRDS("~/research/tooth/data/igor_incsr_molar.rds")
 igor_incsr_epi = readRDS("~/research/tooth/data/igor_incsr_epi.rds")
+igor_incsr$cyto = CytoTRACE::CytoTRACE(as.matrix(igor_incsr@assays$RNA@counts))
+im$cyto = CytoTRACE::CytoTRACE(as.matrix(im@assays$RNA@counts))
 
-igor_incsr$cyto = CytoTRACE::CytoTRACE(as.matrix(igor_incsr@assays$RNA@counts))$CytoTRACE
-im$cyto = CytoTRACE::CytoTRACE(as.matrix(im@assays$RNA@counts))$CytoTRACE
+# Calculate CytoTRACE for Celsr1- cells
+incsr_no_celsr1 = subset(igor_incsr, cells = colnames(igor_incsr)[which(igor_incsr@assays$RNA@counts["Celsr1",] == 0)])
+incsr_no_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(incsr_no_celsr1@assays$RNA@counts))
+im_no_celsr1 = subset(im, cells = colnames(im)[which(im@assays$RNA@counts["CELSR1",] == 0)])
+im_no_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(im_no_celsr1@assays$RNA@counts))
+tj_no_celsr1 = subset(tj, cells = colnames(tj)[which(tj@assays$RNA@counts["celsr1a",] == 0)])
+tj_no_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(tj_no_celsr1@assays$RNA@counts))
+jaw_no_celsr1 = subset(jaw, cells = colnames(jaw)[which(jaw@assays$RNA@counts["celsr1a",] == 0)])
+jaw_no_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(jaw_no_celsr1@assays$RNA@counts))
+# tj_jaw = merge(tj, jaw)
+
+# Calculate CytoTRACE for Celsr1+ cells
+incsr_celsr1 = subset(igor_incsr, cells = colnames(igor_incsr)[which(igor_incsr@assays$RNA@counts["Celsr1",] > 0)])
+incsr_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(incsr_celsr1@assays$RNA@counts))
+im_celsr1 = subset(im, cells = colnames(im)[which(im@assays$RNA@counts["CELSR1",] > 0)])
+im_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(im_celsr1@assays$RNA@counts))
+tj_celsr1 = subset(tj, cells = colnames(tj)[which(tj@assays$RNA@counts["celsr1a",] > 0)])
+tj_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(tj_celsr1@assays$RNA@counts))
+jaw_celsr1 = subset(jaw, cells = colnames(jaw)[which(jaw@assays$RNA@counts["celsr1a",] > 0)])
+jaw_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(jaw_celsr1@assays$RNA@counts))
+# tj_jaw_celsr1 = subset(tj_jaw, cells = colnames(tj_jaw)[which(tj_jaw@assays$RNA@counts["celsr1a",] > 0)])
+# tj_jaw_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(tj_jaw_celsr1@assays$RNA@counts))
+
+# Calculate Number of cells
+incsr_mat = incsr_no_celsr1@assays$RNA@counts
+incsr_mat[which(incsr_mat > 1)] = 1
+incsr_celsr1_mat = incsr_celsr1@assays$RNA@counts
+incsr_celsr1_mat[which(incsr_celsr1_mat > 1)] = 1
+
+im_mat = im_no_celsr1@assays$RNA@counts
+im_mat[which(im_mat > 1)] = 1
+im_celsr1_mat = im_celsr1@assays$RNA@counts
+im_celsr1_mat[which(im_celsr1_mat > 1)] = 1
+
+cg_df = data.frame(gene = names(incsr_celsr1_cyto$cytoGenes)[which( names(incsr_celsr1_cyto$cytoGenes) %in% names(incsr_no_celsr1_cyto$cytoGenes) )])
+cg_df$all = incsr_no_celsr1_cyto$cytoGenes[match(cg_df$gene, names(incsr_no_celsr1_cyto$cytoGenes))]
+cg_df$celsr1 = incsr_celsr1_cyto$cytoGenes[match(cg_df$gene, names(incsr_celsr1_cyto$cytoGenes))]
+cg_df$dif = cg_df$celsr1 - cg_df$all
+cg_df$abs_dif = abs(cg_df$dif)
+cg_df$p = r_to_p(cg_df$all, cg_df$celsr1, ncol(incsr_mat), ncol(incsr_celsr1_mat))
+cg_df$q = p.adjust(cg_df$p, method = "BH")
+cg_df$all_num = rowSums(incsr_mat)[match(cg_df$gene, rownames(incsr_mat))]
+cg_df$celsr1_num = rowSums(incsr_celsr1_mat)[match(cg_df$gene, rownames(incsr_celsr1_mat))]
+# ggplot(cg_df, aes(x = all, y = celsr1, color = abs(all-celsr1))) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( abs(cg_df$all - cg_df$celsr1) > 0.7 ),], aes(label = gene), color = "black") + ggtitle("Igor Mouse Incisor")
+# ggplot(cg_df, aes(x = celsr1_num, y = abs_dif, color = abs_dif)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$abs_dif > 0.6 ),], aes(label = gene), color = "black") + ggtitle("Igor Mouse Incisor")
+ggplot(cg_df, aes(x = celsr1_num, y = dif, color = abs_dif)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$dif > 0.55 ),], aes(label = gene), color = "black") + ggtitle("Igor Mouse Incisor")
+cg_df_incsr = cg_df
+
+cg_df = data.frame(gene = names(im_celsr1_cyto$cytoGenes)[which( names(im_celsr1_cyto$cytoGenes) %in% names(im_no_celsr1_cyto$cytoGenes) )])
+cg_df$all = im_no_celsr1_cyto$cytoGenes[match(cg_df$gene, names(im_no_celsr1_cyto$cytoGenes))]
+cg_df$celsr1 = im_celsr1_cyto$cytoGenes[match(cg_df$gene, names(im_celsr1_cyto$cytoGenes))]
+cg_df$dif = cg_df$celsr1 - cg_df$all
+cg_df$abs_dif = abs(cg_df$dif)
+cg_df$p = r_to_p(cg_df$all, cg_df$celsr1, ncol(im_mat), ncol(im_celsr1_mat))
+cg_df$q = p.adjust(cg_df$p, method = "BH")
+cg_df$all_num = rowSums(im_mat)[match(cg_df$gene, rownames(im_mat))]
+cg_df$celsr1_num = rowSums(im_celsr1_mat)[match(cg_df$gene, rownames(im_celsr1_mat))]
+# ggplot(cg_df, aes(x = all, y = celsr1, color = abs(all-celsr1))) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( abs(cg_df$all - cg_df$celsr1) > 0.7 ),], aes(label = gene), color = "black") + ggtitle("Igor Mouse Incisor + Molar")
+# ggplot(cg_df, aes(x = celsr1_num, y = abs_dif, color = abs_dif)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$abs_dif > 0.6 ),], aes(label = gene), color = "black") + ggtitle("Igor Mouse Incisor + Molar")
+ggplot(cg_df, aes(x = celsr1_num, y = dif, color = abs_dif)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$dif > 0.50 ),], aes(label = gene), color = "black") + ggtitle("Igor Mouse Incisor + Molar")
+cg_df$incsr_dif = cg_df_incsr$dif[match(str_to_title(cg_df$gene), cg_df_incsr$gene)]
+cg_df$tmp =  cg_df$dif + cg_df$incsr_dif
+ggplot(cg_df, aes(x = dif, y = incsr_dif, color = tmp)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$tmp > 0.6 ),], aes(label = gene), color = "black") + xlab("Mouse Incisor & Molar Celsr1+ minus Celsr1- R") + ylab("Mouse Incisor Celsr1+ minus Celsr1- R")
+cg_df_im = cg_df
+
+common_celsr1_genes = rownames(tj_celsr1_cyto$exprMatrix)[which(rownames(tj_celsr1_cyto$exprMatrix) %in% rownames(jaw_celsr1_cyto$exprMatrix))]
+common_celsr1_exprMatrix = cbind(tj_celsr1_cyto$exprMatrix[common_celsr1_genes,], jaw_celsr1_cyto$exprMatrix[common_celsr1_genes,])
+common_celsr1_cyto = c(tj_celsr1_cyto$CytoTRACE, jaw_celsr1_cyto$CytoTRACE)
+c_celsr1_cytoGenes = unlist(lapply(common_celsr1_genes, function(x) cor(common_celsr1_exprMatrix[x,], common_celsr1_cyto) ))
+names(c_celsr1_cytoGenes) = common_celsr1_genes
+
+common_all_genes = rownames(tj_no_celsr1_cyto$exprMatrix)[which(rownames(tj_no_celsr1_cyto$exprMatrix) %in% rownames(jaw_no_celsr1_cyto$exprMatrix))]
+common_all_exprMatrix = cbind(tj_no_celsr1_cyto$exprMatrix[common_all_genes,], jaw_no_celsr1_cyto$exprMatrix[common_all_genes,])
+common_all_cyto = c(tj_no_celsr1_cyto$CytoTRACE, jaw_no_celsr1_cyto$CytoTRACE)
+c_all_cytoGenes = unlist(lapply(common_all_genes, function(x) cor(common_all_exprMatrix[x,], common_all_cyto) ))
+names(c_all_cytoGenes) = common_all_genes
+
+common_common_genes = common_celsr1_genes[which(common_celsr1_genes %in% common_all_genes)]
+cg_df = data.frame(gene = common_common_genes, all = c_all_cytoGenes[match(common_common_genes, names(c_all_cytoGenes))], celsr1 = c_celsr1_cytoGenes[match(common_common_genes, names(c_celsr1_cytoGenes))])
+cg_df$dif = cg_df$celsr1 - cg_df$all
+cg_df$abs_dif = abs(cg_df$dif)
+cg_df$p = r_to_p(cg_df$all, cg_df$celsr1, length(common_celsr1_cyto), length(common_all_cyto))
+cg_df$q = p.adjust(cg_df$p, method = "BH")
+ggplot(cg_df, aes(x = all, y = celsr1, color = abs_dif)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$abs_dif > 0.6 ),], aes(label = gene), color = "black") + ggtitle("Cichlid Tooth and Jaw")
+cg_df$hgnc = ens_gene_info$hgnc[match(cg_df$gene, ens_gene_info$gene_raw)]
+cg_df$incsr_dif = cg_df_incsr$dif[match(cg_df$hgnc, toupper(cg_df_incsr$gene))]
+cg_df$im_dif = cg_df_im$dif[match(cg_df$hgnc, cg_df_im$gene)]
+cg_df$tmp =  cg_df$dif + cg_df$incsr_dif
+cg_df$tmp_im =  cg_df$dif + cg_df$im_dif
+ggplot(cg_df, aes(x = dif, y = incsr_dif, color = tmp)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(data = cg_df[which( cg_df$tmp > 0.6 ),], aes(label = hgnc), color = "black") + xlab("Cichlid Celsr1+ minus Celsr1- R") + ylab("Mouse Incisor Celsr1+ minus Celsr1- R")
+
+cg_df$incsr_q = cg_df_incsr$q[match(cg_df$hgnc, toupper(cg_df_incsr$gene))]
+cg_df$im_q = cg_df_im$q[match(cg_df$hgnc, toupper(cg_df_im$gene))]
+cdh3_df = data.frame(dataset = c("Cichlid", "MI", "MIM"), gene = "CDH3", q = c(cg_df$q[which(cg_df$hgnc == "CDH3")], cg_df$incsr_q[which(cg_df$hgnc == "CDH3")], cg_df$im_q[which(cg_df$hgnc == "CDH3")]))
+cdh3_df$neg_log_10 = -log10(cdh3_df$q)
+ggplot(cdh3_df, aes(x = gene, y =neg_log_10, fill = dataset)) + geom_bar(stat = "identity", position = position_dodge2()) + geom_hline(yintercept = -log10(0.05), linetype = "dashed") + xlab("") + ylab("-Log10 Adjusted P")
+
+up_celsr_genes = cg_df$hgnc[which(cg_df$q < 0.05 & cg_df$incsr_q < 0.05 & cg_df$im_q < 0.05 & cg_df$dif > 0 & cg_df$incsr_dif > 0 & cg_df$im_dif > 0)]
+up_celsr_df = data.frame(dataset = c(rep("Cichlid", length(up_celsr_genes)), rep("MI", length(up_celsr_genes)), rep("MIM", length(up_celsr_genes))),
+                         gene = rep(up_celsr_genes, 3),
+                         isPos = "Celsr1+",
+                         data = c(cg_df$celsr1[match(up_celsr_genes, cg_df$hgnc)], cg_df_incsr$celsr1[match(str_to_title(up_celsr_genes), cg_df_incsr$gene)], cg_df_im$celsr1[match(up_celsr_genes, cg_df_im$gene)]))
+up_celsr_df = rbind(up_celsr_df, data.frame(dataset = c(rep("Cichlid", length(up_celsr_genes)), rep("MI", length(up_celsr_genes)), rep("MIM", length(up_celsr_genes))),
+                                            gene = rep(up_celsr_genes, 3),
+                                            isPos = "Celsr1-",
+                                            data = c(cg_df$all[match(up_celsr_genes, cg_df$hgnc)], cg_df_incsr$all[match(str_to_title(up_celsr_genes), cg_df_incsr$gene)], cg_df_im$all[match(up_celsr_genes, cg_df_im$gene)])))
+up_celsr_df$dataset_gene = paste0(up_celsr_df$dataset, "_", up_celsr_df$gene)
+up_celsr_df %>% ggplot(aes(x = gene, y = data, color = dataset, group = dataset_gene, shape = isPos)) + geom_point(stat = "identity", position = position_dodge(width = 0.5), size = 2.5) + geom_line(position = position_dodge(width = 0.5), arrow = arrow(length=unit(0.30,"cm"), ends = "first", angle = 20)) + xlab("") + ylab("Correlation w/ CytoTRACE") + ggtitle("Correlation of Genes w/ CytoTRACE in Celsr1+ Cells (Top Point) vs Celsr1- Cells (Bottom Point)") + theme(plot.subtitle = element_text("Celsr1+ Cells = Top Point, Celsr1- Cells = Bottom Point")) + scale_shape_manual(values = c(15,19)) + theme(legend.title=element_blank())
+up_celsr_df %>% ggplot(aes(x = dataset, y = data, color = dataset, group = dataset_gene, shape = isPos)) + geom_point(stat = "identity", position = position_dodge(width = 0.5), size = 2.5) + geom_line(position = position_dodge(width = 0.5), arrow = arrow(length=unit(0.30,"cm"), ends = "first", angle = 20)) + xlab("") + ylab("Correlation w/ CytoTRACE") + ggtitle("Correlation of Genes w/ CytoTRACE in Celsr1+ Cells (Top Point) vs Celsr1- Cells (Bottom Point)") + theme(plot.subtitle = element_text("Celsr1+ Cells = Top Point, Celsr1- Cells = Bottom Point")) + scale_shape_manual(values = c(15,19)) + theme(legend.title=element_blank()) + facet_wrap(~gene, ncol = length(unique(up_celsr_df$gene))) + theme_bw()
+# ggplot(cg_df2, aes(x = dif, y = incsr_dif, color = tmp)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(aes(label = hgnc), color = "black") + xlab("Cichlid Celsr1+ minus Celsr1- R") + ylab("Mouse Incisor Celsr1+ minus Celsr1- R")
+# ggplot(cg_df2, aes(x = dif, y = im_dif, color = tmp_im)) + geom_point() + scale_color_gradientn(colors = plasma(50)) + geom_text_repel(aes(label = hgnc), color = "black") + xlab("Cichlid Celsr1+ minus Celsr1- R") + ylab("Mouse Incisor & Molar Celsr1+ minus Celsr1- R")
+# + geom_smooth(method = "lm", se  = F, color = "#ad544e") + ggpubr::stat_cor(method = "pearson", hjust=0, vjust=0, label.x = -0.1, label.y = -0.08, color = "#ad544e") + coord_cartesian(clip = 'off')
+
+
+# CDH3 - Method 1
+p_gene =  "Cdh3"
+mz_gene = ens_gene_info$gene_raw[match(toupper(p_gene), ens_gene_info$hgnc)]
+gene_df = data.frame(dataset = c(rep("Cichlid", length(common_celsr1_cyto)), rep("(MI)", length(incsr_celsr1_cyto$CytoTRACE)), rep("(MIM)", length(im_celsr1_cyto$CytoTRACE))),
+                     expr = c(common_celsr1_exprMatrix[mz_gene,], incsr_celsr1_cyto$exprMatrix[p_gene,], im_celsr1_cyto$exprMatrix[toupper(p_gene),]),
+                     cyto = c(common_celsr1_cyto, incsr_celsr1_cyto$CytoTRACE, im_celsr1_cyto$CytoTRACE),
+                     cor = c(rep(cor(common_celsr1_exprMatrix[mz_gene,], common_celsr1_cyto), length(common_celsr1_cyto)), rep(cor(incsr_celsr1_cyto$exprMatrix[p_gene,], incsr_celsr1_cyto$CytoTRACE), length(incsr_celsr1_cyto$CytoTRACE)), rep(cor(im_celsr1_cyto$exprMatrix[toupper(p_gene),], im_celsr1_cyto$CytoTRACE), length(im_celsr1_cyto$CytoTRACE))),
+                     gene = p_gene)
+ggplot(gene_df, aes(x = cyto, y = expr, color = dataset)) + geom_point(alpha = 0.3) + geom_smooth(method = "lm", se  = F) + ggpubr::stat_cor(aes(label = ..r.label..), method = "pearson", hjust=0, vjust=0, label.x = 1, label.y = c(0.6, 0.3, 0), size = 5, geom = "label") + coord_cartesian(clip = 'off') + xlim(expand = c(0,1)) + ggtitle(paste0(p_gene, " in Celsr1+ Cells"))
+gene_df = data.frame(dataset = c(rep("Cichlid", length(common_all_cyto)), rep("(MI)", length(incsr_no_celsr1_cyto$CytoTRACE)), rep("(MIM)", length(im_no_celsr1_cyto$CytoTRACE))),
+                     expr = c(common_all_exprMatrix[mz_gene,], incsr_no_celsr1_cyto$exprMatrix[p_gene,], im_no_celsr1_cyto$exprMatrix[toupper(p_gene),]),
+                     cyto = c(common_all_cyto, incsr_no_celsr1_cyto$CytoTRACE, im_no_celsr1_cyto$CytoTRACE),
+                     cor = c(rep(cor(common_all_exprMatrix[mz_gene,], common_all_cyto), length(common_all_cyto)), rep(cor(incsr_no_celsr1_cyto$exprMatrix[p_gene,], incsr_no_celsr1_cyto$CytoTRACE), length(incsr_no_celsr1_cyto$CytoTRACE)), rep(cor(im_no_celsr1_cyto$exprMatrix[toupper(p_gene),], im_no_celsr1_cyto$CytoTRACE), length(im_no_celsr1_cyto$CytoTRACE))),
+                     gene = p_gene)
+ggplot(gene_df, aes(x = cyto, y = expr, color = dataset)) + geom_point(alpha = 0.3) + geom_smooth(method = "lm", se  = F) + ggpubr::stat_cor(aes(label = ..r.label..), method = "pearson", hjust=0, vjust=0, label.x = 1, label.y = c(0.6, 0.3, 0), size = 5, geom = "label") + coord_cartesian(clip = 'off') + xlim(expand = c(0,1)) + ggtitle(paste0(p_gene, " in Celsr1- Cells")) + scale_color_manual(values = c("#d19a97", "#65a679", "#6d87b3"))
+
+# CDH3 - Method 2
+gene_df = data.frame(dataset = c(rep("Cichlid", length(common_celsr1_cyto)+length(common_all_cyto))),
+                     isPos = c(rep("Celsr1+", length(common_celsr1_cyto)), rep("Celsr1-", length(common_all_cyto))),
+                     expr = c(common_celsr1_exprMatrix[mz_gene,], common_all_exprMatrix[mz_gene,]),
+                     cyto = c(common_celsr1_cyto, common_all_cyto),
+                     cor = c(rep(cor(common_celsr1_exprMatrix[mz_gene,], common_celsr1_cyto), length(common_celsr1_cyto)), rep(cor(common_all_exprMatrix[mz_gene,], common_all_cyto), length(common_all_cyto))),
+                     gene = p_gene)
+ggplot(gene_df, aes(x = cyto, y = expr, color = isPos)) + geom_point(alpha = 0.3) + geom_smooth(method = "lm", se  = F) + ggpubr::stat_cor(aes(label = ..r.label..), method = "pearson", hjust=0, vjust=0, label.x = 1, label.y = c(0.6, 0.3, 0), size = 5, geom = "label") + coord_cartesian(clip = 'off') + xlim(expand = c(0,1)) + ggtitle(paste0(p_gene, " in Celsr1+ vs Celsr1- Cells in Cichlid")) + scale_color_manual(values = c(hue_pal()(3)[1], "darkgray")) + theme(legend.title=element_blank()) 
+gene_df = data.frame(dataset = c(rep("(MI)", length(incsr_celsr1_cyto$CytoTRACE)+length(incsr_no_celsr1_cyto$CytoTRACE))),
+                     isPos = c(rep("Celsr1+", length(incsr_celsr1_cyto$CytoTRACE)), rep("Celsr1-", length(incsr_no_celsr1_cyto$CytoTRACE))),
+                     expr = c(incsr_celsr1_cyto$exprMatrix[p_gene,], incsr_no_celsr1_cyto$exprMatrix[p_gene,]),
+                     cyto = c(incsr_celsr1_cyto$CytoTRACE, incsr_no_celsr1_cyto$CytoTRACE),
+                     cor = c(rep(cor(incsr_celsr1_cyto$CytoTRACE, incsr_celsr1_cyto$CytoTRACE), length(incsr_celsr1_cyto$CytoTRACE)), rep(cor(incsr_no_celsr1_cyto$exprMatrix[p_gene,], incsr_no_celsr1_cyto$CytoTRACE), length(incsr_no_celsr1_cyto$CytoTRACE))),
+                     gene = p_gene)
+ggplot(gene_df, aes(x = cyto, y = expr, color = isPos)) + geom_point(alpha = 0.3) + geom_smooth(method = "lm", se  = F) + ggpubr::stat_cor(aes(label = ..r.label..), method = "pearson", hjust=0, vjust=0, label.x = 1, label.y = c(0.6, 0.3, 0), size = 5, geom = "label") + coord_cartesian(clip = 'off') + xlim(expand = c(0,1)) + ggtitle(paste0(p_gene, " in Celsr1+ vs Celsr1- Cells in (MI)")) + scale_color_manual(values = c(hue_pal()(3)[2], "darkgray")) + theme(legend.title=element_blank()) 
+gene_df = data.frame(dataset = c(rep("(MIM)", length(im_celsr1_cyto$CytoTRACE)+length(im_no_celsr1_cyto$CytoTRACE))),
+                     isPos = c(rep("Celsr1+", length(im_celsr1_cyto$CytoTRACE)), rep("Celsr1-", length(im_no_celsr1_cyto$CytoTRACE))),
+                     expr = c(im_celsr1_cyto$exprMatrix[p_gene,], im_no_celsr1_cyto$exprMatrix[p_gene,]),
+                     cyto = c(im_celsr1_cyto$CytoTRACE, im_no_celsr1_cyto$CytoTRACE),
+                     cor = c(rep(cor(im_celsr1_cyto$CytoTRACE, im_celsr1_cyto$CytoTRACE), length(im_celsr1_cyto$CytoTRACE)), rep(cor(im_no_celsr1_cyto$exprMatrix[p_gene,], im_no_celsr1_cyto$CytoTRACE), length(im_no_celsr1_cyto$CytoTRACE))),
+                     gene = p_gene)
+ggplot(gene_df, aes(x = cyto, y = expr, color = isPos)) + geom_point(alpha = 0.3) + geom_smooth(method = "lm", se  = F) + ggpubr::stat_cor(aes(label = ..r.label..), method = "pearson", hjust=0, vjust=0, label.x = 1, label.y = c(0.6, 0.3, 0), size = 5, geom = "label") + coord_cartesian(clip = 'off') + xlim(expand = c(0,1)) + ggtitle(paste0(p_gene, " in Celsr1+ vs Celsr1- Cells in (MIM)")) + scale_color_manual(values = c(hue_pal()(3)[3], "darkgray")) + theme(legend.title=element_blank()) 
+
 
 # Tooth and Jaw Merging
 tj = readRDS("~/research/tooth/data/tj.rds")
 jaw = readRDS("~/research/tooth/data/jpool.rds")
 tj_jaw = merge(tj, jaw)
-tj_jaw_celsr1_deg = mergeToothJawCytoBIN3(tj, jaw, "celsr1a")
+tj_jaw_celsr1_deg = mergeToothJawCytoBIN2(tj, jaw, "celsr1a")
 igor_incsr_celsr1_deg = createCytoBINsInGene(igor_incsr, "Celsr1")
 im_celsr1_deg = createCytoBINsInGene(im, "CELSR1")
 igor_incsr_epi_celsr1_deg = createCytoBINsInGene(igor_incsr_epi, "Gli1")
@@ -491,6 +644,12 @@ cytobin_df = rbind(cytobin_df, data.frame(bin = igor_incsr_celsr1$bin, exp = col
 cytobin_df = rbind(cytobin_df, data.frame(bin = im_celsr1$bin, exp = colSums(im_celsr1@assays$RNA@data[human_high_degs,]), cyto = im_celsr1$cyto, dataset = "MIM"))
 cytobin_df$bin = plyr::revalue(cytobin_df$bin, replace = c("relative_high" = "High", "relative_medium" = "Medium", "relative_low" = "Low"))
 cytobin_df$bin = factor(cytobin_df$bin, levels = c("High", "Medium", "Low"))
+
+cdh3_df = data.frame(dataset = c("Cichlid", "MI", "MIM"),
+                     gene = "Cdh3",
+                     p_val_adj = c(tj_jaw_celsr1_deg$p_val_adj[which(tj_jaw_celsr1_deg$gene == "ENSMZEG00005018585" & tj_jaw_celsr1_deg$avg_log2FC > 0)], igor_incsr_celsr1_deg$p_val_adj[which(igor_incsr_celsr1_deg$gene == "Cdh3" & igor_incsr_celsr1_deg$avg_log2FC > 0)], im_celsr1_deg$p_val_adj[which(im_celsr1_deg$gene == "CDH3" & im_celsr1_deg$avg_log2FC > 0)]))
+cdh3_df$neg_log_10 = -log10(cdh3_df$p_val_adj)
+ggplot(cdh3_df, aes(x = gene, y =neg_log_10, fill = dataset)) + geom_bar(stat = "identity", position = position_dodge2()) + geom_hline(yintercept = -log10(0.05), linetype = "dashed") + xlab("") + ylab("-Log10 Adjusted P")
 
 pdf("~/research/tooth/results/celsr1_cyto.pdf", width = 8, height = 5)
 ggplot(cytobin_df, aes(x=dataset, y = cyto, fill = bin, color = bin)) + geom_boxplot(alpha = 0.6) + geom_jitter(position=position_dodge2(width=0.75), alpha=0.5) + scale_color_manual(values = c(temp[10], "darkgoldenrod1", temp[2])) + scale_fill_manual(values = c(temp[10], "darkgoldenrod1", temp[2])) + xlab("") + ylab("CytoTRACE") + theme(panel.grid.major.x = element_blank()) + theme_bw()
@@ -595,8 +754,9 @@ pal = colorRampPalette(temp)
 
 # INCSR
 time_df_p = data.frame()
-gene = "ogt"
-gene_cyto_df = data.frame(data = incsr@assays$RNA@data[str_to_title(gene),], cyto = incsr$cyto, dataset = "MI", gene = "Celsr1")
+gene = "ptprf"
+# gene_cyto_df = data.frame(data = incsr@assays$RNA@data[str_to_title(gene),which(incsr@assays$RNA@data[str_to_title(gene),] > 0)], cyto = incsr$cyto, dataset = "MI", gene = "Celsr1")
+gene_cyto_df = data.frame(data = incsr@assays$RNA@data[str_to_title(gene),which(incsr@assays$RNA@data[str_to_title("Celsr1"),] > 0)], cyto = incsr$cyto[which(incsr@assays$RNA@data[str_to_title("Celsr1"),] > 0)], dataset = "MI", gene = "Celsr1")
 loessMod75 <- loess(gene_cyto_df[,"data"] ~ gene_cyto_df[,"cyto"], span=0.75)
 smoothed75 <- predict(loessMod75)
 # this_df = gene_cyto_df[,c("cyto", "dataset", "gene")]
@@ -606,7 +766,8 @@ gene_cyto_df$smooth = smoothed75
 time_df_p = rbind(time_df_p, gene_cyto_df)
 
 # IM
-gene_cyto_df = data.frame(data = im@assays$RNA@data[toupper(gene),], cyto = im$cyto, dataset = "MIM", gene = "Celsr1")
+# gene_cyto_df = data.frame(data = im@assays$RNA@data[toupper(gene),], cyto = im$cyto, dataset = "MIM", gene = "Celsr1")
+gene_cyto_df = data.frame(data = im@assays$RNA@data[toupper(gene),which(im@assays$RNA@data[toupper("CELSR1"),] > 0)], cyto = im$cyto[which(im@assays$RNA@data[toupper("CELSR1"),] > 0)], dataset = "MIM", gene = "Celsr1")
 loessMod75 <- loess(gene_cyto_df[,"data"] ~ gene_cyto_df[,"cyto"], span=0.75)
 smoothed75 <- predict(loessMod75)
 # this_df = gene_cyto_df[,c("cyto", "dataset", "gene")]
@@ -616,7 +777,9 @@ gene_cyto_df$smooth = smoothed75
 time_df_p = rbind(time_df_p, gene_cyto_df)
 
 #TJ
-gene_cyto_df = data.frame(data = tj@assays$RNA@data[paste0(gene, ".1"),], cyto = tj$cyto, dataset = "CT", gene = "Celsr1")
+mz_gene = paste0(gene, "b")
+# gene_cyto_df = data.frame(data = tj@assays$RNA@data[paste0(gene, ".1"),], cyto = tj$cyto, dataset = "CT", gene = "Celsr1")
+gene_cyto_df = data.frame(data = tj@assays$RNA@data[mz_gene, which(tj@assays$RNA@data["celsr1a",] > 0)], cyto = tj$cyto[which(tj@assays$RNA@data["celsr1a",] > 0)], dataset = "CT", gene = "Celsr1")
 loessMod75 <- loess(gene_cyto_df[,"data"] ~ gene_cyto_df[,"cyto"], span=0.75)
 smoothed75 <- predict(loessMod75)
 # this_df = gene_cyto_df[,c("cyto", "dataset", "gene")]
@@ -634,9 +797,81 @@ gene_cyto_df = rbind(gene_cyto_df, data.frame(data = im@assays$RNA@data["CELSR1"
 gene_cyto_df = rbind(gene_cyto_df, data.frame(data = tj@assays$RNA@data["celsr1a",], cyto = tj$cyto, dataset = "CT", gene = "Celsr1"))
 ggplot(gene_cyto_df, aes(cyto, data)) + geom_point() + geom_smooth(formula = y ~ x, method='loess') + theme_bw()
 
+#***************************************************************************************************************************
+# All Combined =============================================================================================================
+#***************************************************************************************************************************
+# Merge Cichlid Tooth, Cichlid Jaw, Mouse Incisor, Mouse Incisor + Molar
+tj_hgnc = readRDS("~/research/tooth/data/tj_hgnc.rds")
+jaw_hgnc = readRDS("~/research/tooth/data/jaw_hgnc.rds")
+incsr_hgnc = readRDS("~/research/tooth/data/incsr_hgnc.rds")
+im = readRDS("~/research/tooth/data/igor_incsr_molar.rds")
+allt = merge(tj_hgnc, jaw_hgnc, incsr_hgnc, im)
+allt = merge(tj_hgnc, list(jaw_hgnc, incsr_hgnc, im), add.cell.ids = c("ct", "cj", "mi", 'mim'))
+saveRDS(allt, "~/research/tooth/data/allt.rds")
+
+# Read Merged Data
+allt = readRDS("~/research/tooth/data/allt.rds")
+# allt_cyto = CytoTRACE::CytoTRACE(as.matrix(allt@assays$RNA@counts))
+# allt$cyto = allt_cyto$CytoTRACE
+
+# Find DEGs b/w High Bins
+res = createCytoBINsInGene(allt, "CELSR1")
+allt_celsr1_ctyo = res[[1]]
+allt_celsr1 = res[[2]]
+Idents(allt_celsr1) = allt_celsr1$bin
+celsr1_deg = FindAllMarkers(allt_celsr1, only.pos = F, logfc.threshold = 0)
+celsr1_deg$isSig = celsr1_deg$p_val_adj < 0.05
+celsr1_deg$cluster_isSig = paste0(celsr1_deg$cluster, "_", celsr1_deg$isSig)
+celsr1_deg_sig = celsr1_deg[which(celsr1_deg$p_val_adj < 0.05),]
+celsr1_deg_sig_pos = celsr1_deg_sig[which(celsr1_deg_sig$avg_log2FC > 0),]
+
+ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = cluster_isSig)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_manual(values = c("gray", temp[10], "gray", temp[2], "gray", "gold"), guide = F)
+
+# Expression of CytoBIN DEGs vs CytoTRACE
+celsr1_dif_genes = unique(celsr1_deg_sig$gene)
+cytobin_df = data.frame(bin = allt_celsr1$bin, exp = colSums(allt_celsr1@assays$RNA@data[celsr1_dif_genes,]), cyto = allt_celsr1$cyto, dataset = "All")
+cytobin_df$bin = factor(cytobin_df$bin, levels = c("Low", "Medium", "High"))
+ggplot(cytobin_df, aes(x=bin, y = exp, fill = bin, color = bin)) + geom_boxplot(alpha = 0.6) + geom_jitter(position=position_jitter(), alpha=0.5) + scale_color_manual(values = c(temp[10], "darkgoldenrod1", temp[2]), guide = F) + scale_fill_manual(values = c(temp[10], "darkgoldenrod1", temp[2]), guide = F) + xlab("") + ylab("Normalized Expression") + ggtitle("") + theme_bw() + theme(panel.border = element_blank(), axis.line = element_line(size = 0.25, colour = "black"), panel.grid.major.x = element_blank())
+ggplot(cytobin_df, aes(x=cyto, y = exp, color = cyto)) + geom_point(alpha = 0.6) + scale_color_gradientn(colors = pal(50), guide = F) + theme_light() + geom_smooth(method = "lm", color = "gray40") + stat_poly_eq(formula = y ~ x, aes(label = paste(..rr.label.., sep = "~~~")), parse = T) + ylab("Normalized Expression") + xlab("CytoTRACE")
+
+# All in Celsr1-
+allt_no_celsr1 = subset(allt, cells = colnames(allt)[which(! colnames(allt) %in% colnames(allt_celsr1))])
+allt_no_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(allt_no_celsr1@assays$RNA@counts))
+allt_no_celsr1$cyto = allt_no_celsr1_cyto$CytoTRACE
+
+# Correlations
+# allt_no_celsr1_cor = newCytoCor(allt_no_celsr1)
+# write.csv(allt_no_celsr1_cor, "~/research/tooth/results/allt_no_celsr1_cor.csv")
+# allt_celsr1_cor = newCytoCor(allt_celsr1)
+# write.csv(allt_celsr1_cor, "~/research/tooth/results/allt_celsr1_cor.csv")
+allt_no_celsr1_cor = read.csv("~/research/tooth/results/allt_no_celsr1_cor.csv")[,2]
+names(allt_no_celsr1_cor) = read.csv("~/research/tooth/results/allt_no_celsr1_cor.csv")[,1]
+allt_celsr1_cor = read.csv("~/research/tooth/results/allt_celsr1_cor.csv")[,2]
+names(allt_celsr1_cor) = read.csv("~/research/tooth/results/allt_celsr1_cor.csv")[,1]
+
+# Correlation in Celsr1+ vs Celsr1-
+common_allt_gene = names(allt_celsr1_cor)[which(names(allt_celsr1_cor) %in% names(allt_no_celsr1_cor))]
+allt_cor_df = data.frame(gene = common_allt_gene, celsr1 = allt_celsr1_cor[match(common_allt_gene, names(allt_celsr1_cor))], no_celsr1 = allt_no_celsr1_cor[match(common_allt_gene, names(allt_no_celsr1_cor))])
+allt_cor_df$dif = allt_cor_df$celsr1 - allt_cor_df$no_celsr1
+ggplot(allt_cor_df, aes(x = no_celsr1, y = celsr1, color = abs(dif))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + xlab("Correlation of Gene w/ CytoTRACE in Celsr1- Cells") + ylab("Correlation of Gene w/ CytoTRACE in Celsr1+ Cells") + geom_text_repel(data = allt_cor_df[which(allt_cor_df$dif > 0.55),], aes(label = gene), color = plasma(100)[10])
+
+#
+allt_no_celsr1$bin <- allt_no_celsr1$cyto
+allt_no_celsr1$bin[which(allt_no_celsr1$cyto <= quantile(allt_no_celsr1$cyto, 0.33))] <- "Low"
+allt_no_celsr1$bin[which(allt_no_celsr1$cyto > quantile(allt_no_celsr1$cyto, 0.33) & allt_no_celsr1$cyto <= quantile(allt_no_celsr1$cyto, 0.66))] <- "Medium"
+allt_no_celsr1$bin[which(allt_no_celsr1$cyto > quantile(allt_no_celsr1$cyto, 0.66))] <- "High"
+Idents(allt_no_celsr1) = allt_no_celsr1$bin
+no_celsr1_deg = FindAllMarkers(allt_no_celsr1, only.pos = F, logfc.threshold = 0)
+no_celsr1_deg$isSig = no_celsr1_deg$p_val_adj < 0.05
+no_celsr1_deg$cluster_isSig = paste0(no_celsr1_deg$cluster, "_", no_celsr1_deg$isSig)
+no_celsr1_deg_sig = no_celsr1_deg[which(no_celsr1_deg$p_val_adj < 0.05),]
+no_celsr1_deg_sig_pos = no_celsr1_deg_sig[which(no_celsr1_deg_sig$avg_log2FC > 0),]
+
 createCytoBINsInGene = function(obj, gene) {
   gene_pos_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
   gene_obj = subset(obj, cells = gene_pos_cells)
+  gene_obj_cyto = CytoTRACE::CytoTRACE(as.matrix(gene_obj@assays$RNA@counts))
+  gene_obj$cyto = gene_obj_cyto$CytoTRACE
   
   gene_obj$bin <- gene_obj$cyto
   gene_obj$bin[which(gene_obj$cyto <= quantile(gene_obj$cyto, 0.33))] <- "Low"
@@ -646,12 +881,12 @@ createCytoBINsInGene = function(obj, gene) {
   gene_obj$bin[which(gene_obj$cyto <= 0.33)] <- "Low"
   gene_obj$bin[which(gene_obj$cyto > 0.33 & gene_obj$cyto <= 0.66)] <- "Medium"
   gene_obj$bin[which(gene_obj$cyto > 0.66)] <- "High"
-  # return(gene_obj)
-  Idents(gene_obj) = gene_obj$bin
-  deg = FindAllMarkers(gene_obj, only.pos = F, logfc.threshold = 0)
-  deg = deg[which(deg$p_val_adj < 0.05),]
-  deg$cluster_sign = paste0(sign(deg$avg_log2FC), deg$cluster)
-  return(deg)
+  return(list(gene_obj_cyto, gene_obj))
+  # Idents(gene_obj) = gene_obj$bin
+  # deg = FindAllMarkers(gene_obj, only.pos = F, logfc.threshold = 0)
+  # deg = deg[which(deg$p_val_adj < 0.05),]
+  # deg$cluster_sign = paste0(sign(deg$avg_log2FC), deg$cluster)
+  # return(deg)
 }
 
 mergeToothJawCytoBIN = function(obj1, obj2, gene) {
@@ -704,7 +939,7 @@ mergeToothJawCytoBIN2 = function(obj1, obj2, gene) {
   cytobin_df = data.frame(bin = gene_obj2$bin, exp = colSums(gene_obj2@assays$RNA@data[c("ENSMZEG00005018585", "ppp2r2ca", "mpzl2b"),]), cyto = gene_obj2$cyto, dataset = "Cichlid")
   cytobin_df = rbind(cytobin_df, data.frame(bin = gene_obj2$bin, exp = colSums(gene_obj2@assays$RNA@data[c("ENSMZEG00005018585", "ppp2r2ca", "mpzl2b"),]), cyto = gene_obj2$cyto, dataset = "Cichlid"))
   
-  return(list(deg, cytobin_df))
+  return(deg)
 }
 mergeToothJawCytoBIN3 = function(obj1, obj2, gene) {
   gene_pos_cells = colnames(obj1)[which(obj1@assays$RNA@counts[gene,] > 0)]
@@ -762,6 +997,12 @@ cytoCor = function(obj, gene) {
   names(gene_cors) = non_zero_genes
   return(gene_cors)
 }
-celsr1Shape = function(obj, gene) {
-  
+newCytoCor = function(obj) {
+  mat = obj@assays$RNA@counts
+  mat[which(mat > 1)] = 1
+  mat_rowsums = rowSums(mat)
+  non_zero_genes = names(mat_rowsums)[which(mat_rowsums >= 3)]
+  gene_cors = unlist(mclapply(non_zero_genes, function(x) cor(obj@assays$RNA@data[x,], obj$cyto), mc.cores = detectCores()))
+  names(gene_cors) = non_zero_genes
+  return(gene_cors)
 }

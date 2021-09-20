@@ -1908,3 +1908,213 @@ cytoScoreByIdent(all_obj_celsr1)
 gene_cyto_df = data.frame(data = colSums(all_obj_celsr1@assays$RNA@data[all_obj_celsr1_deg$gene[1:200],]), cyto = all_obj_celsr1$cyto, bin = all_obj_celsr1$bin, gene = "Celsr1")
 gene_cyto_df$bin = factor(gene_cyto_df$bin, levels = c("High", "Medium", "Low"))
 ggplot(gene_cyto_df, aes(x = bin, y = data, fill = bin, color = bin)) + geom_boxplot(alpha = 0.6) + geom_jitter(alpha=0.1) + xlab("") + ylab("Expression of BIN DEGs") + theme(panel.grid.major.x = element_blank()) + theme_bw() + scale_color_manual(values = c(temp[10], "darkgoldenrod1", temp[2])) + scale_fill_manual(values = c(temp[10], "darkgoldenrod1", temp[2]))
+
+# Ameloblast Trajectory
+igor_epi = readRDS("~/research/tooth/data/igor_incsr_epi.rds")
+igor_epi_cyto = readRDS("~/research/tooth/data/igor_incsr_epi_cyto.rds")
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+pal = colorRampPalette(temp)
+FeaturePlot(igor_epi, "cyto", pt.size = 2.5) + scale_color_gradientn(colors = pal(100))
+amb_genes = c("Six1", "Bex1", "Sox2", "Moxd1", "Sox11", "Etv4", "Ascl5", "Ell2", "Satb2", "Sox21", "Mafb", "Foxq1", "Foxo1", "Cdkn2b", "Runx2", "Klf5", "Prdm1")
+big_ones = c("Enam", "Klk4", "Odam", "Gm17660")
+new_amb_genes = c("Ngfr", "Mdk", "Vwa2", "Cks1b", "Stmn1", "Enam", "Klk4", "Odam", "Gm17660")
+amb_df = data.frame()
+for (amb_gene in all_amb_sig_narrow_post) {
+  # amb_df = rbind(amb_df, data.frame(gene = amb_gene, data = igor_epi@assays$RNA@counts[amb_gene,], cyto  = ))
+  amb_df = rbind(amb_df, data.frame(gene = amb_gene, cyto = igor_epi$cyto[which(igor_epi@assays$RNA@counts[amb_gene,] > 0)] ))
+  # amb_df = rbind(amb_df, data.frame(gene = amb_gene, cyto = igor_epi$cyto[which(igor_epi@assays$RNA@counts[amb_gene,] > 0)]*igor_epi@assays$RNA@data[amb_gene,][which(igor_epi@assays$RNA@counts[amb_gene,] > 0)] ))
+}
+amb_df$gene = factor(amb_df$gene, levels = amb_genes)
+ggplot(amb_df, aes(x = gene, y = cyto, color = cyto, fill = cyto)) + geom_boxplot() + geom_point(position = position_jitter()) + scale_color_gradientn(colors = pal(50)) + scale_fill_gradientn(colors = pal(50))
+
+amb_pre_secr = c("Six1", "Bex1", "Sox2", "Moxd1", "Sox11", "Etv4", "Ascl5")
+amb_sim_res = list()
+amb_sim_df = data.frame()
+all_amb_sig = rownames(igor_epi)
+for (amb_gene in amb_pre_secr) {
+  print(amb_gene)
+  amb_sim_res[[amb_gene]] = findCoexpressedGenes(obj = igor_epi, gene = amb_gene)[[1]]
+  amb_sim_res[[amb_gene]] = amb_sim_res[[amb_gene]][which(amb_sim_res[[amb_gene]]$p_val_adj < 0.05),]
+  all_amb_sig = all_amb_sig[which(all_amb_sig %in% rownames(amb_sim_res[[amb_gene]]))]
+}
+
+all_amb_sig_narrow_pre = c()
+for (amb_gene in all_amb_sig) {
+  if ( quantile(igor_epi$cyto[which(igor_epi@assays$RNA@counts[amb_gene,] > 0)], 0.25) > 0.7 ) {
+    all_amb_sig_narrow_pre = c(all_amb_sig_narrow_pre, amb_gene)
+  }
+}
+
+amb_post_secr = c("Foxq1", "Foxo1", "Cdkn2b", "Runx2", "Klf5", "Prdm1")
+amb_sim_res = list()
+amb_sim_df = data.frame()
+all_amb_sig = c()
+for (amb_gene in amb_post_secr) {
+  print(amb_gene)
+  amb_sim_res[[amb_gene]] = findCoexpressedGenes(obj = igor_epi, gene = amb_gene)[[1]]
+  amb_sim_res[[amb_gene]] = amb_sim_res[[amb_gene]][which(amb_sim_res[[amb_gene]]$p_val_adj < 0.05),]
+  all_amb_sig = c(all_amb_sig, rownames(amb_sim_res[[amb_gene]]))
+}
+table(table(all_amb_sig))
+all_amb_sig_df = data.frame(table(all_amb_sig))
+all_amb_sig_high_names = as.vector(all_amb_sig_df$all_amb_sig[which(all_amb_sig_df$Freq >= 5)])
+
+all_amb_sig_narrow_post = c()
+for (amb_gene in all_amb_sig_high_names) {
+  if ( quantile(igor_epi$cyto[which(igor_epi@assays$RNA@counts[amb_gene,] > 0)], 0.75) < 0.5 ) {
+    all_amb_sig_narrow_post = c(all_amb_sig_narrow_post, amb_gene)
+  }
+}
+
+all_amb = unique(c(amb_genes, big_ones, all_amb_sig_narrow_pre, all_amb_sig_narrow_post))
+library("SeuratWrappers")
+library("monocle3")
+Seurat_Object_Diet <- DietSeurat(igor_epi, graphs = "umap")
+ie.cds = as.cell_data_set(Seurat_Object_Diet)
+ie.cds = preprocess_cds(ie.cds, num_dim = 100, use_genes = all_amb) # "You're computing too large a percentage of total singular values, use a standard svd instead."
+# ie.cds = align_cds(ie.cds, alignment_group = "batch")
+ie.cds <- reduce_dimension(ie.cds)
+ie.cds <- cluster_cells(ie.cds)
+ie.cds <- learn_graph(ie.cds, use_partition = F)
+ie.cds <- order_cells(ie.cds)
+igor_epi = Seurat::AddMetaData(object = igor_epi, metadata = ie.cds@principal_graph_aux@listData$UMAP$pseudotime, col.name = "amb_time")
+plot_cells(ie.cds, color_cells_by = "pseudotime", label_cell_groups=FALSE, label_leaves=FALSE, label_branch_points=FALSE, graph_label_size=0, cell_size = 0.9)
+myFeaturePlot(igor_epi, feature = "amb_time", na.blank = T, my.col.pal = colorRampPalette(inferno(100)), my.pt.size = 1.5)
+
+jaw = readRDS("~/research/tooth/data/jpool.rds")
+jaw$cyto = CytoTRACE::CytoTRACE(as.matrix(jaw@assays$RNA@counts))$CytoTRACE
+Idents(jaw) = jaw$seurat_clusters
+jaw = subset(jaw, cells = colnames(jaw)[which(jaw$seurat_clusters %in% c(0, 1, 3, 4, 7))])
+FeaturePlot(jaw, "cyto", pt.size = 1.5) + scale_color_gradientn(colors = pal(50))
+
+ens_gene_info = read.csv("~/research/all_research/ens_hgnc_description.csv")
+mz_amb_genes = ens_gene_info$gene_raw[match(c(toupper(new_amb_genes), toupper(amb_genes)), ens_gene_info$hgnc)]
+mz_amb_genes = mz_amb_genes[which(!is.na(mz_amb_genes))]
+mz_amb_df = data.frame()
+for (mz_amb_gene in mz_amb_genes) {
+  if (length(which(jaw@assays$RNA@counts[mz_amb_gene,] > 0))) {
+    # mz_amb_df = rbind(mz_amb_df, data.frame(gene = mz_amb_gene, data = igor_epi@assays$RNA@counts[mz_amb_gene,], cyto  = ))
+    mz_amb_df = rbind(mz_amb_df, data.frame(gene = mz_amb_gene, cyto = jaw$cyto[which(jaw@assays$RNA@counts[mz_amb_gene,] > 0)] ))
+    # mz_amb_df = rbind(mz_amb_df, data.frame(gene = mz_amb_gene, cyto = igor_epi$cyto[which(igor_epi@assays$RNA@counts[mz_amb_gene,] > 0)]*igor_epi@assays$RNA@data[mz_amb_gene,][which(igor_epi@assays$RNA@counts[mz_amb_gene,] > 0)] )) 
+  }
+}
+mz_amb_df$gene = factor(mz_amb_df$gene, levels = mz_amb_genes)
+ggplot(mz_amb_df, aes(x = gene, y = cyto, color = cyto, fill = cyto)) + geom_boxplot() + geom_point(position = position_jitter()) + scale_color_gradientn(colors = pal(50)) + scale_fill_gradientn(colors = pal(50))
+
+jaw = subset(jaw, cells = colnames(jaw)[which(colSums(jaw@assays$RNA@counts[mz_amb_genes,]) > 0)])
+Seurat_Object_Diet <- DietSeurat(jaw, graphs = "umap")
+jaw.cds = as.cell_data_set(Seurat_Object_Diet)
+jaw.cds = preprocess_cds(jaw.cds, num_dim = 100, use_genes = mz_amb_genes) # "You're computing too large a percentage of total singular values, use a standard svd instead."
+# jaw.cds = align_cds(jaw.cds, alignment_group = "batch")
+jaw.cds <- reduce_dimension(jaw.cds)
+jaw.cds <- cluster_cells(jaw.cds)
+jaw.cds <- learn_graph(jaw.cds, use_partition = F)
+jaw.cds <- order_cells(jaw.cds)
+jaw = Seurat::AddMetaData(object = jaw, metadata = jaw.cds@principal_graph_aux@listData$UMAP$pseudotime, col.name = "amb_time")
+plot_cells(jaw.cds, color_cells_by = "pseudotime", label_cell_groups=FALSE, label_leaves=FALSE, label_branch_points=FALSE, graph_label_size=0, cell_size = 0.9)
+
+all_pre = unique(c(amb_pre_secr, all_amb_sig_narrow_pre))
+all_post = unique(c(amb_post_secr, all_amb_sig_narrow_post))
+mz_pre = ens_gene_info$gene_raw[match(toupper(all_pre), ens_gene_info$hgnc)]
+mz_post = ens_gene_info$gene_raw[match(toupper(all_post), ens_gene_info$hgnc)]
+expressionOfList(obj = jaw, gene_list = mz_pre[which(! is.na(mz_pre) )])[[1]]
+expressionOfList(obj = jaw, gene_list = mz_post[which(! is.na(mz_post) )])[[1]]
+myFeaturePlot(jaw, feature = "amb_time", na.blank = T, my.col.pal = colorRampPalette(plasma(100)), my.pt.size = 1.5)
+
+
+# Odontoblast Trajectory
+igor_mes = readRDS("~/research/tooth/data/igor_incsr_mes.rds")
+my_igor_mes = readRDS("~/research/tooth/data/igor_incsr_mes_my.RDS")
+odb_df = data.frame()
+odb_genes = c("Sall1", "Notum", "Dkk1", "Wisp1", "Slc8a3", "Dspp", "Dmp1", "Nupr1", "Smpd3", "Wnt6")
+for (odb_gene in odb_genes) {
+  # amb_df = rbind(amb_df, data.frame(gene = amb_gene, data = igor_epi@assays$RNA@counts[amb_gene,], cyto  = ))
+  odb_df = rbind(odb_df, data.frame(gene = odb_gene, cyto = igor_epi$cyto[which(igor_mes@assays$RNA@counts[odb_gene,] > 0)] ))
+  # amb_df = rbind(amb_df, data.frame(gene = amb_gene, cyto = igor_epi$cyto[which(igor_epi@assays$RNA@counts[amb_gene,] > 0)]*igor_epi@assays$RNA@data[amb_gene,][which(igor_epi@assays$RNA@counts[amb_gene,] > 0)] ))
+}
+odb_df$gene = factor(odb_df$gene, levels = odb_genes)
+ggplot(odb_df, aes(x = gene, y = cyto, color = cyto, fill = cyto)) + geom_boxplot() + geom_point(position = position_jitter()) + scale_color_gradientn(colors = pal(50)) + scale_fill_gradientn(colors = pal(50))
+
+odb_pre = c("Sall1", "Notum", "Dkk1")
+all_odb_sig = data.frame(genes = rownames(igor_mes), row.names = rownames(igor_mes))
+for (odb_gene in odb_pre) {
+  print(odb_gene)
+  res = findCoexpressedGenes(obj = igor_mes, gene = odb_gene)[[1]]
+  res = res[which(res$p_val_adj < 0.05),]
+  res$neg_log_q = -log10(res$p_val_adj)
+  all_odb_sig[,odb_gene] = 0
+  all_odb_sig[rownames(res),odb_gene] = res$neg_log_q
+}
+all_odb_sig$sum = rowSums(all_odb_sig[,c(2:ncol(all_odb_sig))])
+hist(all_odb_sig$sum, breaks = 40)
+all_odb_sig_pre_names = as.vector(all_odb_sig_pre$genes[which(all_odb_sig_pre$sum >= quantile(all_odb_sig_pre$sum, 0.999, na.rm = T))])
+length(which(! all_odb_sig_pre_names %in% odb_genes))
+all_odb_sig_pre = all_odb_sig
+
+odb_early = c("Wisp1", "Slc8a3")
+all_odb_sig = data.frame(genes = rownames(igor_mes), row.names = rownames(igor_mes))
+for (odb_gene in odb_early) {
+  print(odb_gene)
+  res = findCoexpressedGenes(obj = igor_mes, gene = odb_gene)[[1]]
+  res = res[which(res$p_val_adj < 0.05),]
+  res$neg_log_q = -log10(res$p_val_adj)
+  all_odb_sig[,odb_gene] = 0
+  all_odb_sig[rownames(res),odb_gene] = res$neg_log_q
+}
+all_odb_sig$sum = rowSums(all_odb_sig[,c(2:ncol(all_odb_sig))])
+hist(all_odb_sig$sum, breaks = 40)
+all_odb_sig_early_names = as.vector(all_odb_sig$genes[which(all_odb_sig$sum >= quantile(all_odb_sig$sum, 0.95, na.rm = T))])
+length(which(! all_odb_sig_early_names %in% odb_genes))
+all_odb_sig_early = all_odb_sig
+
+odb_late = c("Dmp1", "Nupr1")
+all_odb_sig = data.frame(genes = rownames(igor_mes), row.names = rownames(igor_mes))
+for (odb_gene in odb_late) {
+  print(odb_gene)
+  res = findCoexpressedGenes(obj = igor_mes, gene = odb_gene)[[1]]
+  res = res[which(res$p_val_adj < 0.05),]
+  res$neg_log_q = -log10(res$p_val_adj)
+  all_odb_sig[,odb_gene] = 0
+  all_odb_sig[rownames(res),odb_gene] = res$neg_log_q
+}
+all_odb_sig$sum = rowSums(all_odb_sig[,c(2:ncol(all_odb_sig))])
+hist(all_odb_sig$sum, breaks = 40)
+all_odb_sig_late_names = as.vector(all_odb_sig$genes[which(all_odb_sig$sum >= quantile(all_odb_sig$sum, 0.95, na.rm = T))])
+length(which(! all_odb_sig_late_names %in% odb_genes))
+all_odb_sig_late = all_odb_sig
+
+other_odb_genes = c("Tubb3", "Srms", "Etv4", "Wnt10a", "Bmp8a", "Itga4", "Fgf3", "D430041D05Rik", "Pipox")
+
+library("SeuratWrappers")
+library("monocle3")
+theory_genes = c("Celsr1", "Thy1", "Mki67", "Dspp")
+Seurat_Object_Diet <- DietSeurat(igor_mes, graphs = "umap")
+i_mes.cds = as.cell_data_set(Seurat_Object_Diet)
+# i_mes.cds <- estimate_size_factors(i_mes.cds)
+# i_mes.cds@rowRanges@elementMetadata@listData[["gene_short_name"]] <- rownames(igor_mes[["RNA"]])
+i_mes.cds = preprocess_cds(i_mes.cds, num_dim = 100, use_genes = unique(c(theory_genes, other_odb_genes, all_odb_sig_pre_names, odb_genes))) # "You're computing too large a percentage of total singular values, use a standard svd instead."
+# i_mes.cds = align_cds(i_mes.cds, alignment_group = "batch")
+i_mes.cds <- reduce_dimension(i_mes.cds)
+i_mes.cds <- cluster_cells(i_mes.cds)
+i_mes.cds <- learn_graph(i_mes.cds, use_partition = F)
+i_mes.cds <- order_cells(i_mes.cds)
+igor_mes = Seurat::AddMetaData(object = igor_mes, metadata = i_mes.cds@principal_graph_aux@listData$UMAP$pseudotime, col.name = "odb_time")
+my_igor_mes = Seurat::AddMetaData(object = my_igor_mes, metadata = i_mes.cds@principal_graph_aux@listData$UMAP$pseudotime, col.name = "odb_time")
+plot_cells(i_mes.cds, color_cells_by = "pseudotime", label_cell_groups=FALSE, label_leaves=FALSE, label_branch_points=FALSE, graph_label_size=0, cell_size = 0.9)
+myFeaturePlot(igor_mes, feature = "odb_time", na.blank = T, my.col.pal = colorRampPalette(plasma(100)), my.pt.size = 1.5)
+myFeaturePlot(my_igor_mes, feature = "odb_time", na.blank = T, my.col.pal = colorRampPalette(plasma(100)), my.pt.size = 1.5)
+
+p_gene = "Nupr1"
+p = plot_cells(i_mes.cds, color_cells_by = "pseudotime", label_cell_groups=FALSE, label_leaves=FALSE, label_branch_points=FALSE, graph_label_size=0, cell_size = 0.9)
+trj_umap = p$data[,c(1,2)]
+trj_umap$data = igor_mes@assays$RNA@data[p_gene,]
+trj_umap$annot = igor_mes$annot
+trj_umap = trj_umap[order(trj_umap$data, decreasing = F),]
+ggplot(trj_umap, aes(data_dim_1, data_dim_2, color = data)) + geom_point() + scale_color_gradientn(colors=viridis(50)) + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + ggtitle(p_gene)
+
+ggplot(trj_umap, aes(data_dim_1, data_dim_2, color = annot)) + geom_point() + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + ggtitle("Annotation")
+
+graph_test_res <- graph_test(i_mes.cds, neighbor_graph="principal_graph", cores=4)
+pr_deg_ids <- row.names(subset(graph_test_res, q_value < 0.05))
+plot_cells(i_mes.cds, genes=rownames(graph_test_res[order(graph_test_res$q_value, decreasing = F)[1:10],]), show_trajectory_graph=FALSE, label_cell_groups=FALSE, label_leaves=FALSE, cell_size = 0.8)
