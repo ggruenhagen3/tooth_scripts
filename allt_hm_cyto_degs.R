@@ -24,7 +24,7 @@ createCytoBINsInGene = function(obj, gene) {
 }
 
 # CM Celsr1+ DEGs
-allt = readRDS("~/research/tooth/data/allt.rds")
+allt = readRDS("allt.rds")
 res = createCytoBINsInGene(allt, "CELSR1")
 allt_celsr1_ctyo = res[[1]]
 allt_celsr1 = res[[2]]
