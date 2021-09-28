@@ -387,6 +387,33 @@ write.csv(jaw_hits_hgnc, "~/research/tooth/results/jaw_hgnc_mammal_ovlp.csv")
 # *************************************************************************************************************
 # Figure 3 ====================================================================================================
 # *************************************************************************************************************
+highligtCelsr1Plot = function(obj, my.pt.size = 2, my.alpha.min = 0.4, my.alpha.max = 1, doLabel = F, my.label.size = 4, showGuide = F) {
+  if ("celsr1a" %in% rownames(obj)) {
+    celsr1_name = "celsr1a"
+  }
+  if ("Celsr1" %in% rownames(obj)) {
+    celsr1_name = "Celsr1"
+  }
+  if ("CELSR1" %in% rownames(obj)) {
+    celsr1_name = "CELSR1"
+  }
+  values = obj@meta.data[, "cyto"]
+  df = as.data.frame(obj@reductions$umap@cell.embeddings)
+  df$value = values
+  df$celsr1Pos = obj@assays$RNA@counts[celsr1_name,] > 0
+  df$ident = Idents(obj)
+  df = df[order(df$value, na.last = F, decreasing = F),]
+  temp = rev(brewer.pal(11,"Spectral"))
+  temp[6] = "gold" # this is what plotCytoTRACE uses
+  pal = colorRampPalette(temp)
+  cnames <- aggregate(cbind(UMAP_1, UMAP_2) ~ ident, data=df, FUN=mean)
+  p = ggplot(df, aes(UMAP_1, UMAP_2, color = value, alpha = celsr1Pos, shape = celsr1Pos)) + geom_point(size = my.pt.size) + scale_color_gradientn(colors = pal(50), guide = F) + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_alpha_manual(values = c(my.alpha.min, my.alpha.max), guide = F) + scale_shape_manual(values = c(1, 19), guide = F)
+  if (showGuide)
+    p = p + scale_color_gradientn(colors = pal(50))
+  if (doLabel)
+    p = p + geom_text_repel(data=cnames, aes(UMAP_1, UMAP_2, label = ident), size=my.label.size, inherit.aes = FALSE)
+  return(p)
+}
 pdf("~/research/tooth/results/tj_jaw_cyto.pdf", width = 5.5, height = 5)
 FeaturePlot(tj_jaw, "cyto", order = T) + scale_color_gradientn(colors = pal(100)) + ggtitle("") + theme_void()
 dev.off()
@@ -394,10 +421,32 @@ pdf("~/research/tooth/results/incsr_cyto.pdf", width = 5.5, height = 5)
 FeaturePlot(igor_incsr, "cyto", order = T) + scale_color_gradientn(colors = pal(100)) + ggtitle("") + theme_void()
 dev.off()
 pdf("~/research/tooth/results/incsr_epi_cyto.pdf", width = 5.5, height = 5)
+FeaturePlot(igor_incsr_epi, "cyto", order = T) + scale_color_gradientn(colors = pal(100)) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/incsr_epi_cyto.pdf", width = 5.5, height = 5)
 FeaturePlot(igor_incsr_epi, "cyto", order = T, pt.size = 1.5) + scale_color_gradientn(colors = pal(100)) + ggtitle("") + theme_void()
 dev.off()
 pdf("~/research/tooth/results/im_cyto.pdf", width = 5.5, height = 5)
 FeaturePlot(im, "cyto", order = T) + scale_color_gradientn(colors = pal(100)) + ggtitle("") + theme_void()
+dev.off()
+
+pdf("~/research/tooth/results/tj_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(tj, my.pt.size = 4) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/jaw_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(jaw, my.pt.size = 4) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/incsr_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(incsr) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/incsr_epi_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void())
+dev.off()
+pdf("~/research/tooth/results/im_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(im, my.pt.size = 1, doLabel = T) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/hm_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(hm, my.pt.size = 1, doLabel = T) + ggtitle("") + theme_void()
 dev.off()
 
 pdf("~/research/tooth/results/tj_jaw_cyto_celsr1.pdf", width = 5.5, height = 5)
