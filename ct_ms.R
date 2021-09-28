@@ -825,14 +825,30 @@ celsr1_deg$cluster_isSig = paste0(celsr1_deg$cluster, "_", celsr1_deg$isSig)
 celsr1_deg_sig = celsr1_deg[which(celsr1_deg$p_val_adj < 0.05),]
 celsr1_deg_sig_pos = celsr1_deg_sig[which(celsr1_deg_sig$avg_log2FC > 0),]
 
-ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = cluster_isSig)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_manual(values = c("gray", temp[10], "gray", temp[2], "gray", "gold"), guide = F)
+# Volcano Plot
+celsr1_deg$col = plyr::revalue(celsr1_deg$cluster, replace = c("Low" = rev(brewer.pal(11,"Spectral"))[2], "Medium" = "gold", "High" = rev(brewer.pal(11,"Spectral"))[10]))
+celsr1_deg$col[which(celsr1_deg$p_val_adj >= 0.05)] = "gray"
+celsr1_deg$abs_pct_dif = abs(celsr1_deg$pct.1 - celsr1_deg$pct.2)
+celsr1_deg$col[which( (celsr1_deg$abs_pct_dif < 0.05 | abs(celsr1_deg$avg_log2FC) < 0.25) )] = "gray"
+pdf("~/scratch/d_tooth/results/igor/allt/cm_celsr1_sig_thresh.pdf", width = 6, height = 6)
+ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity()
+dev.off()
 
 # Expression of CytoBIN DEGs vs CytoTRACE
+library(ggpmisc)
 celsr1_dif_genes = unique(celsr1_deg_sig$gene)
-cytobin_df = data.frame(bin = allt_celsr1$bin, exp = colSums(allt_celsr1@assays$RNA@data[celsr1_dif_genes,]), cyto = allt_celsr1$cyto, dataset = "All")
+cytobin_df = data.frame(bin = allt_celsr1$bin, exp = colSums(allt_celsr1@assays$RNA@data[celsr1_deg_sig$gene[which(celsr1_deg_sig$cluster == "Low" & celsr1_deg_sig$avg_log2FC > 0)],]), bin_deg = "Low", cyto = allt_celsr1$cyto, dataset = "All")
+cytobin_df = rbind(cytobin_df, data.frame(bin = allt_celsr1$bin, exp = colSums(allt_celsr1@assays$RNA@data[celsr1_deg_sig$gene[which(celsr1_deg_sig$cluster == "Medium" & celsr1_deg_sig$avg_log2FC > 0)],]), bin_deg = "Medium", cyto = allt_celsr1$cyto, dataset = "All"))
+cytobin_df = rbind(cytobin_df, data.frame(bin = allt_celsr1$bin, exp = colSums(allt_celsr1@assays$RNA@data[celsr1_deg_sig$gene[which(celsr1_deg_sig$cluster == "High" & celsr1_deg_sig$avg_log2FC > 0)],]), bin_deg = "High", cyto = allt_celsr1$cyto, dataset = "All"))
+cytobin_df = rbind(cytobin_df, data.frame(bin = allt_celsr1$bin, exp = colSums(allt_celsr1@assays$RNA@data[ unique(celsr1_deg_sig$gene[which(celsr1_deg_sig$cluster == "High" & celsr1_deg_sig$avg_log2FC > 0)], celsr1_deg_sig$gene[which(celsr1_deg_sig$cluster == "Low" & celsr1_deg_sig$avg_log2FC < 0)]),]), bin_deg = "Test", cyto = allt_celsr1$cyto, dataset = "All"))
 cytobin_df$bin = factor(cytobin_df$bin, levels = c("Low", "Medium", "High"))
-ggplot(cytobin_df, aes(x=bin, y = exp, fill = bin, color = bin)) + geom_boxplot(alpha = 0.6) + geom_jitter(position=position_jitter(), alpha=0.5) + scale_color_manual(values = c(temp[10], "darkgoldenrod1", temp[2]), guide = F) + scale_fill_manual(values = c(temp[10], "darkgoldenrod1", temp[2]), guide = F) + xlab("") + ylab("Normalized Expression") + ggtitle("") + theme_bw() + theme(panel.border = element_blank(), axis.line = element_line(size = 0.25, colour = "black"), panel.grid.major.x = element_blank())
-ggplot(cytobin_df, aes(x=cyto, y = exp, color = cyto)) + geom_point(alpha = 0.6) + scale_color_gradientn(colors = pal(50), guide = F) + theme_light() + geom_smooth(method = "lm", color = "gray40") + stat_poly_eq(formula = y ~ x, aes(label = paste(..rr.label.., sep = "~~~")), parse = T) + ylab("Normalized Expression") + xlab("CytoTRACE")
+cytobin_df$bin_deg = factor(cytobin_df$bin_deg, levels = c("Low", "Medium", "High", "Test"))
+png("allt_celsr1_boxplot.png", width = 900, height = 600, res = 100)
+ggplot(cytobin_df, aes(x=bin_deg, y = exp, fill = bin, color = bin)) + geom_boxplot(alpha = 0.6) + geom_point(stat = "identity", position = position_jitterdodge(), alpha = 0.2) + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + scale_fill_manual(values = c(temp[2], temp[6], temp[10])) + xlab("CytoBIN DEGs") + ylab("Normalized Expression") + ggtitle("") + theme_bw() + theme(panel.border = element_blank(), axis.line = element_line(size = 0.25, colour = "black"), panel.grid.major.x = element_blank())
+dev.off()
+png("allt_celsr1_trendline_test.png", width = 900, height = 600, res = 100)
+ggplot(cytobin_df[which(cytobin_df$bin_deg == "Test"),], aes(x=cyto, y = exp, color = cyto)) + geom_point(alpha = 0.6) + scale_color_gradientn(colors = pal(50), guide = F) + theme_light() + geom_smooth(method = "lm", color = "gray40") + stat_poly_eq(formula = y ~ x, aes(label = paste(..rr.label.., sep = "~~~")), parse = T) + ylab("Normalized Expression") + xlab("CytoTRACE")
+dev.off()
 
 # All in Celsr1-
 allt_no_celsr1 = subset(allt, cells = colnames(allt)[which(! colnames(allt) %in% colnames(allt_celsr1))])
@@ -855,6 +871,29 @@ allt_cor_df = data.frame(gene = common_allt_gene, celsr1 = allt_celsr1_cor[match
 allt_cor_df$dif = allt_cor_df$celsr1 - allt_cor_df$no_celsr1
 ggplot(allt_cor_df, aes(x = no_celsr1, y = celsr1, color = abs(dif))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + xlab("Correlation of Gene w/ CytoTRACE in Celsr1- Cells") + ylab("Correlation of Gene w/ CytoTRACE in Celsr1+ Cells") + geom_text_repel(data = allt_cor_df[which(allt_cor_df$dif > 0.55),], aes(label = gene), color = plasma(100)[10])
 
+mat_allt_celsr1 = allt_celsr1@assays$RNA@counts
+mat_allt_celsr1[which(mat_allt_celsr1 > 1)] = 1
+allt_celsr1_cells = rowSums(mat_allt_celsr1)
+mat_allt_no_celsr1 = allt_no_celsr1@assays$RNA@counts
+mat_allt_no_celsr1[which(mat_allt_no_celsr1 > 1)] = 1
+allt_no_celsr1_cells = rowSums(mat_allt_no_celsr1)
+allt_cor_df$num_in_celsr1 = ncol(allt_celsr1)
+allt_cor_df$num_in_no_celsr1 = ncol(allt_no_celsr1)
+# allt_cor_df$num_in_celsr1 = allt_celsr1_cells[match(allt_cor_df$gene, names(allt_celsr1_cells))]
+# allt_cor_df$num_in_no_celsr1 = allt_no_celsr1_cells[match(allt_cor_df$gene, names(allt_no_celsr1_cells))]
+allt_cor_df$p = r_to_p(allt_cor_df$celsr1, allt_cor_df$no_celsr1, allt_cor_df$num_in_celsr1, allt_cor_df$num_in_no_celsr1)
+allt_cor_df$bon = p.adjust(allt_cor_df$p, method = "bonferroni")
+allt_cor_df$neg_log_bon = -log10(allt_cor_df$bon)
+allt_cor_df$isSig = allt_cor_df$bon < 0.05
+pal = colorRamp(plasma(10))
+allt_cor_df$col = rgb(pal( allt_cor_df$neg_log_bon/max(allt_cor_df$neg_log_bon) ), maxColorValue = 255)
+allt_cor_df$col[which(allt_cor_df$neg_log_bon < 30 | abs(allt_cor_df$dif) < 0.3)] = "darkgray"
+png("allt_yc_vs_nc_cor_p.png", width = 800, height = 600, res = 100)
+# ggplot(allt_cor_df, aes(x = dif, y = neg_log_bon, color = neg_log_bon)) + geom_point() + geom_hline(yintercept = -log10(0.05), linetype="dashed") + xlab("R Celsr1+ - R Celsr1-") + ylab(expression(-Log["10"]*" Adjusted P")) + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + geom_text_repel(data = allt_cor_df[which(allt_cor_df$neg_log_bon > 60),], aes(label = gene))
+ggplot(allt_cor_df, aes(x = dif, y = neg_log_bon, color = col)) + geom_point() + geom_hline(yintercept = 30, linetype="dashed") + geom_vline(xintercept = c(-0.3, 0.3), linetype="dashed") + xlab("R Celsr1+ - R Celsr1-") + ylab(expression(-Log["10"]*" Adjusted P")) + scale_color_identity() + theme_bw() + geom_text_repel(data = allt_cor_df[which(allt_cor_df$neg_log_bon > 60),], aes(label = gene))
+dev.off()
+
+
 #
 allt_no_celsr1$bin <- allt_no_celsr1$cyto
 allt_no_celsr1$bin[which(allt_no_celsr1$cyto <= quantile(allt_no_celsr1$cyto, 0.33))] <- "Low"
@@ -867,6 +906,370 @@ no_celsr1_deg$cluster_isSig = paste0(no_celsr1_deg$cluster, "_", no_celsr1_deg$i
 no_celsr1_deg_sig = no_celsr1_deg[which(no_celsr1_deg$p_val_adj < 0.05),]
 no_celsr1_deg_sig_pos = no_celsr1_deg_sig[which(no_celsr1_deg_sig$avg_log2FC > 0),]
 
+# Compare allt Celsr1+ vs Celsr1- CytoBIN DEGs
+celsr1_deg = read.csv("allt_celsr1_deg.csv")
+rownames(celsr1_deg) = celsr1_deg$X
+celsr1_deg$X = NULL
+celsr1_deg_sig = celsr1_deg[which(celsr1_deg$p_val_adj < 0.05),]
+no_celsr1_deg = read.csv("allt_no_celsr1_deg.csv")
+rownames(no_celsr1_deg) = no_celsr1_deg$X
+no_celsr1_deg$X = NULL
+no_celsr1_deg_sig = no_celsr1_deg[which(no_celsr1_deg$p_val_adj < 0.05),]
+
+celsr1_deg_sig_low    = celsr1_deg_sig[which(celsr1_deg_sig$cluster == "Low"),]
+celsr1_deg_sig_medium = celsr1_deg_sig[which(celsr1_deg_sig$cluster == "Medium"),]
+celsr1_deg_sig_high   = celsr1_deg_sig[which(celsr1_deg_sig$cluster == "High"),]
+no_celsr1_deg_sig_low    = no_celsr1_deg_sig[which(no_celsr1_deg_sig$cluster == "Low"),]
+no_celsr1_deg_sig_medium = no_celsr1_deg_sig[which(no_celsr1_deg_sig$cluster == "Medium"),]
+no_celsr1_deg_sig_high   = no_celsr1_deg_sig[which(no_celsr1_deg_sig$cluster == "High"),]
+
+celsr1_y_n_not_common = celsr1_deg_sig_low[which(! celsr1_deg_sig_low$gene %in% no_celsr1_deg_sig_low$gene ),]
+celsr1_y_n_not_common = rbind(celsr1_y_n_not_common, celsr1_deg_sig_medium[which(! celsr1_deg_sig_medium$gene %in% no_celsr1_deg_sig_medium$gene ),])
+celsr1_y_n_not_common = rbind(celsr1_y_n_not_common, celsr1_deg_sig_high[which(! celsr1_deg_sig_high$gene %in% no_celsr1_deg_sig_high$gene ),])
+write.csv(celsr1_y_n_not_common, "~/scratch/d_tooth/results/igor/allt/allt_celsr1_deg_sig_and_not_a_no_celsr1_deg.csv")
+
+num_celsr1_deg_sig = data.frame(aggregate(gene ~ cluster, data = celsr1_deg_sig, length))
+colnames(num_celsr1_deg_sig)[2] = "All Celsr1+ DEG"
+num_celsr1_deg_sig$not_common = aggregate(gene ~ cluster, data = celsr1_y_n_not_common, length)[,2]
+colnames(num_celsr1_deg_sig)[3] = "Celsr1+ DEG and Not Celsr1-"
+num_celsr1_deg_sig = reshape2::melt(num_celsr1_deg_sig)
+png("~/scratch/d_tooth/results/igor/allt/allt_celsr1_deg_sig_vs_no_celsr1_big.png", width = 800, height = 600, res = 100)
+print(ggplot(num_celsr1_deg_sig, aes(x=cluster, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", alpha = 0.8, position=position_dodge2()) + scale_color_manual(values = c("#2dcc84", "gold")) + scale_fill_manual(values = c("#2dcc84", "gold")) + xlab("") + ylab("Number of DEGs"))
+dev.off()
+
+allt$celsr1_bin = "None"
+allt$celsr1_bin[colnames(allt_celsr1)] = paste0("y_", allt_celsr1$bin)
+allt$celsr1_bin[colnames(allt_no_celsr1)] = paste0("n_", allt_no_celsr1$bin)
+Idents(allt) = allt$celsr1_bin
+hvh_deg = FindMarkers(allt, ident.1="y_High", ident.2="n_High")
+mvm_deg = FindMarkers(allt, ident.1="y_Medium", ident.2="n_Medium")
+lvl_deg = FindMarkers(allt, ident.1="y_Low", ident.2="n_Low")
+
+hvh_deg$cluster = "High"
+mvm_deg$cluster = "Medium"
+lvl_deg$cluster = "Low"
+hvh_deg$gene = rownames(hvh_deg)
+mvm_deg$gene = rownames(mvm_deg)
+lvl_deg$gene = rownames(lvl_deg)
+bin_deg_dif = rbind(hvh_deg, mvm_deg, lvl_deg)
+bin_deg_dif_sig = bin_deg_dif[which(bin_deg_dif$p_val_adj < 0.05),]
+write.csv(bin_deg_dif, "~/scratch/d_tooth/results/igor/allt/allt_celsr1_vs_no_celsr1_deg.csv")
+p_df = as.data.frame(table(bin_deg_dif_sig$cluster))
+png("~/scratch/d_tooth/results/igor/allt/allt_y_vs_n_celsr1_deg_sig.png", width = 800, height = 600, res = 100)
+print(ggplot(p_df, aes(x=Var1, y = Freq)) + geom_bar(stat = "identity", alpha = 0.8, position=position_dodge2()) + xlab("") + ylab("Number of DEGs"))
+dev.off()
+
+# Human CytoBIN DEG
+hm = readRDS("~/scratch/d_tooth/data/hm.rds")
+res = createCytoBINsInGene(hm, "CELSR1")
+hm_celsr1_ctyo = res[[1]]
+hm_celsr1 = res[[2]]
+Idents(hm_celsr1) = hm_celsr1$bin
+hm_celsr1_deg = FindAllMarkers(hm_celsr1, only.pos = F, logfc.threshold = 0)
+hm_celsr1_deg$isSig = hm_celsr1_deg$p_val_adj < 0.05
+hm_celsr1_deg$cluster_isSig = paste0(hm_celsr1_deg$cluster, "_", hm_celsr1_deg$isSig)
+hm_celsr1_deg_sig = hm_celsr1_deg[which(hm_celsr1_deg$isSig),]
+
+# Find Human CytoBIN DEGs that are also Cichlid+Mouse CytoBIN DEGs
+hm_celsr1_deg_sig_low    = hm_celsr1_deg_sig[which(hm_celsr1_deg_sig$cluster == "Low"),]
+hm_celsr1_deg_sig_medium = hm_celsr1_deg_sig[which(hm_celsr1_deg_sig$cluster == "Medium"),]
+hm_celsr1_deg_sig_high   = hm_celsr1_deg_sig[which(hm_celsr1_deg_sig$cluster == "High"),]
+
+celsr1_allt_hm_common = celsr1_deg_sig_low[which(! celsr1_deg_sig_low$gene %in% hm_celsr1_deg_sig_low$gene ),]
+celsr1_allt_hm_common = rbind(celsr1_allt_hm_common, celsr1_deg_sig_medium[which(! celsr1_deg_sig_medium$gene %in% hm_celsr1_deg_sig_medium$gene ),])
+celsr1_allt_hm_common = rbind(celsr1_allt_hm_common, celsr1_deg_sig_high[which(! celsr1_deg_sig_high$gene %in% hm_celsr1_deg_sig_high$gene ),])
+write.csv(celsr1_allt_hm_common, "~/scratch/d_tooth/results/igor/allt/allt_celsr1_deg_sig_vs_hm_celsr1_deg_sig_not_common.csv")
+
+num_celsr1_deg_sig = data.frame(aggregate(gene ~ cluster, data = celsr1_deg_sig, length))
+colnames(num_celsr1_deg_sig)[2] = "all"
+num_celsr1_deg_sig$not_common = aggregate(gene ~ cluster, data = celsr1_allt_hm_common, length)[,2]
+num_celsr1_deg_sig = reshape2::melt(num_celsr1_deg_sig)
+png("~/scratch/d_tooth/results/igor/allt//allt_celsr1_deg_sig_vs_hm_celsr1_deg_sig_not_common.png", width = 800, height = 600, res = 100)
+print(ggplot(num_celsr1_deg_sig, aes(x=cluster, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", alpha = 0.8, position=position_dodge2()) + scale_color_manual(values = c("#2dcc84", "orange")) + scale_fill_manual(values = c("#2dcc84", "orange")) + xlab("") + ylab("Number of DEGs"))
+dev.off()
+
+# Human Celsr1+ Correlation vs Cichlid+Mouse Celsr1+ Correlation
+# hm_celsr1_cor = newCytoCor(hm_celsr1)
+allt_celsr1_cor = read.csv("allt_celsr1_cor.csv")[,2]
+names(allt_celsr1_cor) = read.csv("allt_celsr1_cor.csv")[,1]
+hm_celsr1_cor = read.csv("hm_celsr1_cor.csv")[,2]
+names(hm_celsr1_cor) = read.csv("hm_celsr1_cor.csv")[,1]
+
+common_gene = names(allt_celsr1_cor)[which(names(allt_celsr1_cor) %in% names(hm_celsr1_cor))]
+cor_df = data.frame(gene = common_gene, c_m = allt_celsr1_cor[match(common_gene, names(allt_celsr1_cor))], hm = hm_celsr1_cor[match(common_gene, names(hm_celsr1_cor))])
+cor_df$dif = cor_df$c_m - cor_df$hm
+png("~/scratch/d_tooth/results/igor/allt/cm_vs_hm_cyto_cor.png", width = 800, height = 600, res = 100)
+ggplot(cor_df, aes(x = hm, y = c_m, color = abs(dif))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + xlab("R of Gene w/ CytoTRACE in Human Celsr1+ Cells") + ylab("R of Gene w/ CytoTRACE in Cichlid+Mouse Celsr1+ Cells") + geom_text_repel(data = cor_df[which(cor_df$dif > 0.55),], aes(label = gene), color = plasma(100)[10])
+dev.off()
+
+common_gene = names(hm_celsr1_cor)[which(names(hm_celsr1_cor) %in% names(hm_no_celsr1_cor))]
+cor_df = data.frame(gene = common_gene, hm_celsr1 = hm_celsr1_cor[match(common_gene, names(hm_celsr1_cor))], hm_no_celsr1 = hm_no_celsr1_cor[match(common_gene, names(hm_no_celsr1_cor))])
+cor_df$dif = cor_df$hm_celsr1 - cor_df$hm_no_celsr1
+cor_df$num_in_celsr1 = ncol(hm_celsr1)
+cor_df$num_in_no_celsr1 = ncol(hm_no_celsr1)
+# allt_cor_df$num_in_celsr1 = allt_celsr1_cells[match(allt_cor_df$gene, names(allt_celsr1_cells))]
+# allt_cor_df$num_in_no_celsr1 = allt_no_celsr1_cells[match(allt_cor_df$gene, names(allt_no_celsr1_cells))]
+cor_df$p = r_to_p(cor_df$hm_celsr1, cor_df$hm_no_celsr1, cor_df$num_in_celsr1, cor_df$num_in_no_celsr1)
+cor_df$bon = p.adjust(cor_df$p, method = "bonferroni")
+cor_df$neg_log_bon = -log10(cor_df$bon)
+cor_df$isSig = cor_df$bon < 0.05
+pal = colorRamp(plasma(10))
+cor_df$col = rgb(pal( cor_df$neg_log_bon/max(cor_df$neg_log_bon) ), maxColorValue = 255)
+cor_df$col[which(cor_df$neg_log_bon < 30 | abs(cor_df$dif) < 0.3)] = "darkgray"
+png("hm_yc_vs_nc_cor_p.png", width = 800, height = 600, res = 100)
+# ggplot(allt_cor_df, aes(x = dif, y = neg_log_bon, color = neg_log_bon)) + geom_point() + geom_hline(yintercept = -log10(0.05), linetype="dashed") + xlab("R Celsr1+ - R Celsr1-") + ylab(expression(-Log["10"]*" Adjusted P")) + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + geom_text_repel(data = allt_cor_df[which(allt_cor_df$neg_log_bon > 60),], aes(label = gene))
+ggplot(cor_df, aes(x = dif, y = neg_log_bon, color = col)) + geom_point() + geom_hline(yintercept = 30, linetype="dashed") + geom_vline(xintercept = c(-0.3, 0.3), linetype="dashed") + xlab("R Celsr1+ - R Celsr1-") + ylab(expression(-Log["10"]*" Adjusted P")) + scale_color_identity() + theme_bw() + geom_text_repel(data = cor_df[which(cor_df$neg_log_bon > 60),], aes(label = gene))
+dev.off()
+allt_cor_df[,c("hm_bon")] = cor_df[match(allt_cor_df$gene, cor_df$gene), c("bon")]
+allt_cor_df$hm_bon[which( is.na(allt_cor_df$hm_bon) )] = 1
+allt_cor_df$hm_neg_log_bon = -log10(allt_cor_df$hm_bon)
+png("allt_hm_yc_vs_nc_cor_p.png", width = 800, height = 600, res = 100)
+# ggplot(allt_cor_df, aes(x = dif, y = neg_log_bon, color = neg_log_bon)) + geom_point() + geom_hline(yintercept = -log10(0.05), linetype="dashed") + xlab("R Celsr1+ - R Celsr1-") + ylab(expression(-Log["10"]*" Adjusted P")) + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + geom_text_repel(data = allt_cor_df[which(allt_cor_df$neg_log_bon > 60),], aes(label = gene))
+ggplot(allt_cor_df, aes(x = hm_neg_log_bon, y = neg_log_bon, color = col)) + geom_point() + geom_hline(yintercept = 30, linetype="dashed") + geom_vline(xintercept = 30, linetype="dashed") + xlab(expression(-Log["10"]*" Adjusted P of Celsr1+ vs Celsr1- R Dif in Human")) + ylab(expression(-Log["10"]*" Adjusted P of Celsr1+ vs Celsr1- R Dif in C+M")) + scale_color_identity() + theme_bw() + geom_text_repel(data = allt_cor_df[which(allt_cor_df$neg_log_bon > 60),], aes(label = gene))
+dev.off()
+
+# CM Celsr1+ Cor and Number of Cells
+mat_allt_celsr1 = allt_celsr1@assays$RNA@counts
+mat_allt_celsr1[which(mat_allt_celsr1 > 1)] = 1
+allt_celsr1_cells = rowSums(mat_allt_celsr1)
+allt_cor_num_df = data.frame(gene = names(allt_celsr1_cor), cor = unname(allt_celsr1_cor), num_cells = unname(allt_celsr1_cells[match(names(allt_celsr1_cor), names(allt_celsr1_cells))]))
+png("allt_cor_num_cells.png", width = 800, height = 600, res = 100)
+ggplot(allt_cor_num_df, aes(x = num_cells, y = cor, color = cor)) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + xlab("Number of Cells") + ylab("Correlation w/ CytoTRACE")
+dev.off()
+
+# Human Celsr1+ CytoBINs vs Cichlid+Mouse Celsr1+ CytoBINs
+cm_hm_celsr1 = merge(allt_celsr1, hm_celsr1)
+cm_hm_celsr1$celsr1_bin = "None"
+cm_hm_celsr1$celsr1_bin[colnames(allt_celsr1)] = paste0("cm_", allt_celsr1$bin)
+cm_hm_celsr1$celsr1_bin[colnames(hm_celsr1)] = paste0("hm_", hm_celsr1$bin)
+Idents(cm_hm_celsr1) = cm_hm_celsr1$celsr1_bin
+cm_hm_hvh_deg = FindMarkers(cm_hm_celsr1, ident.1="cm_High", ident.2="hm_High")
+cm_hm_mvm_deg = FindMarkers(cm_hm_celsr1, ident.1="cm_Medium", ident.2="hm_Medium")
+cm_hm_lvl_deg = FindMarkers(cm_hm_celsr1, ident.1="cm_Low", ident.2="hm_Low")
+
+cm_hm_hvh_deg$cluster = "High"
+cm_hm_mvm_deg$cluster = "Medium"
+cm_hm_lvl_deg$cluster = "Low"
+cm_hm_hvh_deg$gene = rownames(cm_hm_hvh_deg)
+cm_hm_mvm_deg$gene = rownames(cm_hm_mvm_deg)
+cm_hm_lvl_deg$gene = rownames(cm_hm_lvl_deg)
+bin_deg_dif2 = rbind(cm_hm_hvh_deg, cm_hm_mvm_deg, cm_hm_lvl_deg)
+bin_deg_dif2_sig = bin_deg_dif2[which(bin_deg_dif2$p_val_adj < 0.05),]
+write.csv(bin_deg_dif2, "~/scratch/d_tooth/results/igor/allt/allt_celsr1_vs_hm_celsr1_deg.csv")
+p_df = as.data.frame(table(bin_deg_dif2_sig$cluster))
+png("~/scratch/d_tooth/results/igor/allt/allt_celsr1_vs_hm_celsr1_deg_sig.png", width = 800, height = 600, res = 100)
+print(ggplot(p_df, aes(x=Var1, y = Freq)) + geom_bar(stat = "identity", alpha = 0.8, position=position_dodge2()) + xlab("") + ylab("Number of DEGs"))
+dev.off()
+
+# Human vs Cichlid+Mouse Celsr1+ Volcano Plot
+bin_deg_dif2$col = plyr::revalue(bin_deg_dif2$cluster, replace = c("High" = temp[10], "Medium" = temp[6], "Low" = temp[2]))
+bin_deg_dif2$col[which(bin_deg_dif2$p_val_adj >= 0.05)] = "darkgray"
+bin_deg_dif2$isSig = bin_deg_dif2$p_val_adj >= 0.05
+png("~/scratch/d_tooth/results/igor/allt/allt_celsr1_vs_hm_celsr1_deg_sig_volcano.png", width = 800, height = 600, res = 100)
+ggplot(bin_deg_dif2, aes(x = avg_log2FC, y = -log10(p_val), color = col, alpha = isSig)) + geom_point() + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + scale_alpha_manual(values = c(0.6, 0.1), guide = F)
+dev.off()
+
+# HM Celsr1-
+hm_no_celsr1 = subset(hm, cells = colnames(hm)[which(! colnames(hm) %in% colnames(hm_celsr1))])
+hm_no_celsr1_cyto = CytoTRACE::CytoTRACE(as.matrix(hm_no_celsr1@assays$RNA@counts))
+hm_no_celsr1$cyto = hm_no_celsr1_cyto$CytoTRACE
+
+# R diff in C+M (Celsr1+ - Celsr1-) vs R diff in (Human Celsr1+ - C+M Celsr1+)
+common_gene = names(allt_celsr1_cor)[which(names(allt_celsr1_cor) %in% names(hm_celsr1_cor))]
+cor_df = data.frame(gene = common_gene, c_m = allt_celsr1_cor[match(common_gene, names(allt_celsr1_cor))], hm = hm_celsr1_cor[match(common_gene, names(hm_celsr1_cor))])
+cor_df$dif = cor_df$c_m - cor_df$hm
+common_allt_gene = names(allt_celsr1_cor)[which(names(allt_celsr1_cor) %in% names(allt_no_celsr1_cor))]
+allt_cor_df = data.frame(gene = common_allt_gene, celsr1 = allt_celsr1_cor[match(common_allt_gene, names(allt_celsr1_cor))], no_celsr1 = allt_no_celsr1_cor[match(common_allt_gene, names(allt_no_celsr1_cor))])
+allt_cor_df$dif = allt_cor_df$celsr1 - allt_cor_df$no_celsr1
+allt_cor_df$hm_celsr1 = cor_df$hm[match(allt_cor_df$gene, cor_df$gene)]
+allt_cor_df = allt_cor_df[which( !is.na(allt_cor_df$hm_celsr1) ),]
+allt_cor_df$cm_hm_celsr1_dif = allt_cor_df$celsr1 - allt_cor_df$hm_celsr1
+colnames(allt_cor_df)[4] = "celsr1_no_celsr1_dif"
+png("~/scratch/d_tooth/results/igor/allt/r_dif.png", width = 800, height = 600, res = 100)
+ggplot(allt_cor_df, aes(x = celsr1_no_celsr1_dif, y = cm_hm_celsr1_dif, color = celsr1_no_celsr1_dif + cm_hm_celsr1_dif)) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + xlab("R Celsr1+ - R Celsr1- in C+M") + ylab("(R Celsr1+ C+M) - (R Celsr1+ Human)") + geom_text_repel(data=allt_cor_df[which(allt_cor_df$celsr1_no_celsr1_dif + allt_cor_df$cm_hm_celsr1_dif > 0.8),], aes(label = gene))
+dev.off()
+
+# R diff in C+M (Celsr1+ - Celsr1-) vs R diff in Human (Celsr1+ - Celsr1-)
+common_gene = names(hm_celsr1_cor)[which(names(hm_celsr1_cor) %in% names(hm_no_celsr1_cor))]
+cor_df = data.frame(gene = common_gene, hm_celsr1 = hm_celsr1_cor[match(common_gene, names(hm_celsr1_cor))], hm_no_celsr1 = hm_no_celsr1_cor[match(common_gene, names(hm_no_celsr1_cor))])
+cor_df$dif = cor_df$hm_celsr1 - cor_df$hm_no_celsr1
+common_allt_gene = names(allt_celsr1_cor)[which(names(allt_celsr1_cor) %in% names(allt_no_celsr1_cor))]
+allt_cor_df = data.frame(gene = common_allt_gene, celsr1 = allt_celsr1_cor[match(common_allt_gene, names(allt_celsr1_cor))], no_celsr1 = allt_no_celsr1_cor[match(common_allt_gene, names(allt_no_celsr1_cor))])
+allt_cor_df$cm_dif = allt_cor_df$celsr1 - allt_cor_df$no_celsr1
+allt_cor_df[,c("hm_celsr1", "hm_no_celsr1")] = cor_df[match(allt_cor_df$gene, cor_df$gene), c("hm_celsr1", "hm_no_celsr1")]
+allt_cor_df = allt_cor_df[which( !is.na(allt_cor_df$hm_celsr1) ),]
+allt_cor_df$hm_dif = allt_cor_df$hm_celsr1 - allt_cor_df$hm_no_celsr1
+allt_cor_df$dif_dif = allt_cor_df$cm_dif - allt_cor_df$hm_dif
+png("~/scratch/d_tooth/results/igor/allt/hm_celsr1_vs_no_celsr1_cor.png", width = 800, height = 600, res = 100)
+ggplot(cor_df, aes(x = hm_no_celsr1, y = hm_celsr1, color = abs(hm_celsr1 - hm_no_celsr1))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + xlab("R Celsr1- Human") + ylab("R Celsr1+ Human") + geom_text_repel(data=cor_df[which(cor_df$hm_celsr1 - cor_df$hm_no_celsr1 > 0.5),], aes(label = gene))
+dev.off()
+png("~/scratch/d_tooth/results/igor/allt/allt_hm_celsr1_vs_no_celsr1_cor.png", width = 800, height = 600, res = 100)
+ggplot(allt_cor_df, aes(x = hm_dif, y = cm_dif, color = abs(cm_dif - hm_dif))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + theme_bw() + xlab("R Celsr1+ - R Celsr1- in Human") + ylab("R Celsr1+ - R Celsr1- Cichlid & Mouse") + geom_text_repel(data=allt_cor_df[which(allt_cor_df$cm_dif - allt_cor_df$hm_dif > 0.5),], aes(label = gene))
+dev.off()
+
+# Talha's Genius Idea: (Celsr1+ vs Celsr1- in C+M) vs (Celsr1+ vs Celsr1- in Human)
+hm_no_celsr1$bin <- hm_no_celsr1$cyto
+hm_no_celsr1$bin[which(hm_no_celsr1$cyto <= quantile(hm_no_celsr1$cyto, 0.33))] <- "Low"
+hm_no_celsr1$bin[which(hm_no_celsr1$cyto > quantile(hm_no_celsr1$cyto, 0.33) & hm_no_celsr1$cyto <= quantile(hm_no_celsr1$cyto, 0.66))] <- "Medium"
+hm_no_celsr1$bin[which(hm_no_celsr1$cyto > quantile(hm_no_celsr1$cyto, 0.66))] <- "High"
+Idents(hm_no_celsr1) = hm_no_celsr1$bin
+hm_no_celsr1_deg = FindAllMarkers(hm_no_celsr1, only.pos = F, logfc.threshold = 0)
+hm_no_celsr1_deg$isSig = hm_no_celsr1_deg$p_val_adj < 0.05
+hm_no_celsr1_deg$cluster_isSig = paste0(hm_no_celsr1_deg$cluster, "_", hm_no_celsr1_deg$isSig)
+hm_no_celsr1_deg_sig = hm_no_celsr1_deg[which(hm_no_celsr1_deg$p_val_adj < 0.05),]
+write.csv(hm_no_celsr1_deg, "hm_no_celsr1_deg.csv")
+
+hm_celsr1_deg = read.csv("hm_celsr1_deg.csv")
+hm_celsr1_deg_sig = hm_celsr1_deg[which(hm_celsr1_deg$p_val_adj < 0.05),]
+hm_celsr1_deg_sig_low    = hm_celsr1_deg_sig[which(hm_celsr1_deg_sig$cluster == "Low"),]
+hm_celsr1_deg_sig_medium = hm_celsr1_deg_sig[which(hm_celsr1_deg_sig$cluster == "Medium"),]
+hm_celsr1_deg_sig_high   = hm_celsr1_deg_sig[which(hm_celsr1_deg_sig$cluster == "High"),]
+hm_no_celsr1_deg_sig_low    = hm_no_celsr1_deg_sig[which(hm_no_celsr1_deg_sig$cluster == "Low"),]
+hm_no_celsr1_deg_sig_medium = hm_no_celsr1_deg_sig[which(hm_no_celsr1_deg_sig$cluster == "Medium"),]
+hm_no_celsr1_deg_sig_high   = hm_no_celsr1_deg_sig[which(hm_no_celsr1_deg_sig$cluster == "High"),]
+
+hm_celsr1_y_n_not_common = hm_celsr1_deg_sig_low[which(! hm_celsr1_deg_sig_low$gene %in% hm_no_celsr1_deg_sig_low$gene ),]
+hm_celsr1_y_n_not_common = rbind(hm_celsr1_y_n_not_common, hm_celsr1_deg_sig_medium[which(! hm_celsr1_deg_sig_medium$gene %in% hm_no_celsr1_deg_sig_medium$gene ),])
+hm_celsr1_y_n_not_common = rbind(hm_celsr1_y_n_not_common, hm_celsr1_deg_sig_high[which(! hm_celsr1_deg_sig_high$gene %in% hm_no_celsr1_deg_sig_high$gene ),])
+write.csv(hm_celsr1_y_n_not_common, "hm_celsr1_y_n_not_common_big.csv")
+
+hm_celsr1_y_n_not_common$cluster = factor(hm_celsr1_y_n_not_common$cluster, levels = c("Low", "Medium", "High"))
+num_celsr1_deg_sig = data.frame(aggregate(gene ~ cluster, data = hm_celsr1_deg_sig, length))
+colnames(num_celsr1_deg_sig)[2] = "All Celsr1+ DEG"
+aggr_tmp = aggregate(gene ~ cluster, data = hm_celsr1_y_n_not_common, length)
+num_celsr1_deg_sig$not_common = aggr_tmp$gene[match(num_celsr1_deg_sig$cluster, aggr_tmp$cluster)]
+num_celsr1_deg_sig$not_common[which(is.na(num_celsr1_deg_sig$not_common))] = 0
+colnames(num_celsr1_deg_sig)[3] = "Celsr1+ DEG and Not Celsr1-"
+num_celsr1_deg_sig = reshape2::melt(num_celsr1_deg_sig)
+png("~/scratch/d_tooth/results/igor/allt/hm_celsr1_deg_sig_vs_no_celsr1_big.png", width = 800, height = 600, res = 100)
+print(ggplot(num_celsr1_deg_sig, aes(x=cluster, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", alpha = 0.8, position=position_dodge2()) + scale_color_manual(values = c("#2dcc84", "gold")) + scale_fill_manual(values = c("#2dcc84", "gold")) + xlab("") + ylab("Number of DEGs"))
+dev.off()
+
+allt_celsr1_y_n_not_common =  read.csv("allt_celsr1_deg_sig_and_not_a_no_celsr1_deg.csv")
+allt_celsr1_y_n_not_common_low = allt_celsr1_y_n_not_common[which(allt_celsr1_y_n_not_common$cluster == "Low"),]
+allt_celsr1_y_n_not_common_med = allt_celsr1_y_n_not_common[which(allt_celsr1_y_n_not_common$cluster == "Medium"),]
+allt_celsr1_y_n_not_common_high = allt_celsr1_y_n_not_common[which(allt_celsr1_y_n_not_common$cluster == "High"),]
+hm_celsr1_y_n_not_common_low = hm_celsr1_y_n_not_common[which(hm_celsr1_y_n_not_common$cluster == "Low"),]
+hm_celsr1_y_n_not_common_med = hm_celsr1_y_n_not_common[which(hm_celsr1_y_n_not_common$cluster == "Medium"),]
+hm_celsr1_y_n_not_common_high = hm_celsr1_y_n_not_common[which(hm_celsr1_y_n_not_common$cluster == "High"),]
+
+cm_celsr1_spe = allt_celsr1_y_n_not_common_low[which(! allt_celsr1_y_n_not_common_low$gene %in% hm_celsr1_y_n_not_common_low$gene ),]
+cm_celsr1_spe = rbind(cm_celsr1_spe, allt_celsr1_y_n_not_common_med[which(! allt_celsr1_y_n_not_common_med$gene %in% hm_celsr1_y_n_not_common_med$gene ),])
+cm_celsr1_spe = rbind(cm_celsr1_spe, allt_celsr1_y_n_not_common_high[which(! allt_celsr1_y_n_not_common_high$gene %in% hm_celsr1_y_n_not_common_high$gene ),])
+write.csv(cm_celsr1_spe, "cm_celsr1_special.csv")
+
+# Avg LogFC of Human Celsr1+ vs C+M CElsr1+ in CM Celsr1+ Special Genes
+hm_celsr1_pct_fc_low = pct_dif_avg_logFC(hm_celsr1, cells.1 = colnames(hm_celsr1)[which(hm_celsr1$bin == "Low")], cells.2 = colnames(hm_celsr1)[which(hm_celsr1$bin != "Low")])
+hm_celsr1_pct_fc_med = pct_dif_avg_logFC(hm_celsr1, cells.1 = colnames(hm_celsr1)[which(hm_celsr1$bin == "Medium")], cells.2 = colnames(hm_celsr1)[which(hm_celsr1$bin != "Medium")])
+hm_celsr1_pct_fc_high = pct_dif_avg_logFC(hm_celsr1, cells.1 = colnames(hm_celsr1)[which(hm_celsr1$bin == "High")], cells.2 = colnames(hm_celsr1)[which(hm_celsr1$bin != "High")])
+allt_celsr1_pct_fc_low = pct_dif_avg_logFC(allt_celsr1, cells.1 = colnames(allt_celsr1)[which(allt_celsr1$bin == "Low")], cells.2 = colnames(allt_celsr1)[which(allt_celsr1$bin != "Low")])
+allt_celsr1_pct_fc_med = pct_dif_avg_logFC(allt_celsr1, cells.1 = colnames(allt_celsr1)[which(allt_celsr1$bin == "Medium")], cells.2 = colnames(allt_celsr1)[which(allt_celsr1$bin != "Medium")])
+allt_celsr1_pct_fc_high = pct_dif_avg_logFC(allt_celsr1, cells.1 = colnames(allt_celsr1)[which(allt_celsr1$bin == "High")], cells.2 = colnames(allt_celsr1)[which(allt_celsr1$bin != "High")])
+
+hm_celsr1_pct_fc_low$cluster = "Low"
+hm_celsr1_pct_fc_med$cluster = "Medium"
+hm_celsr1_pct_fc_high$cluster = "High"
+hm_celsr1_pct_fc_low$dataset = "HM"
+hm_celsr1_pct_fc_med$dataset = "HM"
+hm_celsr1_pct_fc_high$dataset = "HM"
+
+allt_celsr1_pct_fc_low$cluster = "Low"
+allt_celsr1_pct_fc_med$cluster = "Medium"
+allt_celsr1_pct_fc_high$cluster = "High"
+allt_celsr1_pct_fc_low$dataset = "CM"
+allt_celsr1_pct_fc_med$dataset = "CM"
+allt_celsr1_pct_fc_high$dataset = "CM"
+
+cm_celsr1_spe_pct_fc = cbind(hm_celsr1_pct_fc_low[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Low")], hm_celsr1_pct_fc_low$gene),], allt_celsr1_pct_fc_low[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Low")], allt_celsr1_pct_fc_low$gene),])
+cm_celsr1_spe_pct_fc = rbind(cm_celsr1_spe_pct_fc, cbind(hm_celsr1_pct_fc_med[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Medium")], hm_celsr1_pct_fc_med$gene),], allt_celsr1_pct_fc_med[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Medium")], allt_celsr1_pct_fc_med$gene),]))
+cm_celsr1_spe_pct_fc = rbind(cm_celsr1_spe_pct_fc, cbind(hm_celsr1_pct_fc_high[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "High")], hm_celsr1_pct_fc_high$gene),], allt_celsr1_pct_fc_high[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "High")], allt_celsr1_pct_fc_high$gene),]))
+colnames(cm_celsr1_spe_pct_fc) = c(paste0("hm.", colnames(hm_celsr1_pct_fc_low)), paste0("cm.", colnames(allt_celsr1_pct_fc_low)))
+cm_celsr1_spe_pct_fc$hm.avg_logFC[which( is.na(cm_celsr1_spe_pct_fc$hm.avg_logFC))] = 0
+cm_celsr1_spe_pct_fc$cm.cluster = factor(cm_celsr1_spe_pct_fc$cm.cluster, levels = c("Low", "Medium", "High"))
+
+png("~/scratch/d_tooth/results/igor/allt/allt_and_hm_fc_at_cm_celsr1_special_big.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = hm.avg_logFC, y = cm.avg_logFC, color = abs(cm.avg_logFC - hm.avg_logFC))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$cm.avg_logFC - cm_celsr1_spe_pct_fc$hm.avg_logFC) > 4 ),], aes(label = cm.genes)) + xlab("Human Celsr1+ Average LogFC") + ylab("Cichlid and Mouse Celsr1+ Average LogFC") + theme_bw() 
+dev.off()
+png("~/scratch/d_tooth/results/igor/allt/allt_and_hm_fc_at_cm_celsr1_special_cluster_big.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = hm.avg_logFC, y = cm.avg_logFC, color = cm.cluster)) + geom_point(alpha = 0.7) + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$cm.avg_logFC - cm_celsr1_spe_pct_fc$hm.avg_logFC) > 4 ),], aes(label = cm.genes)) + xlab("Human Celsr1+ Average LogFC") + ylab("Cichlid and Mouse Celsr1+ Average LogFC") + theme_bw() 
+dev.off()
+
+# Avg LogFC of C+M Celsr1- vs C+M CElsr1+ in CM Celsr1+ Special Genes
+allt_no_celsr1_pct_fc_low = pct_dif_avg_logFC(allt_no_celsr1, cells.1 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin == "Low")], cells.2 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin != "Low")])
+allt_no_celsr1_pct_fc_med = pct_dif_avg_logFC(allt_no_celsr1, cells.1 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin == "Medium")], cells.2 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin != "Medium")])
+allt_no_celsr1_pct_fc_high = pct_dif_avg_logFC(allt_no_celsr1, cells.1 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin == "High")], cells.2 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin != "High")])
+allt_no_celsr1_pct_fc_low$cluster = "Low"
+allt_no_celsr1_pct_fc_med$cluster = "Medium"
+allt_no_celsr1_pct_fc_high$cluster = "High"
+allt_no_celsr1_pct_fc_low$dataset = "CM-"
+allt_no_celsr1_pct_fc_med$dataset = "CM-"
+allt_no_celsr1_pct_fc_high$dataset = "CM-"
+
+cm_celsr1_spe_pct_fc = cbind(allt_no_celsr1_pct_fc_low[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Low")], allt_no_celsr1_pct_fc_low$gene),], allt_celsr1_pct_fc_low[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Low")], allt_celsr1_pct_fc_low$gene),])
+cm_celsr1_spe_pct_fc = rbind(cm_celsr1_spe_pct_fc, cbind(allt_no_celsr1_pct_fc_med[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Medium")], allt_no_celsr1_pct_fc_med$gene),], allt_celsr1_pct_fc_med[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "Medium")], allt_celsr1_pct_fc_med$gene),]))
+cm_celsr1_spe_pct_fc = rbind(cm_celsr1_spe_pct_fc, cbind(allt_no_celsr1_pct_fc_high[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "High")], allt_no_celsr1_pct_fc_high$gene),], allt_celsr1_pct_fc_high[match(cm_celsr1_spe$gene[which(cm_celsr1_spe$cluster == "High")], allt_celsr1_pct_fc_high$gene),]))
+colnames(cm_celsr1_spe_pct_fc) = c(paste0("nc.", colnames(allt_no_celsr1_pct_fc_high)), paste0("yc.", colnames(allt_celsr1_pct_fc_low)))
+cm_celsr1_spe_pct_fc$nc.avg_logFC[which( is.na(cm_celsr1_spe_pct_fc$nc.avg_logFC) )] = 0
+cm_celsr1_spe_pct_fc$yc.cluster = factor(cm_celsr1_spe_pct_fc$yc.cluster, levels = c("Low", "Medium", "High"))
+cm_celsr1_spe_pct_fc$avg_logFC_dif = cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC
+cm_celsr1_spe_pct_fc$pct_dif_dif = cm_celsr1_spe_pct_fc$yc.pct_dif - cm_celsr1_spe_pct_fc$nc.pct_dif
+
+png("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_fc_at_cm_celsr1_special_big.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = nc.avg_logFC, y = yc.avg_logFC, color = abs(yc.avg_logFC - nc.avg_logFC))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 4 ),], aes(label = yc.genes)) + xlab("Cichlid and Mouse Celsr1- Average LogFC") + ylab("Cichlid and Mouse Celsr1+ Average LogFC") + theme_bw() 
+dev.off()
+png("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_fc_at_cm_celsr1_special_cluster_big.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = nc.avg_logFC, y = yc.avg_logFC, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 4 ),], aes(label = yc.genes)) + xlab("Cichlid and Mouse Celsr1- Average LogFC") + ylab("Cichlid and Mouse Celsr1+ Average LogFC") + theme_bw() 
+dev.off()
+png("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_pct_fc_at_cm_celsr1_special_big.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = abs(avg_logFC_dif - pct_dif_dif/10))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Dif (Celsr1+ vs Celsr1- in C+M)") + ylab("Average LogFC Dif (Celsr1+ vs Celsr1- in C+M)") + theme_bw() 
+dev.off()
+
+# Avg LogFC Diff vs Pct Dif Diff
+png("~/scratch/d_tooth/results/igor/allt/test.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = pct_dif_dif, y = abs(avg_logFC_dif), color = abs(avg_logFC_dif) > 0.25 & abs(pct_dif_dif) > 10)) + geom_point() + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 4 ),], aes(label = yc.genes)) + xlab("% Difference Dif (Celsr1+ vs Celsr1- in C+M)") + ylab("Average LogFC Dif (Celsr1+ vs Celsr1- in C+M)") + theme_bw() 
+dev.off()
+
+# Combo Approach
+combo = cm_celsr1_spe[which( cm_celsr1_spe$gene %in% allt_cor_df$gene[which(allt_cor_df$bon < 0.05 & allt_cor_df$hm_bon >= 0.05)] ),]
+combo[,c("r_celsr1", "r_no_celsr1", "r_dif", "num_celsr1", "num_no_celsr1", "p", "cm_bon", "hm_bon")] = allt_cor_df[match(combo$gene, allt_cor_df$gene), c("celsr1", "no_celsr1", "dif", "num_in_celsr1", "num_in_no_celsr1", "p", "bon", "hm_bon")]
+combo = combo[order(combo$p_val_adj),]
+
+
+#*************************************************************************************************
+# CM Celsr1+ Special ToppGene Circle Plot ========================================================
+#*************************************************************************************************
+toppgene_df = read.table("C:/Users/miles/Downloads/cm_celsr1_spe_big_toppgene.txt", sep = "\t", header = T, nrow = 19490)
+toppgene_df = toppgene_df[which(! toppgene_df$Category %in% c("Pubmed", "Pathway")),]
+toppgene_df = toppgene_df[which(toppgene_df$q.value.Bonferroni < 0.05),]
+toppgene_df$neg_log_bon = -log10(toppgene_df$q.value.Bonferroni)
+
+pdf("C:/Users/miles/Downloads/cm_celsr1_spe_big_toppgene.pdf", width = 10, height = 10)
+toppgene_df = toppgene_df[order(toppgene_df$q.value.Bonferroni, decreasing = F), ]
+toppgene_df = toppgene_df[1:100,]
+toppgene_df$col = plyr::revalue(toppgene_df$Category, replace = c("GO: Biological Process" = "#00A08A", "GO: Cellular Component" = "#FF0000", "GO: Molecular Function" = "#F2AD00", "Mouse Phenotype" = "#264653"))
+circos.par("gap.after" = c(rep(0, 99), 20), cell.padding = c(0, 0, 0, 0), "start.degree" = 90, track.margin = c(0.02, 0.02))
+circos.initialize(sectors = toppgene_df$Name, xlim = c(0,1))
+# circos.track(ylim = c(0, max(toppgene_df$cichlid_neg_log10_p)), track.height = 0.15, bg.border = NA, panel.fun = function(x, y) {
+circos.track(ylim = c(0, ceiling(max(toppgene_df$neg_log_bon))), track.height = 0.15, bg.border = NA, panel.fun = function(x, y) {
+  pos = circlize:::polar2Cartesian(circlize(CELL_META$xcenter, CELL_META$ycenter))
+
+  circos.rect(CELL_META$cell.xlim[1], 0, CELL_META$cell.xlim[2], toppgene_df$neg_log_bon[CELL_META$sector.numeric.index], col = paste0(toppgene_df$col[CELL_META$sector.numeric.index], "90"), border = toppgene_df$col[CELL_META$sector.numeric.index])
+  # circos.rect(CELL_META$cell.xlim[1], toppgene_df$cichlid_neg_log10_p[CELL_META$sector.numeric.index], CELL_META$cell.xlim[2], toppgene_df$cichlid_neg_log10_p[CELL_META$sector.numeric.index]+toppgene_df$mi_neg_log10_p[CELL_META$sector.numeric.index], col = "#FF000090", border = "#FF0000")
+  # circos.rect(CELL_META$cell.xlim[1], toppgene_df$cichlid_neg_log10_p[CELL_META$sector.numeric.index]+toppgene_df$mi_neg_log10_p[CELL_META$sector.numeric.index], CELL_META$cell.xlim[2], toppgene_df$cichlid_neg_log10_p[CELL_META$sector.numeric.index]+toppgene_df$mi_neg_log10_p[CELL_META$sector.numeric.index]+toppgene_df$mim_neg_log10_p[CELL_META$sector.numeric.index], col = "#F2AD0090",  border = "#F2AD00")
+
+  circos.text(CELL_META$xcenter, CELL_META$cell.ylim[1] - mm_y(1),
+              toppgene_df$Name[CELL_META$sector.numeric.index], facing = "clockwise", niceFacing = TRUE,
+              adj = c(1, 0.5), cex = 0.6)
+  circos.segments(CELL_META$cell.xlim[1],ceiling(max(toppgene_df$neg_log_bon)), CELL_META$cell.xlim[2], ceiling(max(toppgene_df$neg_log_bon)), col = "gray20", lty = 1) # top
+  circos.segments(CELL_META$cell.xlim[1], ceiling(max(toppgene_df$neg_log_bon)/2), CELL_META$cell.xlim[2], ceiling(max(toppgene_df$neg_log_bon)/2), col = "gray80", lty = 2) # middle
+  circos.segments(CELL_META$cell.xlim[1], 0, CELL_META$cell.xlim[2], 0, col = "gray20", lty = 1) # bottom
+})
+circos.yaxis(at = c(0, ceiling(max(toppgene_df$neg_log_bon)/2), ceiling(max(toppgene_df$neg_log_bon))), labels = c(0, ceiling(max(toppgene_df$neg_log_bon)/2), ceiling(max(toppgene_df$neg_log_bon))), sector.index = toppgene_df$Name[1], track.index = 1, side = "left", labels.niceFacing = F)
+dev.off()
+
+#*************************************************************************************************
+# Helper Functions ===============================================================================
+#*************************************************************************************************
 createCytoBINsInGene = function(obj, gene) {
   gene_pos_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
   gene_obj = subset(obj, cells = gene_pos_cells)
