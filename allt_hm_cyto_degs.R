@@ -146,36 +146,36 @@ Idents(allt_yc) = allt_yc$bin
 saveRDS(allt_yc, "allt_yc.rds")
 saveRDS(hm_yc,   "hm_yc.rds")
 
-print("Finding DEGs in Allt Celsr1+")
-allt_yc_deg = FindAllMarkers(allt_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
-allt_yc_deg$pct_dif = allt_yc_deg$pct.1 - allt_yc_deg$pct.2
-allt_yc_deg$abs_pct_dif = allt_yc_deg$pct.1 - allt_yc_deg$pct.2
-allt_yc_deg$isSig = allt_yc_deg$p_val_adj < 0.05
-allt_yc_deg$cluster_isSig = paste0(allt_yc_deg$cluster, "_", allt_yc_deg$isSig)
-write.csv(allt_yc_deg, "allt_yc_deg.csv")
-print("Done")
+# print("Finding DEGs in Allt Celsr1+")
+# allt_yc_deg = FindAllMarkers(allt_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
+# allt_yc_deg$pct_dif = allt_yc_deg$pct.1 - allt_yc_deg$pct.2
+# allt_yc_deg$abs_pct_dif = allt_yc_deg$pct.1 - allt_yc_deg$pct.2
+# allt_yc_deg$isSig = allt_yc_deg$p_val_adj < 0.05
+# allt_yc_deg$cluster_isSig = paste0(allt_yc_deg$cluster, "_", allt_yc_deg$isSig)
+# write.csv(allt_yc_deg, "allt_yc_deg.csv")
+# print("Done")
 
-print("Finding DEGs in HM Celsr1+")
-hm_yc_deg = FindAllMarkers(hm_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
-hm_yc_deg$pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
-hm_yc_deg$abs_pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
-hm_yc_deg$isSig = hm_yc_deg$p_val_adj < 0.05
-hm_yc_deg$cluster_isSig = paste0(hm_yc_deg$cluster, "_", hm_yc_deg$isSig)
-write.csv(hm_yc_deg, "hm_yc_deg.csv")
-print("Done")
+# print("Finding DEGs in HM Celsr1+")
+# hm_yc_deg = FindAllMarkers(hm_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
+# hm_yc_deg$pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
+# hm_yc_deg$abs_pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
+# hm_yc_deg$isSig = hm_yc_deg$p_val_adj < 0.05
+# hm_yc_deg$cluster_isSig = paste0(hm_yc_deg$cluster, "_", hm_yc_deg$isSig)
+# write.csv(hm_yc_deg, "hm_yc_deg.csv")
+# print("Done")
 
 # Celsr1- Cells
 tjh_nc_res    = createCytoBINsInGeneNeg(tjh, "CELSR1")
 jawh_nc_res   = createCytoBINsInGeneNeg(jawh, "CELSR1")
 incsrh_nc_res = createCytoBINsInGeneNeg(incsrh, "CELSR1")
-imh_nc_res    = createCytoBINsInGeneNeg(im, "CELSR1")
-hmh_nc_res    = createCytoBINsInGeneNeg(hm, "CELSR1")
+im_nc_res    = createCytoBINsInGeneNeg(im, "CELSR1")
+hm_nc_res    = createCytoBINsInGeneNeg(hm, "CELSR1")
 
 tjh_nc    = tjh_nc_res[[2]]
 jawh_nc   = jawh_nc_res[[2]]
 incsrh_nc = incsrh_nc_res[[2]]
-imh_nc    = imh_nc_res[[2]]
-hm_nc     = hmh_nc_res[[2]]
+im_nc    = im_nc_res[[2]]
+hm_nc     = hm_nc_res[[2]]
 
 allt_nc = subset(allt, cells = colnames(allt)[which(allt@assays$RNA@counts["CELSR1",] == 0)])
 allt_nc$bin = "none"
