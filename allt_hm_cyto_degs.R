@@ -23,7 +23,7 @@ createCytoBINsInGene = function(obj, gene) {
   return(list(gene_obj_cyto, gene_obj))
 }
 createCytoBINsInGeneNeg = function(obj, gene) {
-  gene_neg_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
+  gene_neg_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] == 0)]
   gene_obj = subset(obj, cells = gene_neg_cells)
   gene_obj_cyto = CytoTRACE::CytoTRACE(as.matrix(gene_obj@assays$RNA@counts))
   gene_obj$cyto = gene_obj_cyto$CytoTRACE
