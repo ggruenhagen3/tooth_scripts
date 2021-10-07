@@ -70,7 +70,7 @@ incsrh_yc = incsrh_yc_res[[2]]
 imi_yc    = imi_yc_res[[2]]
 imm_yc    = imm_yc_res[[2]]
 
-regen_yc = subset(allt, cells = colnames(regen)[which(regen@assays$RNA@counts["CELSR1",] > 0)])
+regen_yc = subset(regen, cells = colnames(regen)[which(regen@assays$RNA@counts["CELSR1",] > 0)])
 regen_yc$bin = "none"
 regen_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "Low")])]    = "Low"
 regen_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "Medium")])] = "Medium"
