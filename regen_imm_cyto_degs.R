@@ -55,7 +55,7 @@ im     = readRDS(paste0(data_folder, "igor_incsr_molar.rds"))
 imi = subset(im, cells = colnames(im)[which(im$anatomy == "Incisor")])
 imm = subset(im, cells = colnames(im)[which(im$anatomy == "Molar")])
 
-regen = merge(tj_hgnc, list(jaw_hgnc, incsr_hgnc, imi), add.cell.ids = c("ct", "cj", "mi", 'imi'))
+regen = merge(tjh, list(jawh, incsrh, imi), add.cell.ids = c("ct", "cj", "mi", 'imi'))
 
 # Celsr1+ Cells
 tjh_yc_res    = createCytoBINsInGene(tjh, "CELSR1")
