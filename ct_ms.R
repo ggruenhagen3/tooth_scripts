@@ -1283,6 +1283,14 @@ combo = cm_celsr1_spe[which( cm_celsr1_spe$gene %in% allt_cor_df$gene[which(allt
 combo[,c("r_celsr1", "r_no_celsr1", "r_dif", "num_celsr1", "num_no_celsr1", "p", "cm_bon", "hm_bon")] = allt_cor_df[match(combo$gene, allt_cor_df$gene), c("celsr1", "no_celsr1", "dif", "num_in_celsr1", "num_in_no_celsr1", "p", "bon", "hm_bon")]
 combo = combo[order(combo$p_val_adj),]
 
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+pal = colorRampPalette(temp)
+df = hm@meta.data
+df = df[order(df$cyto, decreasing = F),]
+pdf("C:/Users/miles/Downloads/hm_nCount_transDiversity.pdf", width = 6, height = 5.5)
+ggplot(df, aes(x = nCount_RNA, y = nFeature_RNA, color = cyto)) + geom_point() + scale_color_gradientn(colors = pal(50)) + xlab("Number of UMIs") + ylab("Transcriptional Diversity")
+dev.off()
 
 #*************************************************************************************************
 # CM Celsr1+ Special ToppGene Circle Plot ========================================================
