@@ -19,7 +19,7 @@ Idents(regen_full) = regen_full$celsr1_bin
 yc_nc_bin_full = data.frame()
 for (bin in c("High", "Medium", "Low")) {
   print(bin)
-  bin_res = FindMarkers(regen_full, ident.1 = paste0("yc_", bin ), ident.1 = paste0("nc_", bin ))
+  bin_res = FindMarkers(regen_full, ident.1 = paste0("yc_", bin ), ident.2 = paste0("nc_", bin ))
   bin_res$gene = rownames(bin_res)
   bin_res$cluster = bin
   bin_res$bin = bin
