@@ -34,7 +34,7 @@ regen_yc$isMes = F
 regen_yc$isMes[which(regen_yc$annot %in% c("Pulp cells", "PDL"))] = T
 regen_yc$isMes[which(regen_yc$sample == "TJ" & regen_yc$seurat_clusters %in% c("5", "7"))] = T
 regen_yc$isMes[which(regen_yc$sample == "JPOOL" & regen_yc$seurat_clusters %in% c("6"))] = T
-regen_yc_mes = subset(regen_yc, cells = colnames(regen_yc)[which(im$isMes)])
+regen_yc_mes = subset(regen_yc, cells = colnames(regen_yc)[which(regen_yc$isMes)])
 
 regen_yc_mes$bin <- regen_yc_mes$cyto
 regen_yc_mes$bin[which(regen_yc_mes$cyto <= quantile(regen_yc_mes$cyto, 0.33))] <- "Low"
@@ -55,7 +55,7 @@ regen_yc$isEpi = F
 regen_yc$isEpi[which(regen_yc$annot %in% c("Epithelial cells"))] = T
 regen_yc$isEpi[which(regen_yc$sample == "TJ" & regen_yc$seurat_clusters %in% c("2", "3", "4"))] = T
 regen_yc$isEpi[which(regen_yc$sample == "JPOOL" & regen_yc$seurat_clusters %in% c("0", "1", "3", "4", "7"))] = T
-regen_yc_epi = subset(regen_yc, cells = colnames(regen_yc)[which(im$isEpi)])
+regen_yc_epi = subset(regen_yc, cells = colnames(regen_yc)[which(regen_yc$isEpi)])
 
 regen_yc_epi$bin <- regen_yc_epi$cyto
 regen_yc_epi$bin[which(regen_yc_epi$cyto <= quantile(regen_yc_epi$cyto, 0.33))] <- "Low"
