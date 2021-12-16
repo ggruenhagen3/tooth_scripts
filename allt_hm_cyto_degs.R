@@ -116,35 +116,36 @@ hm     = readRDS(paste0(data_folder, "hm.rds"))
 allt   = readRDS(paste0(allt_folder, "allt.rds"))
 
 # Celsr1+ Cells
-tjh_yc_res    = createCytoBINsInGene(tjh, "CELSR1")
-jawh_yc_res   = createCytoBINsInGene(jawh, "CELSR1")
-incsrh_yc_res = createCytoBINsInGene(incsrh, "CELSR1")
-im_yc_res    = createCytoBINsInGene(im, "CELSR1")
-hm_yc_res    = createCytoBINsInGene(hm, "CELSR1")
-
-tjh_yc    = tjh_yc_res[[2]]
-jawh_yc   = jawh_yc_res[[2]]
-incsrh_yc = incsrh_yc_res[[2]]
-im_yc     = im_yc_res[[2]]
-hm_yc     = hm_yc_res[[2]]
-
-allt_yc = subset(allt, cells = colnames(allt)[which(allt@assays$RNA@counts["CELSR1",] > 0)])
-allt_yc$bin = "none"
-allt_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "Low")])]    = "Low"
-allt_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "Medium")])] = "Medium"
-allt_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "High")])]   = "High"
-allt_yc$bin[paste0("cj_", colnames(jawh_yc)[which(jawh_yc$bin     == "Low")])]    = "Low"
-allt_yc$bin[paste0("cj_", colnames(jawh_yc)[which(jawh_yc$bin     == "Medium")])] = "Medium"
-allt_yc$bin[paste0("cj_", colnames(jawh_yc)[which(jawh_yc$bin     == "High")])]   = "High"
-allt_yc$bin[paste0("mi_", colnames(incsrh_yc)[which(incsrh_yc$bin == "Low")])]    = "Low"
-allt_yc$bin[paste0("mi_", colnames(incsrh_yc)[which(incsrh_yc$bin == "Medium")])] = "Medium"
-allt_yc$bin[paste0("mi_", colnames(incsrh_yc)[which(incsrh_yc$bin == "High")])]    = "High"
-allt_yc$bin[paste0("mim_", colnames(im_yc)[which(im_yc$bin        == "Low")])]    = "Low"
-allt_yc$bin[paste0("mim_", colnames(im_yc)[which(im_yc$bin        == "Medium")])] = "Medium"
-allt_yc$bin[paste0("mim_", colnames(im_yc)[which(im_yc$bin        == "High")])]   = "High"
-Idents(allt_yc) = allt_yc$bin
-saveRDS(allt_yc, "allt_yc.rds")
-saveRDS(hm_yc,   "hm_yc.rds")
+# tjh_yc_res    = createCytoBINsInGene(tjh, "CELSR1")
+# jawh_yc_res   = createCytoBINsInGene(jawh, "CELSR1")
+# incsrh_yc_res = createCytoBINsInGene(incsrh, "CELSR1")
+# im_yc_res    = createCytoBINsInGene(im, "CELSR1")
+# hm_yc_res    = createCytoBINsInGene(hm, "CELSR1")
+# 
+# tjh_yc    = tjh_yc_res[[2]]
+# jawh_yc   = jawh_yc_res[[2]]
+# incsrh_yc = incsrh_yc_res[[2]]
+# im_yc     = im_yc_res[[2]]
+# hm_yc     = hm_yc_res[[2]]
+# 
+# allt_yc = subset(allt, cells = colnames(allt)[which(allt@assays$RNA@counts["CELSR1",] > 0)])
+# allt_yc$bin = "none"
+# allt_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "Low")])]    = "Low"
+# allt_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "Medium")])] = "Medium"
+# allt_yc$bin[paste0("ct_", colnames(tjh_yc)[which(tjh_yc$bin       == "High")])]   = "High"
+# allt_yc$bin[paste0("cj_", colnames(jawh_yc)[which(jawh_yc$bin     == "Low")])]    = "Low"
+# allt_yc$bin[paste0("cj_", colnames(jawh_yc)[which(jawh_yc$bin     == "Medium")])] = "Medium"
+# allt_yc$bin[paste0("cj_", colnames(jawh_yc)[which(jawh_yc$bin     == "High")])]   = "High"
+# allt_yc$bin[paste0("mi_", colnames(incsrh_yc)[which(incsrh_yc$bin == "Low")])]    = "Low"
+# allt_yc$bin[paste0("mi_", colnames(incsrh_yc)[which(incsrh_yc$bin == "Medium")])] = "Medium"
+# allt_yc$bin[paste0("mi_", colnames(incsrh_yc)[which(incsrh_yc$bin == "High")])]    = "High"
+# allt_yc$bin[paste0("mim_", colnames(im_yc)[which(im_yc$bin        == "Low")])]    = "Low"
+# allt_yc$bin[paste0("mim_", colnames(im_yc)[which(im_yc$bin        == "Medium")])] = "Medium"
+# allt_yc$bin[paste0("mim_", colnames(im_yc)[which(im_yc$bin        == "High")])]   = "High"
+# Idents(allt_yc) = allt_yc$bin
+# Idents(hm_yc) = hm_yc$bin
+# saveRDS(allt_yc, "allt_yc.rds")
+# saveRDS(hm_yc,   "hm_yc.rds")
 
 # print("Finding DEGs in Allt Celsr1+")
 # allt_yc_deg = FindAllMarkers(allt_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
@@ -155,56 +156,61 @@ saveRDS(hm_yc,   "hm_yc.rds")
 # write.csv(allt_yc_deg, "allt_yc_deg.csv")
 # print("Done")
 
-# print("Finding DEGs in HM Celsr1+")
-# hm_yc_deg = FindAllMarkers(hm_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
-# hm_yc_deg$pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
-# hm_yc_deg$abs_pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
-# hm_yc_deg$isSig = hm_yc_deg$p_val_adj < 0.05
-# hm_yc_deg$cluster_isSig = paste0(hm_yc_deg$cluster, "_", hm_yc_deg$isSig)
-# write.csv(hm_yc_deg, "hm_yc_deg.csv")
-# print("Done")
-
-# Celsr1- Cells
-tjh_nc_res    = createCytoBINsInGeneNeg(tjh, "CELSR1")
-jawh_nc_res   = createCytoBINsInGeneNeg(jawh, "CELSR1")
-incsrh_nc_res = createCytoBINsInGeneNeg(incsrh, "CELSR1")
-im_nc_res    = createCytoBINsInGeneNeg(im, "CELSR1")
-hm_nc_res    = createCytoBINsInGeneNeg(hm, "CELSR1")
-
-tjh_nc    = tjh_nc_res[[2]]
-jawh_nc   = jawh_nc_res[[2]]
-incsrh_nc = incsrh_nc_res[[2]]
-im_nc    = im_nc_res[[2]]
-hm_nc     = hm_nc_res[[2]]
-
-allt_nc = subset(allt, cells = colnames(allt)[which(allt@assays$RNA@counts["CELSR1",] == 0)])
-allt_nc$bin = "none"
-allt_nc$bin[paste0("ct_", colnames(tjh_nc)[which(tjh_nc$bin       == "Low")])]    = "Low"
-allt_nc$bin[paste0("ct_", colnames(tjh_nc)[which(tjh_nc$bin       == "Medium")])] = "Medium"
-allt_nc$bin[paste0("ct_", colnames(tjh_nc)[which(tjh_nc$bin       == "High")])]   = "High"
-allt_nc$bin[paste0("cj_", colnames(jawh_nc)[which(jawh_nc$bin     == "Low")])]    = "Low"
-allt_nc$bin[paste0("cj_", colnames(jawh_nc)[which(jawh_nc$bin     == "Medium")])] = "Medium"
-allt_nc$bin[paste0("cj_", colnames(jawh_nc)[which(jawh_nc$bin     == "High")])]   = "High"
-allt_nc$bin[paste0("mi_", colnames(incsrh_nc)[which(incsrh_nc$bin == "Low")])]    = "Low"
-allt_nc$bin[paste0("mi_", colnames(incsrh_nc)[which(incsrh_nc$bin == "Medium")])] = "Medium"
-allt_nc$bin[paste0("mi_", colnames(incsrh_nc)[which(incsrh_nc$bin == "High")])]   = "High"
-allt_nc$bin[paste0("mim_", colnames(im_nc)[which(im_nc$bin        == "Low")])]    = "Low"
-allt_nc$bin[paste0("mim_", colnames(im_nc)[which(im_nc$bin        == "Medium")])] = "Medium"
-allt_nc$bin[paste0("mim_", colnames(im_nc)[which(im_nc$bin        == "High")])]   = "High"
-Idents(allt_nc) = allt_nc$bin
-saveRDS(allt_nc, "allt_nc.rds")
-saveRDS(hm_nc,   "hm_nc.rds")
-
-print("Finding DEGs in Allt Celsr1-")
-allt_nc_deg = FindAllMarkers(allt_nc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
-allt_nc_deg$pct_dif = allt_nc_deg$pct.1 - allt_nc_deg$pct.2
-allt_nc_deg$abs_pct_dif = allt_nc_deg$pct.1 - allt_nc_deg$pct.2
-allt_nc_deg$isSig = allt_nc_deg$p_val_adj < 0.05
-allt_nc_deg$cluster_isSig = paste0(allt_nc_deg$cluster, "_", allt_nc_deg$isSig)
-write.csv(allt_nc_deg, "allt_nc_deg.csv")
+print("Finding DEGs in HM Celsr1+")
+hm_yc = readRDS("hm_yc.rds")
+Idents(hm_yc) = hm_yc$bin
+hm_yc_deg = FindAllMarkers(hm_yc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
+hm_yc_deg$pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
+hm_yc_deg$abs_pct_dif = hm_yc_deg$pct.1 - hm_yc_deg$pct.2
+hm_yc_deg$isSig = hm_yc_deg$p_val_adj < 0.05
+hm_yc_deg$cluster_isSig = paste0(hm_yc_deg$cluster, "_", hm_yc_deg$isSig)
+write.csv(hm_yc_deg, "hm_yc_deg.csv")
 print("Done")
 
+# Celsr1- Cells
+# tjh_nc_res    = createCytoBINsInGeneNeg(tjh, "CELSR1")
+# jawh_nc_res   = createCytoBINsInGeneNeg(jawh, "CELSR1")
+# incsrh_nc_res = createCytoBINsInGeneNeg(incsrh, "CELSR1")
+# im_nc_res    = createCytoBINsInGeneNeg(im, "CELSR1")
+# hm_nc_res    = createCytoBINsInGeneNeg(hm, "CELSR1")
+# 
+# tjh_nc    = tjh_nc_res[[2]]
+# jawh_nc   = jawh_nc_res[[2]]
+# incsrh_nc = incsrh_nc_res[[2]]
+# im_nc    = im_nc_res[[2]]
+# hm_nc     = hm_nc_res[[2]]
+
+# allt_nc = subset(allt, cells = colnames(allt)[which(allt@assays$RNA@counts["CELSR1",] == 0)])
+# allt_nc$bin = "none"
+# allt_nc$bin[paste0("ct_", colnames(tjh_nc)[which(tjh_nc$bin       == "Low")])]    = "Low"
+# allt_nc$bin[paste0("ct_", colnames(tjh_nc)[which(tjh_nc$bin       == "Medium")])] = "Medium"
+# allt_nc$bin[paste0("ct_", colnames(tjh_nc)[which(tjh_nc$bin       == "High")])]   = "High"
+# allt_nc$bin[paste0("cj_", colnames(jawh_nc)[which(jawh_nc$bin     == "Low")])]    = "Low"
+# allt_nc$bin[paste0("cj_", colnames(jawh_nc)[which(jawh_nc$bin     == "Medium")])] = "Medium"
+# allt_nc$bin[paste0("cj_", colnames(jawh_nc)[which(jawh_nc$bin     == "High")])]   = "High"
+# allt_nc$bin[paste0("mi_", colnames(incsrh_nc)[which(incsrh_nc$bin == "Low")])]    = "Low"
+# allt_nc$bin[paste0("mi_", colnames(incsrh_nc)[which(incsrh_nc$bin == "Medium")])] = "Medium"
+# allt_nc$bin[paste0("mi_", colnames(incsrh_nc)[which(incsrh_nc$bin == "High")])]   = "High"
+# allt_nc$bin[paste0("mim_", colnames(im_nc)[which(im_nc$bin        == "Low")])]    = "Low"
+# allt_nc$bin[paste0("mim_", colnames(im_nc)[which(im_nc$bin        == "Medium")])] = "Medium"
+# allt_nc$bin[paste0("mim_", colnames(im_nc)[which(im_nc$bin        == "High")])]   = "High"
+# Idents(allt_nc) = allt_nc$bin
+# Idents(hm_nc) = hm_nc$bin
+# saveRDS(allt_nc, "allt_nc.rds")
+# saveRDS(hm_nc,   "hm_nc.rds")
+# 
+# print("Finding DEGs in Allt Celsr1-")
+# allt_nc_deg = FindAllMarkers(allt_nc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
+# allt_nc_deg$pct_dif = allt_nc_deg$pct.1 - allt_nc_deg$pct.2
+# allt_nc_deg$abs_pct_dif = allt_nc_deg$pct.1 - allt_nc_deg$pct.2
+# allt_nc_deg$isSig = allt_nc_deg$p_val_adj < 0.05
+# allt_nc_deg$cluster_isSig = paste0(allt_nc_deg$cluster, "_", allt_nc_deg$isSig)
+# write.csv(allt_nc_deg, "allt_nc_deg.csv")
+# print("Done")
+
 print("Finding DEGs in HM Celsr1-")
+hm_nc = readRDS("hm_nc.rds")
+Idents(hm_nc) = hm_nc$bin
 hm_nc_deg = FindAllMarkers(hm_nc, only.pos = F, logfc.threshold = 0, min.pct = 0.01)
 hm_nc_deg$pct_dif = hm_nc_deg$pct.1 - hm_nc_deg$pct.2
 hm_nc_deg$abs_pct_dif = hm_nc_deg$pct.1 - hm_nc_deg$pct.2

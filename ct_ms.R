@@ -126,6 +126,30 @@ pal = convert_tj$col[match(levels(Idents(tj)), convert_tj$new)]
 print(DimPlot(tj, order = T, label = F, pt.size = 1.5, cols = pal) + theme_void() + ggtitle("") + coord_fixed() + NoLegend())
 dev.off()
 
+p = DimPlot(tj, order = T, label = F, pt.size = 1.5, cols = pal) + theme_void() + ggtitle("") + coord_fixed() + NoLegend()
+p = DimPlot(bb, order = T, label = F, pt.size = 1.5, cols = convert53$col[match(0:52, convert53$old)]) + theme_void() + ggtitle("") + coord_fixed() + NoLegend()
+df = p$data
+hull <- df %>% group_by(parent) %>%
+  slice(c(chull(UMAP_1,UMAP_2),
+          chull(UMAP_1,UMAP_2)[1]))
+library("ggforce")
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_hull(aes(fill = ident), concavity = 20, show.legend = FALSE, expand = unit(2.5, "mm"))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_hull(aes(fill = ident), con.border = "none", concavity = 5, show.legend = FALSE, expand = unit(1.5, "mm"))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_ellipse(aes(fill = ident))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_rect(aes(fill = ident))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_voronoi_tile(aes(fill = ident, group = -1L)) + geom_voronoi_segment(color = "black") + geom_point(color = "black")
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_voronoi_segment(aes(fill = ident))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident, fill = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_polygon(data = hull, alpha = 0.5)
+df$parent = convert53$new.parent[match(df$ident, convert53$old)]
+df$parent_col = convert15$col[match(as.numeric(df$parent), convert15$new.num)]
+# df$expand
+my_pal = c(unique(df$parent_col), convert53$col[match(0:52, convert53$old)])
+names(my_pal) = c(unique(df$parent_col), 0:52)
+pdf("C:/Users/miles/Downloads/test.pdf", width = 8, height = 8)
+ggplot(df, aes(UMAP_1, UMAP_2)) + theme_void() + guides(color=FALSE) + geom_mark_hull(aes(group = parent, fill = parent_col, color = parent_col), concavity = 20, expand = unit(2.7, "mm"), linetype = 'solid') + scale_color_manual(values = my_pal) + scale_fill_identity() + geom_point(aes(color = ident), size = 0.6) 
+dev.off()
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident, fill = ident)) + geom_point(size = 0.5) + theme_void() + guides(color=FALSE) + geom_polygon(data = hull, alpha = 0.5) + scale_color_manual(values = convert53$col[match(0:52, convert53$old)])
+
 # Jaw
 jaw$annot = jaw$seurat_clusters
 Idents(jaw) = jaw$annot
@@ -409,7 +433,7 @@ highligtCelsr1Plot = function(obj, my.pt.size = 2, my.alpha.min = 0.4, my.alpha.
   cnames <- aggregate(cbind(UMAP_1, UMAP_2) ~ ident, data=df, FUN=mean)
   p = ggplot(df, aes(UMAP_1, UMAP_2, color = value, alpha = celsr1Pos, shape = celsr1Pos)) + geom_point(size = my.pt.size) + scale_color_gradientn(colors = pal(50), guide = F) + theme_classic() + theme(plot.title = element_text(hjust = 0.5)) + scale_alpha_manual(values = c(my.alpha.min, my.alpha.max), guide = F) + scale_shape_manual(values = c(1, 19), guide = F)
   if (showGuide)
-    p = p + scale_color_gradientn(colors = pal(50))
+    p = p + scale_color_gradientn(colors = pal(50)) + theme(legend.title=element_blank())
   if (doLabel)
     p = p + geom_text_repel(data=cnames, aes(UMAP_1, UMAP_2, label = ident), size=my.label.size, inherit.aes = FALSE)
   return(p)
@@ -440,13 +464,20 @@ pdf("~/research/tooth/results/incsr_cyto_celsr1_highlight.pdf", width = 5.5, hei
 highligtCelsr1Plot(incsr) + ggtitle("") + theme_void()
 dev.off()
 pdf("~/research/tooth/results/incsr_epi_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
-print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void())
+# print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void() + theme(legend.title=element_blank()))
+print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void() + labs(color='CytoTRACE'))
 dev.off()
 pdf("~/research/tooth/results/im_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
-highligtCelsr1Plot(im, my.pt.size = 1, doLabel = T) + ggtitle("") + theme_void()
+highligtCelsr1Plot(im, my.pt.size = 1, my.alpha.min = 0.2) + ggtitle("") + theme_void()
 dev.off()
 pdf("~/research/tooth/results/hm_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
-highligtCelsr1Plot(hm, my.pt.size = 1, doLabel = T) + ggtitle("") + theme_void()
+highligtCelsr1Plot(hm, my.pt.size = 1, my.alpha.min = 0.05) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/imi_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(imi, my.pt.size = 1, my.alpha.min = 0.05) + ggtitle("") + theme_void()
+dev.off()
+pdf("~/research/tooth/results/imm_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+highligtCelsr1Plot(imm, my.pt.size = 1, my.alpha.min = 0.05) + ggtitle("") + theme_void()
 dev.off()
 
 pdf("~/research/tooth/results/tj_jaw_cyto_celsr1.pdf", width = 5.5, height = 5)
@@ -879,8 +910,8 @@ celsr1_deg$col = plyr::revalue(celsr1_deg$cluster, replace = c("Low" = rev(brewe
 celsr1_deg$col[which(celsr1_deg$p_val_adj >= 0.05)] = "gray"
 celsr1_deg$abs_pct_dif = abs(celsr1_deg$pct.1 - celsr1_deg$pct.2)
 celsr1_deg$col[which( (celsr1_deg$abs_pct_dif < 0.05 | abs(celsr1_deg$avg_log2FC) < 0.25) )] = "gray"
-pdf("~/scratch/d_tooth/results/igor/allt/cm_celsr1_sig_thresh.pdf", width = 6, height = 6)
-ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity()
+pdf("~/scratch/d_tooth/results/igor/allt/cm_celsr1_sig_thresh_sideways.pdf", width = 8, height = 4)
+ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + coord_flip()
 dev.off()
 
 # Expression of CytoBIN DEGs vs CytoTRACE
@@ -1242,6 +1273,9 @@ dev.off()
 png("~/scratch/d_tooth/results/igor/allt/allt_and_hm_fc_at_cm_celsr1_special_cluster_big.png", width = 800, height = 600, res = 100)
 ggplot(cm_celsr1_spe_pct_fc, aes(x = hm.avg_logFC, y = cm.avg_logFC, color = cm.cluster)) + geom_point(alpha = 0.7) + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$cm.avg_logFC - cm_celsr1_spe_pct_fc$hm.avg_logFC) > 4 ),], aes(label = cm.genes)) + xlab("Human Celsr1+ Average LogFC") + ylab("Cichlid and Mouse Celsr1+ Average LogFC") + theme_bw() 
 dev.off()
+png("~/scratch/d_tooth/results/igor/allt/hm_fc_at_cm_celsr1_special_cluster_big.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = hm.pct_dif, y = hm.avg_logFC, color = cm.cluster)) + geom_point(alpha = 0.7) + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$cm.avg_logFC - cm_celsr1_spe_pct_fc$hm.avg_logFC) > 4 ),], aes(label = cm.genes)) + xlab("% Difference Human Celsr1+") + ylab("Average LogFC Human Celsr1+") + theme_bw() 
+dev.off()
 
 # Avg LogFC of C+M Celsr1- vs C+M CElsr1+ in CM Celsr1+ Special Genes
 allt_no_celsr1_pct_fc_low = pct_dif_avg_logFC(allt_no_celsr1, cells.1 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin == "Low")], cells.2 = colnames(allt_no_celsr1)[which(allt_no_celsr1$bin != "Low")])
@@ -1272,6 +1306,18 @@ dev.off()
 png("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_pct_fc_at_cm_celsr1_special_big.png", width = 800, height = 600, res = 100)
 ggplot(cm_celsr1_spe_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = abs(avg_logFC_dif - pct_dif_dif/10))) + geom_point() + scale_color_gradientn(colors = plasma(100), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Dif (Celsr1+ vs Celsr1- in C+M)") + ylab("Average LogFC Dif (Celsr1+ vs Celsr1- in C+M)") + theme_bw() 
 dev.off()
+# This one in b/w the commented section is the best:
+# Start Comment
+png("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_pct_fc_at_cm_celsr1_special_big_bin.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Dif (Celsr1+ vs Celsr1- in C+M)") + ylab("Average LogFC Dif (Celsr1+ vs Celsr1- in C+M)") + theme_bw() 
+dev.off()
+# End Comment
+png("~/scratch/d_tooth/results/igor/allt/allt_yc_pct_fc_at_cm_celsr1_special_big_bin.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = yc.pct_dif, y = yc.avg_logFC, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Celsr1+ in C+M") + ylab("Average LogFC Dif Celsr1+ in C+M") + theme_bw() 
+dev.off()
+png("~/scratch/d_tooth/results/igor/allt/allt_nc_pct_fc_at_cm_celsr1_special_big_bin.png", width = 800, height = 600, res = 100)
+ggplot(cm_celsr1_spe_pct_fc, aes(x = nc.pct_dif, y = nc.avg_logFC, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=cm_celsr1_spe_pct_fc[which( abs(cm_celsr1_spe_pct_fc$yc.avg_logFC - cm_celsr1_spe_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Celsr1- in C+M") + ylab("Average LogFC Dif Celsr1- in C+M") + theme_bw() 
+dev.off()
 
 # Avg LogFC Diff vs Pct Dif Diff
 png("~/scratch/d_tooth/results/igor/allt/test.png", width = 800, height = 600, res = 100)
@@ -1292,15 +1338,620 @@ pdf("C:/Users/miles/Downloads/hm_nCount_transDiversity.pdf", width = 6, height =
 ggplot(df, aes(x = nCount_RNA, y = nFeature_RNA, color = cyto)) + geom_point() + scale_color_gradientn(colors = pal(50)) + xlab("Number of UMIs") + ylab("Transcriptional Diversity")
 dev.off()
 
+#***************************************************************************************************************************
+# All Combined 2 ===========================================================================================================
+#***************************************************************************************************************************
+# Second time through this time calculating CytoTRACE separately.
+# Read Data
+rna_path = "~/scratch/brain/"
+source(paste0(rna_path, "brain_scripts/all_f.R"))
+data_folder = "~/scratch/d_tooth/data/"
+allt_folder = "~/scratch/d_tooth/results/igor/allt/"
+setwd(allt_folder)
+tjh    = readRDS(paste0(data_folder, "tj_hgnc.rds"))
+jawh   = readRDS(paste0(data_folder, "jaw_hgnc.rds"))
+incsrh = readRDS(paste0(data_folder, "incsr_hgnc.rds"))
+im     = readRDS(paste0(data_folder, "igor_incsr_molar.rds"))
+hm     = readRDS(paste0(data_folder, "hm.rds"))
+allt   = readRDS(paste0(allt_folder, "allt.rds"))
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+pal = colorRampPalette(temp)
+
+# See tooth_scripts/allt_hm_cyto_degs.R
+# Load Yes Celsr1 (YC) and No Celsr1 (NC) Data
+allt_yc = readRDS("allt_yc.rds")
+allt_nc = readRDS("allt_nc.rds")
+hm_yc   = readRDS("hm_yc.rds")
+hm_nc   = readRDS("hm_nc.rds")
+
+
+allt_yc_deg$abs_pct_dif = abs(allt_yc_deg$abs_pct_dif)
+allt_nc_deg$abs_pct_dif = abs(allt_nc_deg$abs_pct_dif)
+hm_yc_deg$abs_pct_dif   = abs(hm_yc_deg$abs_pct_dif)
+hm_nc_deg$abs_pct_dif   = abs(hm_nc_deg$abs_pct_dif)
+
+allt_yc_strict_deg = allt_yc_deg[which(allt_yc_deg$p_val_adj < 0.05 & abs(allt_yc_deg$avg_log2FC) > 0.25 & allt_yc_deg$abs_pct_dif > 0.05),]
+allt_yc_strict_deg$cluster_gene = paste0(allt_yc_strict_deg$cluster, "_", allt_yc_strict_deg$gene)
+
+# C+M YC vs NC
+allt_yc_low_deg  = allt_yc_deg[which(allt_yc_deg$p_val_adj < 0.05 & allt_yc_deg$cluster == "Low"),]
+allt_yc_med_deg  = allt_yc_deg[which(allt_yc_deg$p_val_adj < 0.05 & allt_yc_deg$cluster == "Medium"),]
+allt_yc_high_deg = allt_yc_deg[which(allt_yc_deg$p_val_adj < 0.05 & allt_yc_deg$cluster == "High"),]
+allt_nc_low_deg  = allt_nc_deg[which(allt_nc_deg$p_val_adj < 0.05 & allt_nc_deg$cluster == "Low"),]
+allt_nc_med_deg  = allt_nc_deg[which(allt_nc_deg$p_val_adj < 0.05 & allt_nc_deg$cluster == "Medium"),]
+allt_nc_high_deg = allt_nc_deg[which(allt_nc_deg$p_val_adj < 0.05 & allt_nc_deg$cluster == "High"),]
+
+allt_yc_not_nc = allt_yc_low_deg[which(! allt_yc_low_deg$gene %in% allt_nc_low_deg$gene ),]
+allt_yc_not_nc = rbind(allt_yc_not_nc, allt_yc_med_deg[which(! allt_yc_med_deg$gene %in% allt_nc_med_deg$gene ),])
+allt_yc_not_nc = rbind(allt_yc_not_nc, allt_yc_high_deg[which(! allt_yc_high_deg$gene %in% allt_nc_high_deg$gene ),])
+allt_yc_not_nc$cluster_gene = paste0(allt_yc_not_nc$cluster, "_", allt_yc_not_nc$gene)
+
+allt_yc_not_nc_strict = allt_yc_not_nc[which(allt_yc_not_nc$cluster_gene %in% allt_yc_strict_deg$cluster_gene),]
+
+allt_yc_pct_fc_low  = pct_dif_avg_logFC(allt_yc, cells.1 = colnames(allt_yc)[which(allt_yc$bin == "Low")],    cells.2 = colnames(allt_yc)[which(allt_yc$bin != "Low")])
+allt_yc_pct_fc_med  = pct_dif_avg_logFC(allt_yc, cells.1 = colnames(allt_yc)[which(allt_yc$bin == "Medium")], cells.2 = colnames(allt_yc)[which(allt_yc$bin != "Medium")])
+allt_yc_pct_fc_high = pct_dif_avg_logFC(allt_yc, cells.1 = colnames(allt_yc)[which(allt_yc$bin == "High")],   cells.2 = colnames(allt_yc)[which(allt_yc$bin != "High")])
+allt_nc_pct_fc_low  = pct_dif_avg_logFC(allt_nc, cells.1 = colnames(allt_nc)[which(allt_nc$bin == "Low")],    cells.2 = colnames(allt_nc)[which(allt_nc$bin != "Low")])
+allt_nc_pct_fc_med  = pct_dif_avg_logFC(allt_nc, cells.1 = colnames(allt_nc)[which(allt_nc$bin == "Medium")], cells.2 = colnames(allt_nc)[which(allt_nc$bin != "Medium")])
+allt_nc_pct_fc_high = pct_dif_avg_logFC(allt_nc, cells.1 = colnames(allt_nc)[which(allt_nc$bin == "High")],   cells.2 = colnames(allt_nc)[which(allt_nc$bin != "High")])
+allt_yc_pct_fc_low$cluster  = "Low"
+allt_yc_pct_fc_med$cluster  = "Medium"
+allt_yc_pct_fc_high$cluster = "High"
+allt_nc_pct_fc_low$cluster  = "Low"
+allt_nc_pct_fc_med$cluster  = "Medium"
+allt_nc_pct_fc_high$cluster = "High"
+
+allt_yc_not_nc_strict_pct_fc = cbind(allt_yc_pct_fc_low[match(allt_yc_not_nc_strict$gene[which(allt_yc_not_nc_strict$cluster == "Low")], allt_yc_pct_fc_low$gene),], allt_nc_pct_fc_low[match(allt_yc_not_nc_strict$gene[which(allt_yc_not_nc_strict$cluster == "Low")], allt_nc_pct_fc_low$gene),])
+allt_yc_not_nc_strict_pct_fc = rbind(allt_yc_not_nc_strict_pct_fc, cbind(allt_yc_pct_fc_med[match(allt_yc_not_nc_strict$gene[which(allt_yc_not_nc_strict$cluster == "Medium")], allt_yc_pct_fc_med$gene),], allt_nc_pct_fc_med[match(allt_yc_not_nc_strict$gene[which(allt_yc_not_nc_strict$cluster == "Medium")], allt_nc_pct_fc_med$gene),]))
+allt_yc_not_nc_strict_pct_fc = rbind(allt_yc_not_nc_strict_pct_fc, cbind(allt_yc_pct_fc_high[match(allt_yc_not_nc_strict$gene[which(allt_yc_not_nc_strict$cluster == "High")], allt_yc_pct_fc_high$gene),], allt_nc_pct_fc_high[match(allt_yc_not_nc_strict$gene[which(allt_yc_not_nc_strict$cluster == "High")], allt_nc_pct_fc_high$gene),]))
+colnames(allt_yc_not_nc_strict_pct_fc) = c(paste0("yc.", colnames(allt_yc_pct_fc_high)), paste0("nc.", colnames(allt_nc_pct_fc_high)))
+allt_yc_not_nc_strict_pct_fc$nc.avg_logFC[which( is.na(allt_yc_not_nc_strict_pct_fc$nc.avg_logFC) )] = 0
+allt_yc_not_nc_strict_pct_fc$yc.cluster = factor(allt_yc_not_nc_strict_pct_fc$yc.cluster, levels = c("Low", "Medium", "High"))
+allt_yc_not_nc_strict_pct_fc$avg_logFC_dif = allt_yc_not_nc_strict_pct_fc$yc.avg_logFC - allt_yc_not_nc_strict_pct_fc$nc.avg_logFC
+allt_yc_not_nc_strict_pct_fc$pct_dif_dif = allt_yc_not_nc_strict_pct_fc$yc.pct_dif - allt_yc_not_nc_strict_pct_fc$nc.pct_dif
+allt_yc_not_nc_strict_pct_fc$cluster_gene = paste0(allt_yc_not_nc_strict_pct_fc$yc.cluster, "_", allt_yc_not_nc_strict_pct_fc$yc.genes)
+
+allt_yc_not_nc_strict_pct_fc = allt_yc_not_nc_strict_pct_fc[which( abs(allt_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 0.25 & abs(allt_yc_not_nc_strict_pct_fc$pct_dif_dif) > 5 & sign(allt_yc_not_nc_strict_pct_fc$pct_dif_dif) == sign(allt_yc_not_nc_strict_pct_fc$avg_logFC_dif) & sign(allt_yc_not_nc_strict_pct_fc$yc.pct_dif) == sign(allt_yc_not_nc_strict_pct_fc$yc.avg_logFC) ),]
+allt_yc_not_nc_strict = allt_yc_not_nc_strict[which(allt_yc_not_nc_strict$cluster_gene %in% allt_yc_not_nc_strict_pct_fc$cluster_gene),]
+allt_yc_not_nc_strict$cluster = factor(allt_yc_not_nc_strict$cluster, levels = c("Low", "Medium", "High"))
+allt_yc_strict_deg$cluster = factor(allt_yc_strict_deg$cluster, levels = c("Low", "Medium", "High"))
+
+pdf("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
+ggplot(allt_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=allt_yc_not_nc_strict_pct_fc[which( abs(allt_yc_not_nc_strict_pct_fc$yc.avg_logFC - allt_yc_not_nc_strict_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+dev.off()
+# pdf("~/scratch/d_tooth/results/igor/allt/allt_yc_pct_fc_strict_bin.pdf", width = 8, height = 6)
+# ggplot(allt_yc_not_nc_strict_pct_fc, aes(x = yc.pct_dif, y = yc.avg_logFC, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=allt_yc_not_nc_strict_pct_fc[which( abs(allt_yc_not_nc_strict_pct_fc$yc.avg_logFC - allt_yc_not_nc_strict_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Dif Celsr1+") + ylab("Average LogFC in Celsr1+") + theme_bw() 
+# dev.off()
+# pdf("~/scratch/d_tooth/results/igor/allt/allt_nc_pct_fc_strict_bin.pdf", width = 8, height = 6)
+# ggplot(allt_yc_not_nc_strict_pct_fc, aes(x = nc.pct_dif, y = nc.avg_logFC, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=allt_yc_not_nc_strict_pct_fc[which( abs(allt_yc_not_nc_strict_pct_fc$yc.avg_logFC - allt_yc_not_nc_strict_pct_fc$nc.avg_logFC) > 2.8 ),], aes(label = yc.genes)) + xlab("% Difference Dif Celsr1-") + ylab("Average LogFC in Celsr1-") + theme_bw() 
+# dev.off()
+
+prop_df = data.frame(table(allt_yc_not_nc_strict$cluster) / table(allt_yc_strict_deg$cluster))
+prop_df = rbind(prop_df, prop_df)
+prop_df$Freq[4:6] = 1- prop_df$Freq[4:6]
+prop_df$Freq = prop_df$Freq * 100
+prop_df$isDEG = c(rep("Celsr1+ DEG Only", 3), rep("DEG in Both", 3))
+prop_df$isDEG = factor(prop_df$isDEG, levels = c("DEG in Both", "Celsr1+ DEG Only"))
+prop_df$Var1 = factor(prop_df$Var1, levels = c("Low", "Medium", "High"))
+pdf("~/scratch/d_tooth/results/igor/allt/allt_yc_and_nc_strict_bin_prop_sideways.pdf", width = 7, height = 2.8)
+ggplot(prop_df, aes(x = Var1, y = Freq, fill = isDEG)) + geom_bar(stat="identity", alpha = 0.8) + scale_y_continuous(expand = c(0,0)) + xlab("") + ylab("% of All DEGs in Bin") + theme_bw() + theme(legend.title=element_blank()) + scale_fill_manual(values = c("#264653", "#2A9D8F")) + coord_flip()
+dev.off()
+
+df <- data.frame( high   = c(length(which(allt_yc_not_nc_strict$cluster == "High")),   length(which(allt_yc_strict_deg$cluster == "High"))), 
+                  medium = c(length(which(allt_yc_not_nc_strict$cluster == "Medium")), length(which(allt_yc_strict_deg$cluster == "Medium"))),
+                  low = c(length(which(allt_yc_not_nc_strict$cluster == "Low")),       length(which(allt_yc_strict_deg$cluster == "Low"))),
+                  row.names = c('isDEG','notDEG'))
+fisher.test(df)
+df = data.frame(isHigh = c(length(which(allt_yc_not_nc_strict$cluster == "High")),  length(which(allt_yc_strict_deg$cluster == "High" & ! allt_yc_strict_deg$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))),
+                notHigh = c(length(which(allt_yc_not_nc_strict$cluster != "High")),  length(which(allt_yc_strict_deg$cluster != "High" & ! allt_yc_strict_deg$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))),
+                row.names = c('isDEG','notDEG'))
+fisher.test(df, alternative="greater")
+df = data.frame(isMedium = c(length(which(allt_yc_not_nc_strict$cluster == "Medium")),  length(which(allt_yc_strict_deg$cluster == "Medium" & ! allt_yc_strict_deg$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))),
+                notMedium = c(length(which(allt_yc_not_nc_strict$cluster != "Medium")),  length(which(allt_yc_strict_deg$cluster != "Medium" & ! allt_yc_strict_deg$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))),
+                row.names = c('isDEG','notDEG'))
+fisher.test(df, alternative="greater")
+df = data.frame(isLow = c(length(which(allt_yc_not_nc_strict$cluster == "Low")),  length(which(allt_yc_strict_deg$cluster == "Low" & ! allt_yc_strict_deg$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))),
+                notLow = c(length(which(allt_yc_not_nc_strict$cluster != "Low")),  length(which(allt_yc_strict_deg$cluster != "Low" & ! allt_yc_strict_deg$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))),
+                row.names = c('isDEG','notDEG'))
+fisher.test(df, alternative="greater")
+
+# Human YC vs NC
+hm_yc_deg = read.csv("hm_yc_deg.csv")
+hm_nc_deg = read.csv("hm_nc_deg.csv")
+hm_yc_low_deg  = hm_yc_deg[which(hm_yc_deg$p_val_adj < 0.05 & hm_yc_deg$cluster == "Low"),]
+hm_yc_med_deg  = hm_yc_deg[which(hm_yc_deg$p_val_adj < 0.05 & hm_yc_deg$cluster == "Medium"),]
+hm_yc_high_deg = hm_yc_deg[which(hm_yc_deg$p_val_adj < 0.05 & hm_yc_deg$cluster == "High"),]
+hm_nc_low_deg  = hm_nc_deg[which(hm_nc_deg$p_val_adj < 0.05 & hm_nc_deg$cluster == "Low"),]
+hm_nc_med_deg  = hm_nc_deg[which(hm_nc_deg$p_val_adj < 0.05 & hm_nc_deg$cluster == "Medium"),]
+hm_nc_high_deg = hm_nc_deg[which(hm_nc_deg$p_val_adj < 0.05 & hm_nc_deg$cluster == "High"),]
+
+hm_yc_not_nc = hm_yc_low_deg[which(! hm_yc_low_deg$gene %in% hm_nc_low_deg$gene ),]
+hm_yc_not_nc = rbind(hm_yc_not_nc, hm_yc_med_deg[which(! hm_yc_med_deg$gene %in% hm_nc_med_deg$gene ),])
+hm_yc_not_nc = rbind(hm_yc_not_nc, hm_yc_high_deg[which(! hm_yc_high_deg$gene %in% hm_nc_high_deg$gene ),])
+hm_yc_not_nc$cluster_gene = paste0(hm_yc_not_nc$cluster, "_", hm_yc_not_nc$gene)
+
+hm_yc_strict_deg = hm_yc_deg[which(hm_yc_deg$p_val_adj < 0.05 & abs(hm_yc_deg$avg_log2FC) > 0.25 & hm_yc_deg$abs_pct_dif > 0.05),]
+hm_yc_strict_deg$cluster_gene = paste0(hm_yc_strict_deg$cluster, "_", hm_yc_strict_deg$gene)
+
+hm_yc_not_nc_strict = hm_yc_not_nc[which(hm_yc_not_nc$cluster_gene %in% hm_yc_strict_deg$cluster_gene),]
+
+length(which(hm_yc_not_nc$cluster_gene %in% allt_yc_not_nc_strict$cluster_gene))
+length(which(hm_yc_not_nc_strict$cluster_gene %in% hm_yc_not_nc_strict$cluster_gene))
+
+hm_yc_pct_fc_low  = pct_dif_avg_logFC(hm_yc, cells.1 = colnames(hm_yc)[which(hm_yc$bin == "Low")],    cells.2 = colnames(hm_yc)[which(hm_yc$bin != "Low")])
+hm_yc_pct_fc_med  = pct_dif_avg_logFC(hm_yc, cells.1 = colnames(hm_yc)[which(hm_yc$bin == "Medium")], cells.2 = colnames(hm_yc)[which(hm_yc$bin != "Medium")])
+hm_yc_pct_fc_high = pct_dif_avg_logFC(hm_yc, cells.1 = colnames(hm_yc)[which(hm_yc$bin == "High")],   cells.2 = colnames(hm_yc)[which(hm_yc$bin != "High")])
+hm_nc_pct_fc_low  = pct_dif_avg_logFC(hm_nc, cells.1 = colnames(hm_nc)[which(hm_nc$bin == "Low")],    cells.2 = colnames(hm_nc)[which(hm_nc$bin != "Low")])
+hm_nc_pct_fc_med  = pct_dif_avg_logFC(hm_nc, cells.1 = colnames(hm_nc)[which(hm_nc$bin == "Medium")], cells.2 = colnames(hm_nc)[which(hm_nc$bin != "Medium")])
+hm_nc_pct_fc_high = pct_dif_avg_logFC(hm_nc, cells.1 = colnames(hm_nc)[which(hm_nc$bin == "High")],   cells.2 = colnames(hm_nc)[which(hm_nc$bin != "High")])
+hm_yc_pct_fc_low$cluster  = "Low"
+hm_yc_pct_fc_med$cluster  = "Medium"
+hm_yc_pct_fc_high$cluster = "High"
+hm_nc_pct_fc_low$cluster  = "Low"
+hm_nc_pct_fc_med$cluster  = "Medium"
+hm_nc_pct_fc_high$cluster = "High"
+
+hm_yc_not_nc_strict_pct_fc = cbind(hm_yc_pct_fc_low[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Low")], hm_yc_pct_fc_low$gene),], hm_nc_pct_fc_low[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Low")], hm_nc_pct_fc_low$gene),])
+hm_yc_not_nc_strict_pct_fc = rbind(hm_yc_not_nc_strict_pct_fc, cbind(hm_yc_pct_fc_med[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Medium")], hm_yc_pct_fc_med$gene),], hm_nc_pct_fc_med[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Medium")], hm_nc_pct_fc_med$gene),]))
+hm_yc_not_nc_strict_pct_fc = rbind(hm_yc_not_nc_strict_pct_fc, cbind(hm_yc_pct_fc_high[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "High")], hm_yc_pct_fc_high$gene),], hm_nc_pct_fc_high[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "High")], hm_nc_pct_fc_high$gene),]))
+colnames(hm_yc_not_nc_strict_pct_fc) = c(paste0("yc.", colnames(hm_yc_pct_fc_high)), paste0("nc.", colnames(hm_nc_pct_fc_high)))
+hm_yc_not_nc_strict_pct_fc$nc.avg_logFC[which( is.na(hm_yc_not_nc_strict_pct_fc$nc.avg_logFC) )] = 0
+hm_yc_not_nc_strict_pct_fc$yc.cluster = factor(hm_yc_not_nc_strict_pct_fc$yc.cluster, levels = c("Low", "Medium", "High"))
+hm_yc_not_nc_strict_pct_fc$avg_logFC_dif = hm_yc_not_nc_strict_pct_fc$yc.avg_logFC - hm_yc_not_nc_strict_pct_fc$nc.avg_logFC
+hm_yc_not_nc_strict_pct_fc$pct_dif_dif = hm_yc_not_nc_strict_pct_fc$yc.pct_dif - hm_yc_not_nc_strict_pct_fc$nc.pct_dif
+hm_yc_not_nc_strict_pct_fc$cluster_gene = paste0(hm_yc_not_nc_strict_pct_fc$yc.cluster, "_", hm_yc_not_nc_strict_pct_fc$yc.genes)
+
+hm_yc_not_nc_strict_pct_fc = hm_yc_not_nc_strict_pct_fc[which( abs(hm_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 0.25 & abs(hm_yc_not_nc_strict_pct_fc$pct_dif_dif) > 5 & sign(hm_yc_not_nc_strict_pct_fc$pct_dif_dif) == sign(hm_yc_not_nc_strict_pct_fc$avg_logFC_dif) & sign(hm_yc_not_nc_strict_pct_fc$yc.pct_dif) == sign(hm_yc_not_nc_strict_pct_fc$yc.avg_logFC) ),]
+hm_yc_not_nc_strict = hm_yc_not_nc_strict[which(hm_yc_not_nc_strict$cluster_gene %in% hm_yc_not_nc_strict_pct_fc$cluster_gene),]
+hm_yc_not_nc_strict$cluster = factor(hm_yc_not_nc_strict$cluster, levels = c("Low", "Medium", "High"))
+hm_yc_strict_deg$cluster = factor(hm_yc_strict_deg$cluster, levels = c("Low", "Medium", "High"))
+
+pdf("~/scratch/d_tooth/results/igor/allt/hm_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
+ggplot(hm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(rev(brewer.pal(11,"Spectral"))[2], rev(brewer.pal(11,"Spectral"))[10]), guide = "none") + geom_text_repel(aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+dev.off()
+
+# Volcano Plot
+celsr1_deg = read.csv("allt_yc_deg.csv")
+celsr1_deg$cluster_gene = paste0(celsr1_deg$cluster, "_", celsr1_deg$gene)
+celsr1_deg$abs_pct_dif = abs(celsr1_deg$abs_pct_dif)
+celsr1_deg_strict = celsr1_deg[which(celsr1_deg$p_val_adj < 0.05 & abs(celsr1_deg$avg_log2FC) > 0.25 & celsr1_deg$abs_pct_dif > 0.05 & sign(celsr1_deg$avg_log2FC) == sign(celsr1_deg$pct_dif)),]
+celsr1_deg$isSig = celsr1_deg$cluster_gene %in% celsr1_deg_strict$cluster_gene
+celsr1_deg$col = plyr::revalue(celsr1_deg$cluster, replace = c("Low" = rev(brewer.pal(11,"Spectral"))[2], "Medium" = "gold", "High" = rev(brewer.pal(11,"Spectral"))[10]))
+celsr1_deg$col = as.vector(celsr1_deg$col)
+celsr1_deg$col[which( !celsr1_deg$isSig )] = "gray"
+celsr1_deg$abs_pct_dif = abs(celsr1_deg$pct.1 - celsr1_deg$pct.2)
+celsr1_deg$col[which( (celsr1_deg$abs_pct_dif < 0.05 | abs(celsr1_deg$avg_log2FC) < 0.25) )] = "gray"
+pdf("~/scratch/d_tooth/results/igor/allt/allt_yc_sig_thresh2.pdf", width = 5, height = 8)
+# pdf("~/research/tooth/results/cm_nc_sig_thresh3.pdf", width = 5, height = 8)
+ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity()
+dev.off()
+system("rclone copy ~/scratch/d_tooth/results/igor/allt/hm_celsr1_sig_thresh2.pdf dropbox:BioSci-Streelman/George/tmp")
+
+# Enrichment Plot
+low_tg  = read.delim("~/Downloads/allt_yc_deg_strict_low.txt", nrows = 3966)
+med_tg  = read.delim("~/Downloads/allt_yc_deg_strict_medium.txt", nrows = 3966)
+high_tg = read.delim("~/Downloads/allt_yc_deg_strict_high.txt", nrows = 3966)
+
+low_tg$cluster = "Low"
+med_tg$cluster = "Medium"
+high_tg$cluster = "High"
+
+all_tg = rbind(low_tg, med_tg, high_tg)
+all_tg$neg_log_q = -log10(all_tg$q.value.Bonferroni)
+all_tg = all_tg[which( all_tg$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: CEllular Component") ),]
+all_tg = all_tg[which( all_tg$Category %in% c("GO: Biological Process") ),]
+all_tg = all_tg %>% group_by(cluster, Category) %>% slice_max(n = 5, order_by = neg_log_q, with_ties = FALSE)
+all_tg$Name2 = all_tg$Name
+all_tg$Name2 = factor(all_tg$Name2, levels = unique(all_tg$Name2[order(all_tg$cluster, decreasing = T)]))
+all_tg$cluster = factor(all_tg$cluster, levels = c("Low", "Medium", "High"))
+
+# ggplot(all_tg, aes(x = Name2, y = neg_log_q, color = cluster, fill = cluster)) + geom_bar(stat = "identity", alpha = 0.8) + facet_wrap( ~ Category, scales="free_x") + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + scale_color_manual(values = c(temp[2], temp[6], temp[10])) + scale_fill_manual(values = c(temp[2], temp[6], temp[10]))
+pdf("~/research/tooth/results/allt_yc_not_nc_cytobin_toppgene_top5.pdf", width = 7, height = 5)
+ggplot(all_tg, aes(x = Name2, y = neg_log_q, color = cluster, fill = cluster)) + geom_bar(stat = "identity", alpha = 0.8) + facet_wrap( ~ cluster, scales="free_x") + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + scale_color_manual(values = c(temp[2], temp[6], temp[10]), name = "") + scale_fill_manual(values = c(temp[2], temp[6], temp[10]), name = "") + ylab("-Log10 Adj P") + xlab("")
+dev.off()
+
+all_tg$pct_of_list = (all_tg$Hit.Count.in.Query.List / all_tg$Hit.Count.in.Genome) * 100
+all_tg2 = all_tg
+all_tg2$neg_log_q = 0
+all_tg2$pct_of_list = 0
+all_tg = rbind(all_tg, all_tg2)
+ggplot(all_tg, aes(y = Name2, x = pct_of_list, color = cluster, size = neg_log_q)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), name = "") + scale_x_continuous(limits = c(0, max(all_tg$pct_of_list)))
+pdf("~/research/tooth/results/allt_yc_cytobin_toppgene_top5_barish.pdf", width = 7, height = 5)
+ggplot(all_tg, aes(y = Name2, x = neg_log_q, color = cluster)) + geom_point(aes(size = pct_of_list)) + geom_line() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), name = "") + scale_x_continuous(limits = c(0, 85), expand = c(0,0), name = "-Log10 Adj P") + theme_classic() + scale_size_continuous(limits = c(5, 80), name = "% of List") + ylab("")  + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + coord_flip()
+dev.off()
+pdf("~/research/tooth/results/allt_yc_not_nc_cytobin_toppgene_top5_barish.pdf", width = 7, height = 5)
+ggplot(all_tg, aes(y = Name2, x = neg_log_q, color = cluster)) + geom_point(aes(size = pct_of_list)) + geom_line() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), name = "") + scale_x_continuous(limits = c(0, 15), expand = c(0,0), name = "-Log10 Adj P") + theme_classic() + scale_size_continuous(limits = c(1, 12), name = "% of List") + ylab("")  + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + coord_flip()
+dev.off()
+
+ggplot(all_tg, aes(x = Name, y = neg_log_q, fill = pct_of_list)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + scale_fill_gradientn(colors = pal(50))
+
+# Semantic Plot
+library("rrvgo")
+test2 = read.table("~/Downloads/allt_yc_low_sig_pos_toppgene.txt", header = T, sep = "\t", nrows = 3966)
+test2 = test2[which( test2$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: CEllular Component") ),]
+test2 = test2[which(test2$q.value.Bonferroni < 0.05),]
+test2_str = paste(test2$ID, test2$q.value.Bonferroni)
+simMatrix <- calculateSimMatrix(test2$ID, orgdb="org.Hs.eg.db", ont="BP", method="Rel")
+scores <- setNames(-log10(test2$q.value.Bonferroni), test2$ID)
+reducedTerms <- reduceSimMatrix(simMatrix, scores, threshold=0.7, orgdb="org.Hs.eg.db")
+heatmapPlot(simMatrix, reducedTerms, annotateParent=TRUE, annotationLabel="parentTerm", fontsize=6)
+scatterPlot(simMatrix, reducedTerms)
+myRrvgoScatterPlot(simMatrix, reducedTerms, k = 4, colorByK = T, seed = 4) + ggtitle("C+M High CytoBIN DEG BP")
+myRrvgoScatterPlot(simMatrix, reducedTerms, k = 3, colorByK = T, seed = 4) + ggtitle("C+M High CytoBIN DEG MF")
+treemapPlot(reducedTerms)
+wordcloudPlot(reducedTerms, min.freq=1, colors="black")
+myRrvgoScatterPlot(simMatrix, reducedTerms, k = 3, colorByK = T, numLabelPerK = 2, seed = 3) + ggtitle("C+M Medium CytoBIN DEG BP")
+myRrvgoScatterPlot(simMatrix, reducedTerms, k = 4, colorByK = T, numLabelPerK = 2, seed = 3) + ggtitle("C+M Medium CytoBIN DEG MF")
+myRrvgoScatterPlot(simMatrix, reducedTerms, k = 5, colorByK = T, numLabelPerK = 2, seed = 3) + ggtitle("C+M Low CytoBIN DEG BP")
+myRrvgoScatterPlot(simMatrix, reducedTerms, k = 3, colorByK = T, numLabelPerK = 2, seed = 3) + ggtitle("C+M Low CytoBIN DEG MF")
+
+httr::POST(
+  url = "http://revigo.irb.hr/Revigo.aspx",
+  body = list(
+    cutoff = "0.7",
+    valueType = "pvalue",
+    speciesTaxon = "0",
+    measure = "SIMREL",
+    goList = list(test2$ID)
+  ),
+  # application/x-www-form-urlencoded
+  encode = "form"
+) -> res
+
+dat <- httr::content(res, encoding = "UTF-8")
+dat <- stri_replace_all_fixed(dat, "\r", "")
+
+myRrvgoScatterPlot <- function(simMatrix, reducedTerms, size="score", addLabel = T, k = 6, colorByK = F, numLabelPerK = 2, labelSize=3, seed = 1, kIter = 100) {
+  set.seed(seed)
+  if(!all(sapply(c("ggplot2", "ggrepel"), requireNamespace, quietly=TRUE))) {
+    stop("Packages ggplot2, ggrepel and/or its dependencies not available. ",
+         "Consider installing them before using this function.", call.=FALSE)
+  }
+  
+  x <- cmdscale(as.matrix(as.dist(1-simMatrix)), eig=TRUE, k=2)
+  
+  df <- cbind(as.data.frame(x$points),
+              reducedTerms[match(rownames(x$points), reducedTerms$go), c("term", "parent", "parentTerm", "size")])
+  
+  df$k = as.character(unname(kmeans(df[,1:2], k, iter.max = kIter)$cluster))
+  df = df[order(df$size, decreasing = T),]
+  # df2 = df[which(! duplicated(df$k) ),]
+  df2 = df %>% group_by(k) %>% slice_max(n = numLabelPerK, order_by = size, with_ties = FALSE)
+  df2 = df2[which(df2$size != 0),]
+  print(df2)
+  # df2 = df2[1:numTopLabel,]
+  
+  if (colorByK) {
+    print("Coloring By k")
+    p <-
+      ggplot2::ggplot(df, ggplot2::aes(x=V1, y=V2, color=k)) +
+      ggplot2::geom_point(ggplot2::aes(size=size), alpha=.5) +
+      ggplot2::scale_color_discrete(guide="none", name = "-Log10 Adj P") + 
+      ggplot2::scale_size_continuous(range=c(0, 25), name = "-Log10 Adj P", breaks=c(10, 50), labels = c("Lower", "Larger")) +
+      ggplot2::scale_x_continuous(name="Semantic Space X") +
+      ggplot2::scale_y_continuous(name="Semantic Space Y") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank())
+  } else {
+    print("Coloring By parentTerm")
+    p <-
+      ggplot2::ggplot(df, ggplot2::aes(x=V1, y=V2, color=parentTerm)) +
+      ggplot2::geom_point(ggplot2::aes(size=size), alpha=.5) +
+      ggplot2::scale_color_discrete(guide="none") +
+      ggplot2::scale_size_continuous(range=c(0, 25), name = "-Log10 Adj P", breaks=c(10, 50), labels = c("Lower", "Larger")) +
+      ggplot2::scale_x_continuous(name="Semantic Space X") +
+      ggplot2::scale_y_continuous(name="Semantic Space Y") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(axis.text.x=ggplot2::element_blank(), axis.text.y=ggplot2::element_blank())
+  }
+  
+  
+  if(addLabel) {
+    p + ggrepel::geom_label_repel(aes(label=parentTerm),
+                                  data=df2,
+                                  box.padding=grid::unit(1, "lines"), size=labelSize, max.overlaps = Inf)
+  } else {
+    p
+  }
+}
+
+#*******************************************************************************
+# Talha IM Split ===============================================================
+#*******************************************************************************
+rna_path = "~/scratch/brain/"
+source(paste0(rna_path, "brain_scripts/all_f.R"))
+data_folder = "~/scratch/d_tooth/data/"
+allt_folder = "~/scratch/d_tooth/results/igor/allt/"
+setwd(allt_folder)
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+pal = colorRampPalette(temp)
+
+regen_yc = readRDS("regen_yc2.rds")
+regen_nc = readRDS("regen_nc2.rds")
+imm_yc   = readRDS("imm_yc.rds")
+imm_nc   = readRDS("imm_nc.rds")
+hm_yc   = readRDS("hm_yc.rds")
+hm_nc   = readRDS("hm_nc.rds")
+
+regen_yc_deg = read.csv("regen_yc_deg2.csv")
+regen_nc_deg = read.csv("regen_nc_deg2.csv")
+imm_yc_deg = read.csv("imm_yc_deg.csv")
+imm_nc_deg = read.csv("imm_nc_deg.csv")
+hm_yc_deg = read.csv("hm_yc_deg.csv")
+hm_nc_deg = read.csv("hm_nc_deg.csv")
+
+regen_yc_deg$abs_pct_dif = abs(regen_yc_deg$abs_pct_dif)
+regen_nc_deg$abs_pct_dif = abs(regen_nc_deg$abs_pct_dif)
+imm_yc_deg$abs_pct_dif   = abs(imm_yc_deg$abs_pct_dif)
+imm_nc_deg$abs_pct_dif   = abs(imm_nc_deg$abs_pct_dif)
+hm_yc_deg$abs_pct_dif   = abs(hm_yc_deg$abs_pct_dif)
+hm_nc_deg$abs_pct_dif   = abs(hm_nc_deg$abs_pct_dif)
+
+regen_yc_deg$isUp = regen_yc_deg$avg_log2FC > 0
+regen_nc_deg$isUp = regen_nc_deg$avg_log2FC > 0
+imm_yc_deg$isUp   = imm_yc_deg$avg_log2FC > 0
+imm_nc_deg$isUp   = imm_nc_deg$avg_log2FC > 0
+hm_yc_deg$isUp   = hm_yc_deg$avg_log2FC > 0
+hm_nc_deg$isUp   = hm_nc_deg$avg_log2FC > 0
+
+regen_yc_deg$cluster_gene = paste0(regen_yc_deg$cluster, "_", regen_yc_deg$gene)
+regen_nc_deg$cluster_gene = paste0(regen_nc_deg$cluster, "_", regen_nc_deg$gene)
+imm_yc_deg$cluster_gene   = paste0(imm_yc_deg$cluster, "_", imm_yc_deg$gene)
+imm_nc_deg$cluster_gene   = paste0(imm_nc_deg$cluster, "_", imm_nc_deg$gene)
+hm_yc_deg$cluster_gene   = paste0(hm_yc_deg$cluster, "_", hm_yc_deg$gene)
+hm_nc_deg$cluster_gene   = paste0(hm_nc_deg$cluster, "_", hm_nc_deg$gene)
+
+regen_yc_deg$cluster_gene_up = paste0(regen_yc_deg$cluster_gene, "_", regen_yc_deg$isUp)
+regen_nc_deg$cluster_gene_up = paste0(regen_nc_deg$cluster_gene, "_", regen_nc_deg$isUp)
+imm_yc_deg$cluster_gene_up   = paste0(imm_yc_deg$cluster_gene, "_", imm_yc_deg$isUp)
+imm_nc_deg$cluster_gene_up   = paste0(imm_nc_deg$cluster_gene, "_", imm_nc_deg$isUp)
+hm_yc_deg$cluster_gene_up   = paste0(hm_yc_deg$cluster_gene, "_", hm_yc_deg$isUp)
+hm_nc_deg$cluster_gene_up   = paste0(hm_nc_deg$cluster_gene, "_", hm_nc_deg$isUp)
+
+regen_yc_deg = regen_yc_deg[which(regen_yc_deg$p_val_adj < 0.05),]
+regen_nc_deg = regen_nc_deg[which(regen_nc_deg$p_val_adj < 0.05),]
+imm_yc_deg = imm_yc_deg[which(imm_yc_deg$p_val_adj < 0.05),]
+imm_nc_deg = imm_nc_deg[which(imm_nc_deg$p_val_adj < 0.05),]
+hm_yc_deg = hm_yc_deg[which(hm_yc_deg$p_val_adj < 0.05),]
+hm_nc_deg = hm_nc_deg[which(hm_nc_deg$p_val_adj < 0.05),]
+
+regen_yc_deg_strict = regen_yc_deg[which(regen_yc_deg$p_val_adj < 0.05 & abs(regen_yc_deg$avg_log2FC) > 0.25 & regen_yc_deg$abs_pct_dif > 0.05 & sign(regen_yc_deg$avg_log2FC) == sign(regen_yc_deg$pct_dif)),]
+regen_nc_deg_strict = regen_nc_deg[which(regen_nc_deg$p_val_adj < 0.05 & abs(regen_nc_deg$avg_log2FC) > 0.25 & regen_nc_deg$abs_pct_dif > 0.05 & sign(regen_nc_deg$avg_log2FC) == sign(regen_nc_deg$pct_dif)),]
+imm_yc_deg_strict   = imm_yc_deg[which(imm_yc_deg$p_val_adj < 0.05 & abs(imm_yc_deg$avg_log2FC) > 0.25 & imm_yc_deg$abs_pct_dif > 0.05 & sign(imm_yc_deg$avg_log2FC) == sign(imm_yc_deg$pct_dif)),]
+imm_nc_deg_strict   = imm_nc_deg[which(imm_nc_deg$p_val_adj < 0.05 & abs(imm_nc_deg$avg_log2FC) > 0.25 & imm_nc_deg$abs_pct_dif > 0.05 & sign(imm_nc_deg$avg_log2FC) == sign(imm_nc_deg$pct_dif)),]
+hm_yc_deg_strict   = hm_yc_deg[which(hm_yc_deg$p_val_adj < 0.05 & abs(hm_yc_deg$avg_log2FC) > 0.25 & hm_yc_deg$abs_pct_dif > 0.05 & sign(hm_yc_deg$avg_log2FC) == sign(hm_yc_deg$pct_dif)),]
+hm_nc_deg_strict   = hm_nc_deg[which(hm_nc_deg$p_val_adj < 0.05 & abs(hm_nc_deg$avg_log2FC) > 0.25 & hm_nc_deg$abs_pct_dif > 0.05 & sign(hm_nc_deg$avg_log2FC) == sign(hm_nc_deg$pct_dif)),]
+
+# IMM YC vs NC
+imm_yc_not_nc = imm_yc_deg_strict[which(! imm_yc_deg_strict$cluster_gene_up %in% imm_nc_deg_strict$cluster_gene_up ),]
+imm_yc_not_nc_strict = imm_yc_not_nc
+
+imm_yc_pct_fc_low  = pct_dif_avg_logFC(imm_yc, cells.1 = colnames(imm_yc)[which(imm_yc$bin == "Low")],    cells.2 = colnames(imm_yc)[which(imm_yc$bin != "Low")])
+imm_yc_pct_fc_med  = pct_dif_avg_logFC(imm_yc, cells.1 = colnames(imm_yc)[which(imm_yc$bin == "Medium")], cells.2 = colnames(imm_yc)[which(imm_yc$bin != "Medium")])
+imm_yc_pct_fc_high = pct_dif_avg_logFC(imm_yc, cells.1 = colnames(imm_yc)[which(imm_yc$bin == "High")],   cells.2 = colnames(imm_yc)[which(imm_yc$bin != "High")])
+imm_nc_pct_fc_low  = pct_dif_avg_logFC(imm_nc, cells.1 = colnames(imm_nc)[which(imm_nc$bin == "Low")],    cells.2 = colnames(imm_nc)[which(imm_nc$bin != "Low")])
+imm_nc_pct_fc_med  = pct_dif_avg_logFC(imm_nc, cells.1 = colnames(imm_nc)[which(imm_nc$bin == "Medium")], cells.2 = colnames(imm_nc)[which(imm_nc$bin != "Medium")])
+imm_nc_pct_fc_high = pct_dif_avg_logFC(imm_nc, cells.1 = colnames(imm_nc)[which(imm_nc$bin == "High")],   cells.2 = colnames(imm_nc)[which(imm_nc$bin != "High")])
+imm_yc_pct_fc_low$cluster  = "Low"
+imm_yc_pct_fc_med$cluster  = "Medium"
+imm_yc_pct_fc_high$cluster = "High"
+imm_nc_pct_fc_low$cluster  = "Low"
+imm_nc_pct_fc_med$cluster  = "Medium"
+imm_nc_pct_fc_high$cluster = "High"
+
+imm_yc_not_nc_strict_pct_fc = cbind(imm_yc_pct_fc_low[match(imm_yc_not_nc_strict$gene[which(imm_yc_not_nc_strict$cluster == "Low")], imm_yc_pct_fc_low$gene),], imm_nc_pct_fc_low[match(imm_yc_not_nc_strict$gene[which(imm_yc_not_nc_strict$cluster == "Low")], imm_nc_pct_fc_low$gene),])
+imm_yc_not_nc_strict_pct_fc = rbind(imm_yc_not_nc_strict_pct_fc, cbind(imm_yc_pct_fc_med[match(imm_yc_not_nc_strict$gene[which(imm_yc_not_nc_strict$cluster == "Medium")], imm_yc_pct_fc_med$gene),], imm_nc_pct_fc_med[match(imm_yc_not_nc_strict$gene[which(imm_yc_not_nc_strict$cluster == "Medium")], imm_nc_pct_fc_med$gene),]))
+imm_yc_not_nc_strict_pct_fc = rbind(imm_yc_not_nc_strict_pct_fc, cbind(imm_yc_pct_fc_high[match(imm_yc_not_nc_strict$gene[which(imm_yc_not_nc_strict$cluster == "High")], imm_yc_pct_fc_high$gene),], imm_nc_pct_fc_high[match(imm_yc_not_nc_strict$gene[which(imm_yc_not_nc_strict$cluster == "High")], imm_nc_pct_fc_high$gene),]))
+colnames(imm_yc_not_nc_strict_pct_fc) = c(paste0("yc.", colnames(imm_yc_pct_fc_high)), paste0("nc.", colnames(imm_nc_pct_fc_high)))
+imm_yc_not_nc_strict_pct_fc$nc.avg_logFC[which( is.na(imm_yc_not_nc_strict_pct_fc$nc.avg_logFC) )] = 0
+imm_yc_not_nc_strict_pct_fc$yc.cluster = factor(imm_yc_not_nc_strict_pct_fc$yc.cluster, levels = c("Low", "Medium", "High"))
+imm_yc_not_nc_strict_pct_fc$avg_logFC_dif = imm_yc_not_nc_strict_pct_fc$yc.avg_logFC - imm_yc_not_nc_strict_pct_fc$nc.avg_logFC
+imm_yc_not_nc_strict_pct_fc$pct_dif_dif = imm_yc_not_nc_strict_pct_fc$yc.pct_dif - imm_yc_not_nc_strict_pct_fc$nc.pct_dif
+imm_yc_not_nc_strict_pct_fc$cluster_gene = paste0(imm_yc_not_nc_strict_pct_fc$yc.cluster, "_", imm_yc_not_nc_strict_pct_fc$yc.genes)
+
+imm_yc_not_nc_strict_pct_fc = imm_yc_not_nc_strict_pct_fc[which( abs(imm_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 0.25 & abs(imm_yc_not_nc_strict_pct_fc$pct_dif_dif) > 5 & sign(imm_yc_not_nc_strict_pct_fc$pct_dif_dif) == sign(imm_yc_not_nc_strict_pct_fc$avg_logFC_dif) ),]
+imm_yc_not_nc_strict = imm_yc_not_nc_strict[which(imm_yc_not_nc_strict$cluster_gene %in% imm_yc_not_nc_strict_pct_fc$cluster_gene),]
+imm_yc_not_nc_strict$cluster = factor(imm_yc_not_nc_strict$cluster, levels = c("Low", "Medium", "High"))
+imm_yc_deg_strict$cluster = factor(imm_yc_deg_strict$cluster, levels = c("Low", "Medium", "High"))
+
+pdf("~/scratch/d_tooth/results/igor/allt/second_draft/imm_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
+ggplot(imm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+dev.off()
+
+# HM YC vs NC
+hm_yc_not_nc = hm_yc_deg_strict[which(! hm_yc_deg_strict$cluster_gene_up %in% hm_nc_deg_strict$cluster_gene_up ),]
+hm_yc_not_nc_strict = hm_yc_not_nc
+
+hm_yc_pct_fc_low  = pct_dif_avg_logFC(hm_yc, cells.1 = colnames(hm_yc)[which(hm_yc$bin == "Low")],    cells.2 = colnames(hm_yc)[which(hm_yc$bin != "Low")])
+hm_yc_pct_fc_med  = pct_dif_avg_logFC(hm_yc, cells.1 = colnames(hm_yc)[which(hm_yc$bin == "Medium")], cells.2 = colnames(hm_yc)[which(hm_yc$bin != "Medium")])
+hm_yc_pct_fc_high = pct_dif_avg_logFC(hm_yc, cells.1 = colnames(hm_yc)[which(hm_yc$bin == "High")],   cells.2 = colnames(hm_yc)[which(hm_yc$bin != "High")])
+hm_nc_pct_fc_low  = pct_dif_avg_logFC(hm_nc, cells.1 = colnames(hm_nc)[which(hm_nc$bin == "Low")],    cells.2 = colnames(hm_nc)[which(hm_nc$bin != "Low")])
+hm_nc_pct_fc_med  = pct_dif_avg_logFC(hm_nc, cells.1 = colnames(hm_nc)[which(hm_nc$bin == "Medium")], cells.2 = colnames(hm_nc)[which(hm_nc$bin != "Medium")])
+hm_nc_pct_fc_high = pct_dif_avg_logFC(hm_nc, cells.1 = colnames(hm_nc)[which(hm_nc$bin == "High")],   cells.2 = colnames(hm_nc)[which(hm_nc$bin != "High")])
+hm_yc_pct_fc_low$cluster  = "Low"
+hm_yc_pct_fc_med$cluster  = "Medium"
+hm_yc_pct_fc_high$cluster = "High"
+hm_nc_pct_fc_low$cluster  = "Low"
+hm_nc_pct_fc_med$cluster  = "Medium"
+hm_nc_pct_fc_high$cluster = "High"
+
+hm_yc_not_nc_strict_pct_fc = cbind(hm_yc_pct_fc_low[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Low")], hm_yc_pct_fc_low$gene),], hm_nc_pct_fc_low[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Low")], hm_nc_pct_fc_low$gene),])
+hm_yc_not_nc_strict_pct_fc = rbind(hm_yc_not_nc_strict_pct_fc, cbind(hm_yc_pct_fc_med[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Medium")], hm_yc_pct_fc_med$gene),], hm_nc_pct_fc_med[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "Medium")], hm_nc_pct_fc_med$gene),]))
+hm_yc_not_nc_strict_pct_fc = rbind(hm_yc_not_nc_strict_pct_fc, cbind(hm_yc_pct_fc_high[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "High")], hm_yc_pct_fc_high$gene),], hm_nc_pct_fc_high[match(hm_yc_not_nc_strict$gene[which(hm_yc_not_nc_strict$cluster == "High")], hm_nc_pct_fc_high$gene),]))
+colnames(hm_yc_not_nc_strict_pct_fc) = c(paste0("yc.", colnames(hm_yc_pct_fc_high)), paste0("nc.", colnames(hm_nc_pct_fc_high)))
+hm_yc_not_nc_strict_pct_fc$nc.avg_logFC[which( is.na(hm_yc_not_nc_strict_pct_fc$nc.avg_logFC) )] = 0
+hm_yc_not_nc_strict_pct_fc$yc.cluster = factor(hm_yc_not_nc_strict_pct_fc$yc.cluster, levels = c("Low", "Medium", "High"))
+hm_yc_not_nc_strict_pct_fc$avg_logFC_dif = hm_yc_not_nc_strict_pct_fc$yc.avg_logFC - hm_yc_not_nc_strict_pct_fc$nc.avg_logFC
+hm_yc_not_nc_strict_pct_fc$pct_dif_dif = hm_yc_not_nc_strict_pct_fc$yc.pct_dif - hm_yc_not_nc_strict_pct_fc$nc.pct_dif
+hm_yc_not_nc_strict_pct_fc$cluster_gene = paste0(hm_yc_not_nc_strict_pct_fc$yc.cluster, "_", hm_yc_not_nc_strict_pct_fc$yc.genes)
+
+hm_yc_not_nc_strict_pct_fc = hm_yc_not_nc_strict_pct_fc[which( abs(hm_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 0.25 & abs(hm_yc_not_nc_strict_pct_fc$pct_dif_dif) > 5 & sign(hm_yc_not_nc_strict_pct_fc$pct_dif_dif) == sign(hm_yc_not_nc_strict_pct_fc$avg_logFC_dif) ),]
+hm_yc_not_nc_strict = hm_yc_not_nc_strict[which(hm_yc_not_nc_strict$cluster_gene %in% hm_yc_not_nc_strict_pct_fc$cluster_gene),]
+hm_yc_not_nc_strict$cluster = factor(hm_yc_not_nc_strict$cluster, levels = c("Low", "Medium", "High"))
+hm_yc_deg_strict$cluster = factor(hm_yc_deg_strict$cluster, levels = c("Low", "Medium", "High"))
+
+pdf("~/scratch/d_tooth/results/igor/allt/second_draft/hm_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
+ggplot(hm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+dev.off()
+
+# REGEN YC vs NC
+regen_yc_not_nc = regen_yc_deg_strict[which(! regen_yc_deg_strict$cluster_gene_up %in% regen_nc_deg_strict$cluster_gene_up ),]
+regen_yc_not_nc_strict = regen_yc_not_nc
+
+regen_yc_pct_fc_low  = pct_dif_avg_logFC(regen_yc, cells.1 = colnames(regen_yc)[which(regen_yc$bin == "Low")],    cells.2 = colnames(regen_yc)[which(regen_yc$bin != "Low")])
+regen_yc_pct_fc_med  = pct_dif_avg_logFC(regen_yc, cells.1 = colnames(regen_yc)[which(regen_yc$bin == "Medium")], cells.2 = colnames(regen_yc)[which(regen_yc$bin != "Medium")])
+regen_yc_pct_fc_high = pct_dif_avg_logFC(regen_yc, cells.1 = colnames(regen_yc)[which(regen_yc$bin == "High")],   cells.2 = colnames(regen_yc)[which(regen_yc$bin != "High")])
+regen_nc_pct_fc_low  = pct_dif_avg_logFC(regen_nc, cells.1 = colnames(regen_nc)[which(regen_nc$bin == "Low")],    cells.2 = colnames(regen_nc)[which(regen_nc$bin != "Low")])
+regen_nc_pct_fc_med  = pct_dif_avg_logFC(regen_nc, cells.1 = colnames(regen_nc)[which(regen_nc$bin == "Medium")], cells.2 = colnames(regen_nc)[which(regen_nc$bin != "Medium")])
+regen_nc_pct_fc_high = pct_dif_avg_logFC(regen_nc, cells.1 = colnames(regen_nc)[which(regen_nc$bin == "High")],   cells.2 = colnames(regen_nc)[which(regen_nc$bin != "High")])
+regen_yc_pct_fc_low$cluster  = "Low"
+regen_yc_pct_fc_med$cluster  = "Medium"
+regen_yc_pct_fc_high$cluster = "High"
+regen_nc_pct_fc_low$cluster  = "Low"
+regen_nc_pct_fc_med$cluster  = "Medium"
+regen_nc_pct_fc_high$cluster = "High"
+
+regen_yc_not_nc_strict_pct_fc = cbind(regen_yc_pct_fc_low[match(regen_yc_not_nc_strict$gene[which(regen_yc_not_nc_strict$cluster == "Low")], regen_yc_pct_fc_low$gene),], regen_nc_pct_fc_low[match(regen_yc_not_nc_strict$gene[which(regen_yc_not_nc_strict$cluster == "Low")], regen_nc_pct_fc_low$gene),])
+regen_yc_not_nc_strict_pct_fc = rbind(regen_yc_not_nc_strict_pct_fc, cbind(regen_yc_pct_fc_med[match(regen_yc_not_nc_strict$gene[which(regen_yc_not_nc_strict$cluster == "Medium")], regen_yc_pct_fc_med$gene),], regen_nc_pct_fc_med[match(regen_yc_not_nc_strict$gene[which(regen_yc_not_nc_strict$cluster == "Medium")], regen_nc_pct_fc_med$gene),]))
+regen_yc_not_nc_strict_pct_fc = rbind(regen_yc_not_nc_strict_pct_fc, cbind(regen_yc_pct_fc_high[match(regen_yc_not_nc_strict$gene[which(regen_yc_not_nc_strict$cluster == "High")], regen_yc_pct_fc_high$gene),], regen_nc_pct_fc_high[match(regen_yc_not_nc_strict$gene[which(regen_yc_not_nc_strict$cluster == "High")], regen_nc_pct_fc_high$gene),]))
+colnames(regen_yc_not_nc_strict_pct_fc) = c(paste0("yc.", colnames(regen_yc_pct_fc_high)), paste0("nc.", colnames(regen_nc_pct_fc_high)))
+regen_yc_not_nc_strict_pct_fc$nc.avg_logFC[which( is.na(regen_yc_not_nc_strict_pct_fc$nc.avg_logFC) )] = 0
+regen_yc_not_nc_strict_pct_fc$yc.cluster = factor(regen_yc_not_nc_strict_pct_fc$yc.cluster, levels = c("Low", "Medium", "High"))
+regen_yc_not_nc_strict_pct_fc$avg_logFC_dif = regen_yc_not_nc_strict_pct_fc$yc.avg_logFC - regen_yc_not_nc_strict_pct_fc$nc.avg_logFC
+regen_yc_not_nc_strict_pct_fc$pct_dif_dif = regen_yc_not_nc_strict_pct_fc$yc.pct_dif - regen_yc_not_nc_strict_pct_fc$nc.pct_dif
+regen_yc_not_nc_strict_pct_fc$cluster_gene = paste0(regen_yc_not_nc_strict_pct_fc$yc.cluster, "_", regen_yc_not_nc_strict_pct_fc$yc.genes)
+
+regen_yc_not_nc_strict_pct_fc = regen_yc_not_nc_strict_pct_fc[which( abs(regen_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 0.25 & abs(regen_yc_not_nc_strict_pct_fc$pct_dif_dif) > 5 & sign(regen_yc_not_nc_strict_pct_fc$pct_dif_dif) == sign(regen_yc_not_nc_strict_pct_fc$avg_logFC_dif) ),]
+regen_yc_not_nc_strict = regen_yc_not_nc_strict[which(regen_yc_not_nc_strict$cluster_gene %in% regen_yc_not_nc_strict_pct_fc$cluster_gene),]
+regen_yc_not_nc_strict$cluster = factor(regen_yc_not_nc_strict$cluster, levels = c("Low", "Medium", "High"))
+regen_yc_deg_strict$cluster = factor(regen_yc_deg_strict$cluster, levels = c("Low", "Medium", "High"))
+
+pdf("~/scratch/d_tooth/results/igor/allt/second_draft/regen_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
+ggplot(regen_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=regen_yc_not_nc_strict_pct_fc[which(abs(regen_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 1),], aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+dev.off()
+
+regen_yc_deg = read.csv("regen_yc_deg2.csv")
+regen_yc_deg$cluster_gene = paste0(regen_yc_deg$cluster, "_", regen_yc_deg$gene)
+regen_yc_deg$isSig = regen_yc_deg$cluster_gene %in% regen_yc_deg_strict$cluster_gene
+celsr1_deg = regen_yc_deg
+celsr1_deg$col = plyr::revalue(celsr1_deg$cluster, replace = c("Low" = rev(brewer.pal(11,"Spectral"))[2], "Medium" = "gold", "High" = rev(brewer.pal(11,"Spectral"))[10]))
+celsr1_deg$col = as.vector(celsr1_deg$col)
+celsr1_deg$col[which( !celsr1_deg$isSig )] = "gray"
+celsr1_deg = celsr1_deg[order(celsr1_deg$isSig),]
+pdf("~/scratch/d_tooth/results/igor/allt/second_draft/regen_yc_deg_strict.pdf", width = 5, height = 4)
+ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity()
+dev.off()
+
+regen_yc_not_nc_strict_strict = regen_yc_deg_strict[which( paste0(regen_yc_deg_strict$cluster, "_", regen_yc_deg_strict$gene,"_", ! regen_yc_deg_strict$isUp) %in% regen_nc_deg$cluster_gene_up ),]
+regen_yc_not_nc_strict_strict = regen_yc_not_nc_strict_strict[which(regen_yc_not_nc_strict_strict$cluster_gene_up %in% regen_yc_not_nc_strict$cluster_gene_up),]
+regen_yc_only = regen_yc_not_nc_strict[which( (! regen_yc_not_nc_strict$cluster_gene_up %in% imm_yc_not_nc_strict$cluster_gene_up) & (! regen_yc_not_nc_strict$cluster_gene_up %in% hm_yc_not_nc_strict$cluster_gene_up) ),]
+
+#*******************************************************************************
+# Fisher's Table ===============================================================
+#*******************************************************************************
+low_yc = read.delim("C:/Users/miles/Downloads/regen_yc_deg_strict_low.txt")
+low_nc = read.delim("C:/Users/miles/Downloads/regen_nc_deg_strict_low.txt")
+medium_yc = read.delim("C:/Users/miles/Downloads/regen_yc_deg_strict_medium.txt")
+medium_nc = read.delim("C:/Users/miles/Downloads/regen_nc_deg_strict_medium.txt")
+high_yc = read.delim("C:/Users/miles/Downloads/regen_yc_deg_strict_high.txt")
+high_nc = read.delim("C:/Users/miles/Downloads/regen_nc_deg_strict_high.txt")
+
+bin_yc = medium_yc
+bin_nc = medium_nc
+bin_yc = bin_yc[which(bin_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+bin_nc = bin_nc[which(bin_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+bin_all = full_join(bin_yc, bin_nc, by = "ID", suffix = c(".yc", ".nc"))
+bin_all$Category.yc[which(is.na(bin_all$Category.yc))] = bin_all$Category.nc[which(is.na(bin_all$Category.yc))]
+bin_all$Category.nc[which(is.na(bin_all$Category.nc))] = bin_all$Category.yc[which(is.na(bin_all$Category.nc))]
+bin_all$Name.yc[which(is.na(bin_all$Name.yc))] = bin_all$Name.nc[which(is.na(bin_all$Name.yc))]
+bin_all$Name.nc[which(is.na(bin_all$Name.nc))] = bin_all$Name.yc[which(is.na(bin_all$Name.nc))]
+bin_all$q.value.Bonferroni.yc[which(is.na(bin_all$q.value.Bonferroni.yc))] = 1
+bin_all$q.value.Bonferroni.nc[which(is.na(bin_all$q.value.Bonferroni.nc))] = 1
+bin_all$p.value.yc[which(is.na(bin_all$p.value.yc))] = 1
+bin_all$p.value.nc[which(is.na(bin_all$p.value.nc))] = 1
+bin_all$Hit.Count.in.Query.List.yc[which(is.na(bin_all$Hit.Count.in.Query.List.yc))] = 0
+bin_all$Hit.Count.in.Query.List.nc[which(is.na(bin_all$Hit.Count.in.Query.List.nc))] = 0
+ggplot(bin_all, aes(p.value.yc, p.value.nc)) + geom_point()
+# bin_all_pres = bin_all[which(bin_all$p.value.yc != 1 & bin_all$p.value.nc != 1),]
+# ggplot(bin_all_pres, aes(p.value.yc, p.value.nc)) + geom_point()
+
+bin_all_yc = bin_all[which(bin_all$q.value.Bonferroni.yc < 0.05 & bin_all$q.value.Bonferroni.nc >= 0.05),]
+ggplot(bin_all_yc, aes(p.value.yc, p.value.nc)) + geom_point()
+bin_all_yc_t = rbind(setNames(bin_all_yc[,c("ID", "q.value.Bonferroni.yc", "Hit.Count.in.Query.List.yc")], c("ID", "bon", "hit.count")),
+                     setNames(bin_all_yc[,c("ID", "q.value.Bonferroni.nc", "Hit.Count.in.Query.List.nc")], c("ID", "bon", "hit.count")))
+bin_all_yc_t$isYC = c(rep("Celsr1+", nrow(bin_all_yc)), rep("Celsr1-", nrow(bin_all_yc)))
+bin_all_yc_t$bon = as.numeric(bin_all_yc_t$bon)
+bin_all_yc_t$hit.count = as.numeric(bin_all_yc_t$hit.count)
+bin_all_yc_t$neg_log_bon = -log10(bin_all_yc_t$bon)
+bin_all_yc_t$Name = bin_all_yc$Name.yc[match(bin_all_yc_t$ID, bin_all_yc$ID)]
+bin_all_yc_t$ID = factor(bin_all_yc_t$ID, levels = bin_all_yc$ID[order(as.numeric(bin_all_yc$q.value.Bonferroni.yc), decreasing = T)])
+bin_all_yc_t$Name = factor(bin_all_yc_t$Name, levels = bin_all_yc$Name.yc[order(as.numeric(bin_all_yc$q.value.Bonferroni.yc), decreasing = T)])
+ggplot(bin_all_yc_t, aes(y = neg_log_bon, x = Name, color = isYC, fill = isYC)) + geom_bar(stat="identity", alpha = 0.8, position = position_dodge2()) + coord_flip() + scale_color_manual(values = c("#132B43", "#56B1F7")) + scale_fill_manual(values = c("#132B43", "#56B1F7")) + scale_y_continuous(expand = c(0,0), name = expression(-Log["10"]*" Adjusted P")) + ggtitle("Sig Enriched Cat. in Celsr1+, not Celsr1- in Low")
+ggplot(bin_all_yc_t, aes(y = neg_log_bon, x = Name, color = isYC, fill = isYC)) + geom_bar(stat="identity", alpha = 0.8, position = position_dodge2()) + coord_flip() + scale_color_manual(values = c("#DAA520", "#edd815")) + scale_fill_manual(values = c("#DAA520", "#edd815")) + scale_y_continuous(expand = c(0,0), name = expression(-Log["10"]*" Adjusted P")) + ggtitle("Sig Enriched Cat. in Celsr1+, not Celsr1- in Medium")
+ggplot(bin_all_yc_t[which(bin_all_yc_t$Name %in% levels(bin_all_yc_t$Name)[1:50]),], aes(y = neg_log_bon, x = Name, color = isYC, fill = isYC)) + geom_bar(stat="identity", alpha = 0.8, position = position_dodge2()) + coord_flip() + scale_color_manual(values = c("darkred", "red")) + scale_fill_manual(values = c("darkred", "red")) + scale_y_continuous(expand = c(0,0), name = expression(-Log["10"]*" Adjusted P")) + ggtitle("Sig Enriched Cat. in Celsr1+, not Celsr1- in High")
+
+deg = read.csv("C:/Users/miles/Downloads/regen_yc_deg_strict.csv")
+low_n = length(unique(deg$gene[which(deg$cluster == "Low" & deg$avg_log2FC > 0)]))
+medium_n = length(unique(deg$gene[which(deg$cluster == "Medium" & deg$avg_log2FC > 0)]))
+high_n = length(unique(deg$gene[which(deg$cluster == "High" & deg$avg_log2FC > 0)]))
+all_res = rbind(low_yc[which(low_yc$Category == "GO: Biological Process")[1:5],], medium_yc[which(medium_yc$Category == "GO: Biological Process")[1:5],], high_yc[which(high_yc$Category == "GO: Biological Process")[1:5],])
+all_res$cluster = c(rep("Low", 5), rep("Medium", 5), rep("High", 5))
+all_res$n = c(rep(low_n, 5), rep(medium_n, 5), rep(high_n, 5))
+all_res$obs = as.numeric(all_res$Hit.Count.in.Query.List)
+# all_res$obs = c(as.numeric(low_yc$Hit.Count.in.Query.List[match(all_res$ID[1:5], low_yc$ID)]),
+#                 as.numeric(medium_yc$Hit.Count.in.Query.List[match(all_res$ID[6:10], medium_yc$ID)]),
+#                 as.numeric(high_yc$Hit.Count.in.Query.List[match(all_res$ID[11:15], high_yc$ID)]))
+all_res$exp = all_res$n * (as.numeric(all_res$Hit.Count.in.Genome) / 21771)
+all_res$obs_exp = all_res$obs / all_res$exp
+all_res_t = melt(all_res)
+all_res_t = all_res_t[which(all_res_t$variable %in% c("obs", "exp")),]
+all_res_t$cluster_variable = paste0(all_res_t$cluster, "_", all_res_t$variable)
+all_res_t$col = plyr::revalue(all_res_t$cluster_variable, replace = c("Low_exp" = "#132B43", "Low_obs" = "#56B1F7", "Medium_exp" = "#DAA520", "Medium_obs" = "#edd815", "High_exp" = "darkred", "High_obs" = "red"))
+all_res_t$Name = factor(all_res_t$Name, levels = unique(all_res_t$Name[order(all_res_t$cluster)]))
+# ggplot(bin_yc_t, aes(x = Name, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", position = position_dodge2())
+pdf("C:/Users/miles/Downloads/yc_enrich.pdf", width = 10, height = 5)
+ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes")
+dev.off()
+
+deg = read.csv("C:/Users/miles/Downloads/regen_yc_not_nc_strict.csv")
+low_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_low.txt")
+medium_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_medium.txt")
+high_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_high.txt")
+low_n = length(unique(deg$gene[which(deg$cluster == "Low" & deg$avg_log2FC > 0)]))
+medium_n = length(unique(deg$gene[which(deg$cluster == "Medium" & deg$avg_log2FC > 0)]))
+high_n = length(unique(deg$gene[which(deg$cluster == "High" & deg$avg_log2FC > 0)]))
+all_res = rbind(low_yc[which(low_yc$Category == "GO: Biological Process")[1:5],], medium_yc[which(medium_yc$Category == "GO: Biological Process")[1:5],], high_yc[which(high_yc$Category == "GO: Biological Process")[1:5],])
+all_res$cluster = c(rep("Low", 5), rep("Medium", 5), rep("High", 5))
+all_res$n = c(rep(low_n, 5), rep(medium_n, 5), rep(high_n, 5))
+all_res$obs = as.numeric(all_res$Hit.Count.in.Query.List)
+# all_res$obs = c(as.numeric(low_yc$Hit.Count.in.Query.List[match(all_res$ID[1:5], low_yc$ID)]),
+#                 as.numeric(medium_yc$Hit.Count.in.Query.List[match(all_res$ID[6:10], medium_yc$ID)]),
+#                 as.numeric(high_yc$Hit.Count.in.Query.List[match(all_res$ID[11:15], high_yc$ID)]))
+all_res$exp = all_res$n * (as.numeric(all_res$Hit.Count.in.Genome) / 21771)
+all_res$obs_exp = all_res$obs / all_res$exp
+all_res_t = melt(all_res)
+all_res_t = all_res_t[which(all_res_t$variable %in% c("obs", "exp")),]
+all_res_t$cluster_variable = paste0(all_res_t$cluster, "_", all_res_t$variable)
+all_res_t$col = plyr::revalue(all_res_t$cluster_variable, replace = c("Low_exp" = "#132B43", "Low_obs" = "#56B1F7", "Medium_exp" = "#DAA520", "Medium_obs" = "#edd815", "High_exp" = "darkred", "High_obs" = "red"))
+all_res_t$Name = factor(all_res_t$Name, levels = unique(all_res_t$Name[order(all_res_t$cluster)]))
+# ggplot(bin_yc_t, aes(x = Name, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", position = position_dodge2())
+pdf("C:/Users/miles/Downloads/yc_not_nc_enrich.pdf", width = 10, height = 5)
+ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes")
+dev.off()
+
 #*************************************************************************************************
 # CM Celsr1+ Special ToppGene Circle Plot ========================================================
 #*************************************************************************************************
+library(circlize)
 toppgene_df = read.table("C:/Users/miles/Downloads/cm_celsr1_spe_big_toppgene.txt", sep = "\t", header = T, nrow = 19490)
 toppgene_df = toppgene_df[which(! toppgene_df$Category %in% c("Pubmed", "Pathway")),]
 toppgene_df = toppgene_df[which(toppgene_df$q.value.Bonferroni < 0.05),]
 toppgene_df$neg_log_bon = -log10(toppgene_df$q.value.Bonferroni)
 
 pdf("C:/Users/miles/Downloads/cm_celsr1_spe_big_toppgene.pdf", width = 10, height = 10)
+pdf("~/research/tooth/results/allt_yc_not_nc_strict_toppgene.pdf", width = 10, height = 10)
 toppgene_df = toppgene_df[order(toppgene_df$q.value.Bonferroni, decreasing = F), ]
 toppgene_df = toppgene_df[1:100,]
 toppgene_df$col = plyr::revalue(toppgene_df$Category, replace = c("GO: Biological Process" = "#00A08A", "GO: Cellular Component" = "#FF0000", "GO: Molecular Function" = "#F2AD00", "Mouse Phenotype" = "#264653"))
@@ -1330,6 +1981,28 @@ dev.off()
 createCytoBINsInGene = function(obj, gene) {
   gene_pos_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
   gene_obj = subset(obj, cells = gene_pos_cells)
+  gene_obj_cyto = CytoTRACE::CytoTRACE(as.matrix(gene_obj@assays$RNA@counts))
+  gene_obj$cyto = gene_obj_cyto$CytoTRACE
+  
+  gene_obj$bin <- gene_obj$cyto
+  gene_obj$bin[which(gene_obj$cyto <= quantile(gene_obj$cyto, 0.33))] <- "Low"
+  gene_obj$bin[which(gene_obj$cyto > quantile(gene_obj$cyto, 0.33) & gene_obj$cyto <= quantile(gene_obj$cyto, 0.66))] <- "Medium"
+  gene_obj$bin[which(gene_obj$cyto > quantile(gene_obj$cyto, 0.66))] <- "High"
+  gene_obj$bin <- gene_obj$cyto
+  gene_obj$bin[which(gene_obj$cyto <= 0.33)] <- "Low"
+  gene_obj$bin[which(gene_obj$cyto > 0.33 & gene_obj$cyto <= 0.66)] <- "Medium"
+  gene_obj$bin[which(gene_obj$cyto > 0.66)] <- "High"
+  return(list(gene_obj_cyto, gene_obj))
+  # Idents(gene_obj) = gene_obj$bin
+  # deg = FindAllMarkers(gene_obj, only.pos = F, logfc.threshold = 0)
+  # deg = deg[which(deg$p_val_adj < 0.05),]
+  # deg$cluster_sign = paste0(sign(deg$avg_log2FC), deg$cluster)
+  # return(deg)
+}
+
+createCytoBINsInGeneNeg = function(obj, gene) {
+  gene_neg_cells = colnames(obj)[which(obj@assays$RNA@counts[gene,] > 0)]
+  gene_obj = subset(obj, cells = gene_neg_cells)
   gene_obj_cyto = CytoTRACE::CytoTRACE(as.matrix(gene_obj@assays$RNA@counts))
   gene_obj$cyto = gene_obj_cyto$CytoTRACE
   
