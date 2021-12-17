@@ -1,3 +1,26 @@
+# Helper Functions
+createCytoBINsInGene = function(obj) {
+  obj$cyto = 0
+  obj$bin = 0
+  for (s in c("TJ", "JPOOL", "IMI")) {
+    this_cyto = CytoTRACE::CytoTRACE(as.matrix(obj@assays$RNA@counts[which(obj$sample == s)]))
+    this_bin = this_cyto
+    this_bin[which(this_cyto <= quantile(this_cyto, 0.33))] <- "Low"
+    this_bin[which(this_cyto > quantile(this_cyto, 0.33) & this_cyto <= quantile(this_cyto, 0.66))] <- "Medium"
+    this_bin[which(this_cyto > quantile(this_cyto, 0.66))] <- "High"
+    this_bin <- this_cyto
+    this_bin[which(this_cyto <= 0.33)] <- "Low"
+    this_bin[which(this_cyto > 0.33 & this_cyto <= 0.66)] <- "Medium"
+    this_bin[which(this_cyto > 0.66)] <- "High"
+    
+    obj$cyto[which(obj$sample == s)] = this_cyto
+    obj$bin[which(obj$sample == s)] = this_bin
+  }
+  
+  return(obj)
+}
+
+# Body
 rna_path = "~/scratch/brain/"
 source(paste0(rna_path, "brain_scripts/all_f.R"))
 data_folder = "~/scratch/d_tooth/data/"
@@ -29,23 +52,16 @@ regen_nc = readRDS("regen_nc2.rds")
 # 
 # yc_nc_bin_full_sig = yc_nc_bin_full[which(yc_nc_bin_full$p_val_adj < 0.05),]
 # write.csv(yc_nc_bin_full_sig, "yc_nc_bin_simple_deg_sig.csv")
-
+regen_yc$sample[which(is.na(regen_yc$sample))] = "IMI"
 regen_yc$isMes = F
 regen_yc$isMes[which(regen_yc$annot %in% c("Pulp cells", "PDL"))] = T
 regen_yc$isMes[which(regen_yc$sample == "TJ" & regen_yc$seurat_clusters %in% c("5", "7"))] = T
 regen_yc$isMes[which(regen_yc$sample == "JPOOL" & regen_yc$seurat_clusters %in% c("6"))] = T
 regen_yc_mes = subset(regen_yc, cells = colnames(regen_yc)[which(regen_yc$isMes)])
 
-regen_yc_mes$bin <- regen_yc_mes$cyto
-regen_yc_mes$bin[which(regen_yc_mes$cyto <= quantile(regen_yc_mes$cyto, 0.33))] <- "Low"
-regen_yc_mes$bin[which(regen_yc_mes$cyto > quantile(regen_yc_mes$cyto, 0.33) & regen_yc_mes$cyto <= quantile(regen_yc_mes$cyto, 0.66))] <- "Medium"
-regen_yc_mes$bin[which(regen_yc_mes$cyto > quantile(regen_yc_mes$cyto, 0.66))] <- "High"
-regen_yc_mes$bin <- regen_yc_mes$cyto
-regen_yc_mes$bin[which(regen_yc_mes$cyto <= 0.33)] <- "Low"
-regen_yc_mes$bin[which(regen_yc_mes$cyto > 0.33 & regen_yc_mes$cyto <= 0.66)] <- "Medium"
-regen_yc_mes$bin[which(regen_yc_mes$cyto > 0.66)] <- "High"
+regen_yc_mes = createCytoBINsInGene(regen_yc_mes)
 
-Idents(regen_yc_mes) = regen_yc_mes$bins
+Idents(regen_yc_mes) = regen_yc_mes$bin
 regen_yc_mes_deg = FindAllMarkers(regen_yc_mes)
 regen_yc_mes_deg_sig = regen_yc_mes_deg[which(regen_yc_mes_deg$p_val_adj < 0.05),]
 write.csv(regen_yc_mes_deg, "regen_yc_mes_bin_deg.csv")
@@ -57,16 +73,9 @@ regen_yc$isEpi[which(regen_yc$sample == "TJ" & regen_yc$seurat_clusters %in% c("
 regen_yc$isEpi[which(regen_yc$sample == "JPOOL" & regen_yc$seurat_clusters %in% c("0", "1", "3", "4", "7"))] = T
 regen_yc_epi = subset(regen_yc, cells = colnames(regen_yc)[which(regen_yc$isEpi)])
 
-regen_yc_epi$bin <- regen_yc_epi$cyto
-regen_yc_epi$bin[which(regen_yc_epi$cyto <= quantile(regen_yc_epi$cyto, 0.33))] <- "Low"
-regen_yc_epi$bin[which(regen_yc_epi$cyto > quantile(regen_yc_epi$cyto, 0.33) & regen_yc_epi$cyto <= quantile(regen_yc_epi$cyto, 0.66))] <- "Medium"
-regen_yc_epi$bin[which(regen_yc_epi$cyto > quantile(regen_yc_epi$cyto, 0.66))] <- "High"
-regen_yc_epi$bin <- regen_yc_epi$cyto
-regen_yc_epi$bin[which(regen_yc_epi$cyto <= 0.33)] <- "Low"
-regen_yc_epi$bin[which(regen_yc_epi$cyto > 0.33 & regen_yc_epi$cyto <= 0.66)] <- "Medium"
-regen_yc_epi$bin[which(regen_yc_epi$cyto > 0.66)] <- "High"
+regen_yc_epi = createCytoBINsInGene(regen_yc_epi)
 
-Idents(regen_yc_epi) = regen_yc_epi$bins
+Idents(regen_yc_epi) = regen_yc_epi$bin
 regen_yc_epi_deg = FindAllMarkers(regen_yc_epi)
 regen_yc_epi_deg_sig = regen_yc_epi_deg[which(regen_yc_epi_deg$p_val_adj < 0.05),]
 write.csv(regen_yc_epi_deg, "regen_yc_epi_bin_deg.csv")
