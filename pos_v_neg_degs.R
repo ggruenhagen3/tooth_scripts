@@ -52,14 +52,16 @@ regen_nc = readRDS("regen_nc2.rds")
 # 
 # yc_nc_bin_full_sig = yc_nc_bin_full[which(yc_nc_bin_full$p_val_adj < 0.05),]
 # write.csv(yc_nc_bin_full_sig, "yc_nc_bin_simple_deg_sig.csv")
+
 regen_yc$sample[which(is.na(regen_yc$sample))] = "IMI"
+regen_yc$isCichlid = F
+regen_yc$isCichlid[which(regen_yc$sample %in% c("TJ", "JPOOL"))] = T
+
 regen_yc$isMes = F
 regen_yc$isMes[which(regen_yc$annot %in% c("Pulp cells", "PDL"))] = T
 regen_yc$isMes[which(regen_yc$sample == "TJ" & regen_yc$seurat_clusters %in% c("5", "7"))] = T
 regen_yc$isMes[which(regen_yc$sample == "JPOOL" & regen_yc$seurat_clusters %in% c("6"))] = T
 regen_yc_mes = subset(regen_yc, cells = colnames(regen_yc)[which(regen_yc$isMes)])
-
-regen_yc_mes = createCytoBINsInGene(regen_yc_mes)
 
 Idents(regen_yc_mes) = regen_yc_mes$bin
 regen_yc_mes_deg = FindAllMarkers(regen_yc_mes)
@@ -72,8 +74,6 @@ regen_yc$isEpi[which(regen_yc$annot %in% c("Epithelial cells"))] = T
 regen_yc$isEpi[which(regen_yc$sample == "TJ" & regen_yc$seurat_clusters %in% c("2", "3", "4"))] = T
 regen_yc$isEpi[which(regen_yc$sample == "JPOOL" & regen_yc$seurat_clusters %in% c("0", "1", "3", "4", "7"))] = T
 regen_yc_epi = subset(regen_yc, cells = colnames(regen_yc)[which(regen_yc$isEpi)])
-
-regen_yc_epi = createCytoBINsInGene(regen_yc_epi)
 
 Idents(regen_yc_epi) = regen_yc_epi$bin
 regen_yc_epi_deg = FindAllMarkers(regen_yc_epi)
