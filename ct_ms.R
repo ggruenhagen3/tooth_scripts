@@ -135,6 +135,30 @@ pal = convert_tj$col[match(levels(Idents(tj)), convert_tj$new)]
 print(DimPlot(tj, order = T, label = F, pt.size = 1.5, cols = pal) + theme_void() + ggtitle("") + coord_fixed() + NoLegend())
 dev.off()
 
+p = DimPlot(tj, order = T, label = F, pt.size = 1.5, cols = pal) + theme_void() + ggtitle("") + coord_fixed() + NoLegend()
+p = DimPlot(bb, order = T, label = F, pt.size = 1.5, cols = convert53$col[match(0:52, convert53$old)]) + theme_void() + ggtitle("") + coord_fixed() + NoLegend()
+df = p$data
+hull <- df %>% group_by(parent) %>%
+  slice(c(chull(UMAP_1,UMAP_2),
+          chull(UMAP_1,UMAP_2)[1]))
+library("ggforce")
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_hull(aes(fill = ident), concavity = 20, show.legend = FALSE, expand = unit(2.5, "mm"))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_hull(aes(fill = ident), con.border = "none", concavity = 5, show.legend = FALSE, expand = unit(1.5, "mm"))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_ellipse(aes(fill = ident))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_mark_rect(aes(fill = ident))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_voronoi_tile(aes(fill = ident, group = -1L)) + geom_voronoi_segment(color = "black") + geom_point(color = "black")
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_voronoi_segment(aes(fill = ident))
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident, fill = ident)) + geom_point() + theme_void() + guides(color=FALSE) + geom_polygon(data = hull, alpha = 0.5)
+df$parent = convert53$new.parent[match(df$ident, convert53$old)]
+df$parent_col = convert15$col[match(as.numeric(df$parent), convert15$new.num)]
+# df$expand
+my_pal = c(unique(df$parent_col), convert53$col[match(0:52, convert53$old)])
+names(my_pal) = c(unique(df$parent_col), 0:52)
+pdf("C:/Users/miles/Downloads/test.pdf", width = 8, height = 8)
+ggplot(df, aes(UMAP_1, UMAP_2)) + theme_void() + guides(color=FALSE) + geom_mark_hull(aes(group = parent, fill = parent_col, color = parent_col), concavity = 20, expand = unit(2.7, "mm"), linetype = 'solid') + scale_color_manual(values = my_pal) + scale_fill_identity() + geom_point(aes(color = ident), size = 0.6) 
+dev.off()
+ggplot(df, aes(UMAP_1, UMAP_2, color = ident, fill = ident)) + geom_point(size = 0.5) + theme_void() + guides(color=FALSE) + geom_polygon(data = hull, alpha = 0.5) + scale_color_manual(values = convert53$col[match(0:52, convert53$old)])
+
 # Jaw
 jaw$annot = jaw$seurat_clusters
 Idents(jaw) = jaw$annot
@@ -1315,6 +1339,15 @@ combo = cm_celsr1_spe[which( cm_celsr1_spe$gene %in% allt_cor_df$gene[which(allt
 combo[,c("r_celsr1", "r_no_celsr1", "r_dif", "num_celsr1", "num_no_celsr1", "p", "cm_bon", "hm_bon")] = allt_cor_df[match(combo$gene, allt_cor_df$gene), c("celsr1", "no_celsr1", "dif", "num_in_celsr1", "num_in_no_celsr1", "p", "bon", "hm_bon")]
 combo = combo[order(combo$p_val_adj),]
 
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+pal = colorRampPalette(temp)
+df = hm@meta.data
+df = df[order(df$cyto, decreasing = F),]
+pdf("C:/Users/miles/Downloads/hm_nCount_transDiversity.pdf", width = 6, height = 5.5)
+ggplot(df, aes(x = nCount_RNA, y = nFeature_RNA, color = cyto)) + geom_point() + scale_color_gradientn(colors = pal(50)) + xlab("Number of UMIs") + ylab("Transcriptional Diversity")
+dev.off()
+
 #***************************************************************************************************************************
 # All Combined 2 ===========================================================================================================
 #***************************************************************************************************************************
@@ -1973,10 +2006,95 @@ dev.off()
 #*******************************************************************************
 # Fisher's Table ===============================================================
 #*******************************************************************************
-low_yc = read.table("~/Downloads/regen_yc_deg_strict_low.txt", sep = "\t", header = T, nrows = 13000)
-low_nc = read.table("~/Downloads/regen_nc_deg_strict_low.txt", sep = "\t", header = T, nrows = 3000)
-low_all = inner_join(low_yc, low_nc, by = "ID", suffix = c(".yc", ".nc"))
-length(which(low_nc$ID[which(low_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component"))] %in% low_yc$ID[which(low_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component"))]))
+low_yc = read.delim("C:/Users/miles/Downloads/regen_yc_deg_strict_low.txt")
+low_nc = read.delim("C:/Users/miles/Downloads/regen_nc_deg_strict_low.txt")
+medium_yc = read.delim("C:/Users/miles/Downloads/regen_yc_deg_strict_medium.txt")
+medium_nc = read.delim("C:/Users/miles/Downloads/regen_nc_deg_strict_medium.txt")
+high_yc = read.delim("C:/Users/miles/Downloads/regen_yc_deg_strict_high.txt")
+high_nc = read.delim("C:/Users/miles/Downloads/regen_nc_deg_strict_high.txt")
+
+bin_yc = medium_yc
+bin_nc = medium_nc
+bin_yc = bin_yc[which(bin_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+bin_nc = bin_nc[which(bin_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+bin_all = full_join(bin_yc, bin_nc, by = "ID", suffix = c(".yc", ".nc"))
+bin_all$Category.yc[which(is.na(bin_all$Category.yc))] = bin_all$Category.nc[which(is.na(bin_all$Category.yc))]
+bin_all$Category.nc[which(is.na(bin_all$Category.nc))] = bin_all$Category.yc[which(is.na(bin_all$Category.nc))]
+bin_all$Name.yc[which(is.na(bin_all$Name.yc))] = bin_all$Name.nc[which(is.na(bin_all$Name.yc))]
+bin_all$Name.nc[which(is.na(bin_all$Name.nc))] = bin_all$Name.yc[which(is.na(bin_all$Name.nc))]
+bin_all$q.value.Bonferroni.yc[which(is.na(bin_all$q.value.Bonferroni.yc))] = 1
+bin_all$q.value.Bonferroni.nc[which(is.na(bin_all$q.value.Bonferroni.nc))] = 1
+bin_all$p.value.yc[which(is.na(bin_all$p.value.yc))] = 1
+bin_all$p.value.nc[which(is.na(bin_all$p.value.nc))] = 1
+bin_all$Hit.Count.in.Query.List.yc[which(is.na(bin_all$Hit.Count.in.Query.List.yc))] = 0
+bin_all$Hit.Count.in.Query.List.nc[which(is.na(bin_all$Hit.Count.in.Query.List.nc))] = 0
+ggplot(bin_all, aes(p.value.yc, p.value.nc)) + geom_point()
+# bin_all_pres = bin_all[which(bin_all$p.value.yc != 1 & bin_all$p.value.nc != 1),]
+# ggplot(bin_all_pres, aes(p.value.yc, p.value.nc)) + geom_point()
+
+bin_all_yc = bin_all[which(bin_all$q.value.Bonferroni.yc < 0.05 & bin_all$q.value.Bonferroni.nc >= 0.05),]
+ggplot(bin_all_yc, aes(p.value.yc, p.value.nc)) + geom_point()
+bin_all_yc_t = rbind(setNames(bin_all_yc[,c("ID", "q.value.Bonferroni.yc", "Hit.Count.in.Query.List.yc")], c("ID", "bon", "hit.count")),
+                     setNames(bin_all_yc[,c("ID", "q.value.Bonferroni.nc", "Hit.Count.in.Query.List.nc")], c("ID", "bon", "hit.count")))
+bin_all_yc_t$isYC = c(rep("Celsr1+", nrow(bin_all_yc)), rep("Celsr1-", nrow(bin_all_yc)))
+bin_all_yc_t$bon = as.numeric(bin_all_yc_t$bon)
+bin_all_yc_t$hit.count = as.numeric(bin_all_yc_t$hit.count)
+bin_all_yc_t$neg_log_bon = -log10(bin_all_yc_t$bon)
+bin_all_yc_t$Name = bin_all_yc$Name.yc[match(bin_all_yc_t$ID, bin_all_yc$ID)]
+bin_all_yc_t$ID = factor(bin_all_yc_t$ID, levels = bin_all_yc$ID[order(as.numeric(bin_all_yc$q.value.Bonferroni.yc), decreasing = T)])
+bin_all_yc_t$Name = factor(bin_all_yc_t$Name, levels = bin_all_yc$Name.yc[order(as.numeric(bin_all_yc$q.value.Bonferroni.yc), decreasing = T)])
+ggplot(bin_all_yc_t, aes(y = neg_log_bon, x = Name, color = isYC, fill = isYC)) + geom_bar(stat="identity", alpha = 0.8, position = position_dodge2()) + coord_flip() + scale_color_manual(values = c("#132B43", "#56B1F7")) + scale_fill_manual(values = c("#132B43", "#56B1F7")) + scale_y_continuous(expand = c(0,0), name = expression(-Log["10"]*" Adjusted P")) + ggtitle("Sig Enriched Cat. in Celsr1+, not Celsr1- in Low")
+ggplot(bin_all_yc_t, aes(y = neg_log_bon, x = Name, color = isYC, fill = isYC)) + geom_bar(stat="identity", alpha = 0.8, position = position_dodge2()) + coord_flip() + scale_color_manual(values = c("#DAA520", "#edd815")) + scale_fill_manual(values = c("#DAA520", "#edd815")) + scale_y_continuous(expand = c(0,0), name = expression(-Log["10"]*" Adjusted P")) + ggtitle("Sig Enriched Cat. in Celsr1+, not Celsr1- in Medium")
+ggplot(bin_all_yc_t[which(bin_all_yc_t$Name %in% levels(bin_all_yc_t$Name)[1:50]),], aes(y = neg_log_bon, x = Name, color = isYC, fill = isYC)) + geom_bar(stat="identity", alpha = 0.8, position = position_dodge2()) + coord_flip() + scale_color_manual(values = c("darkred", "red")) + scale_fill_manual(values = c("darkred", "red")) + scale_y_continuous(expand = c(0,0), name = expression(-Log["10"]*" Adjusted P")) + ggtitle("Sig Enriched Cat. in Celsr1+, not Celsr1- in High")
+
+deg = read.csv("C:/Users/miles/Downloads/regen_yc_deg_strict.csv")
+low_n = length(unique(deg$gene[which(deg$cluster == "Low" & deg$avg_log2FC > 0)]))
+medium_n = length(unique(deg$gene[which(deg$cluster == "Medium" & deg$avg_log2FC > 0)]))
+high_n = length(unique(deg$gene[which(deg$cluster == "High" & deg$avg_log2FC > 0)]))
+all_res = rbind(low_yc[which(low_yc$Category == "GO: Biological Process")[1:5],], medium_yc[which(medium_yc$Category == "GO: Biological Process")[1:5],], high_yc[which(high_yc$Category == "GO: Biological Process")[1:5],])
+all_res$cluster = c(rep("Low", 5), rep("Medium", 5), rep("High", 5))
+all_res$n = c(rep(low_n, 5), rep(medium_n, 5), rep(high_n, 5))
+all_res$obs = as.numeric(all_res$Hit.Count.in.Query.List)
+# all_res$obs = c(as.numeric(low_yc$Hit.Count.in.Query.List[match(all_res$ID[1:5], low_yc$ID)]),
+#                 as.numeric(medium_yc$Hit.Count.in.Query.List[match(all_res$ID[6:10], medium_yc$ID)]),
+#                 as.numeric(high_yc$Hit.Count.in.Query.List[match(all_res$ID[11:15], high_yc$ID)]))
+all_res$exp = all_res$n * (as.numeric(all_res$Hit.Count.in.Genome) / 21771)
+all_res$obs_exp = all_res$obs / all_res$exp
+all_res_t = melt(all_res)
+all_res_t = all_res_t[which(all_res_t$variable %in% c("obs", "exp")),]
+all_res_t$cluster_variable = paste0(all_res_t$cluster, "_", all_res_t$variable)
+all_res_t$col = plyr::revalue(all_res_t$cluster_variable, replace = c("Low_exp" = "#132B43", "Low_obs" = "#56B1F7", "Medium_exp" = "#DAA520", "Medium_obs" = "#edd815", "High_exp" = "darkred", "High_obs" = "red"))
+all_res_t$Name = factor(all_res_t$Name, levels = unique(all_res_t$Name[order(all_res_t$cluster)]))
+# ggplot(bin_yc_t, aes(x = Name, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", position = position_dodge2())
+pdf("C:/Users/miles/Downloads/yc_enrich.pdf", width = 10, height = 5)
+ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes")
+dev.off()
+
+deg = read.csv("C:/Users/miles/Downloads/regen_yc_not_nc_strict.csv")
+low_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_low.txt")
+medium_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_medium.txt")
+high_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_high.txt")
+low_n = length(unique(deg$gene[which(deg$cluster == "Low" & deg$avg_log2FC > 0)]))
+medium_n = length(unique(deg$gene[which(deg$cluster == "Medium" & deg$avg_log2FC > 0)]))
+high_n = length(unique(deg$gene[which(deg$cluster == "High" & deg$avg_log2FC > 0)]))
+all_res = rbind(low_yc[which(low_yc$Category == "GO: Biological Process")[1:5],], medium_yc[which(medium_yc$Category == "GO: Biological Process")[1:5],], high_yc[which(high_yc$Category == "GO: Biological Process")[1:5],])
+all_res$cluster = c(rep("Low", 5), rep("Medium", 5), rep("High", 5))
+all_res$n = c(rep(low_n, 5), rep(medium_n, 5), rep(high_n, 5))
+all_res$obs = as.numeric(all_res$Hit.Count.in.Query.List)
+# all_res$obs = c(as.numeric(low_yc$Hit.Count.in.Query.List[match(all_res$ID[1:5], low_yc$ID)]),
+#                 as.numeric(medium_yc$Hit.Count.in.Query.List[match(all_res$ID[6:10], medium_yc$ID)]),
+#                 as.numeric(high_yc$Hit.Count.in.Query.List[match(all_res$ID[11:15], high_yc$ID)]))
+all_res$exp = all_res$n * (as.numeric(all_res$Hit.Count.in.Genome) / 21771)
+all_res$obs_exp = all_res$obs / all_res$exp
+all_res_t = melt(all_res)
+all_res_t = all_res_t[which(all_res_t$variable %in% c("obs", "exp")),]
+all_res_t$cluster_variable = paste0(all_res_t$cluster, "_", all_res_t$variable)
+all_res_t$col = plyr::revalue(all_res_t$cluster_variable, replace = c("Low_exp" = "#132B43", "Low_obs" = "#56B1F7", "Medium_exp" = "#DAA520", "Medium_obs" = "#edd815", "High_exp" = "darkred", "High_obs" = "red"))
+all_res_t$Name = factor(all_res_t$Name, levels = unique(all_res_t$Name[order(all_res_t$cluster)]))
+# ggplot(bin_yc_t, aes(x = Name, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", position = position_dodge2())
+pdf("C:/Users/miles/Downloads/yc_not_nc_enrich.pdf", width = 10, height = 5)
+ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes")
+dev.off()
 
 #*************************************************************************************************
 # CM Celsr1+ Special ToppGene Circle Plot ========================================================
