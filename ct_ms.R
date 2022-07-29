@@ -41,6 +41,15 @@ Idents(tj) = factor(Idents(tj), levels = rev(sort(levels(Idents(tj)))))
 dotp = DotPlot(tj, features = deg_tj2$gene) + scale_color_gradientn(colors = pal(50)) + ylab("Cluster") + xlab("Gene") + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, colour = xtext_cols, face = "italic"), axis.text.y = element_text(colour = xtext_unique_cols)) + scale_x_discrete(labels = deg_tj2$gene) + scale_x_discrete(labels = all_labels)
 print(dotp)
 
+pdf("~/research/tooth/results/figure_1_tj_test.pdf", width = 3, height = 6.5)
+print(dotp + xlab("") + ylab("") + coord_fixed() + NoLegend() + coord_flip() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, colour = xtext_unique_cols, face = "plain"), axis.text.y = element_text(colour = xtext_cols, face = "italic")))
+dev.off()
+
+dotp = DotPlot(jaw, features = deg_jaw2$gene) + scale_color_gradientn(colors = pal(50)) + ylab("Cluster") + xlab("Gene") + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, colour = xtext_cols, face = "italic"), axis.text.y = element_text(colour = xtext_unique_cols)) + scale_x_discrete(labels = deg_jaw2$gene) + scale_x_discrete(labels = all_labels)
+pdf("~/research/tooth/results/figure_1_dotplot_jaw_test.pdf", width = 3, height = 8)
+print(dotp + xlab("") + ylab("") + coord_fixed() + NoLegend() + coord_flip() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, colour = xtext_unique_cols, face = "plain"), axis.text.y = element_text(colour = xtext_cols, face = "italic")))
+dev.off()
+
 # DotPlot
 pdf("~/research/tooth/results/figure_1_dotplot_tj_1.pdf", width = 9, height = 5)
 print(dotp + xlab("") + ylab(""))
@@ -439,9 +448,10 @@ dev.off()
 pdf("~/research/tooth/results/incsr_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
 highligtCelsr1Plot(incsr) + ggtitle("") + theme_void()
 dev.off()
-pdf("~/research/tooth/results/incsr_epi_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
+pdf("~/research/tooth/results/incsr_epi_cyto_celsr1_highlight.pdf", width = 3.25, height = 3.5)
 # print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void() + theme(legend.title=element_blank()))
-print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void() + labs(color='CytoTRACE'))
+# print(highligtCelsr1Plot(incsr_epi, my.pt.size = 4, doLabel = T, showGuide = T) + ggtitle("") + theme_void() + labs(color='CytoTRACE'))
+print(highligtCelsr1Plot(incsr_epi, my.pt.size = 2.5, doLabel = T, showGuide = F) + ggtitle("") + theme_void() + labs(color='CytoTRACE'))
 dev.off()
 pdf("~/research/tooth/results/im_cyto_celsr1_highlight.pdf", width = 5.5, height = 5)
 highligtCelsr1Plot(im, my.pt.size = 1, my.alpha.min = 0.2) + ggtitle("") + theme_void()
@@ -1533,8 +1543,76 @@ dev.off()
 
 ggplot(all_tg, aes(x = Name, y = neg_log_q, fill = pct_of_list)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + scale_fill_gradientn(colors = pal(50))
 
+# Pathway Enrichment ===========================================================
+test1 = readxl::read_excel("~/Downloads/cichlid_tooth_degs_and_tg_supp.xlsx", sheet = 2) # Epithelial
+test1 = test1[which(test1$Name %in% c("cell surface", "intrinsic component of plasma membrane", "integral component of plasma membrane", "anchoring junction", "cell-cell junction", "protein complex involved in cell adhesion")),]
+test2 = readxl::read_excel("~/Downloads/cichlid_tooth_degs_and_tg_supp.xlsx", sheet = 3) # Mesenchymal
+test2 = test2[which(test2$Name %in% c("ossification", "odontogenesis of dentin-containing tooth", "skeletal system development", "osteoblast differentiation", "skeletal system morphogenesis", "chondrocyte differentiation", "bone development", "bone morphogenesis", "mesenchymal cell differentiation", "odontogenesis", "biomineralization", "chondrocyte development")),]
+# test3 = readxl::read_excel("~/Downloads/cichlid_tooth_degs_and_tg_supp.xlsx", sheet = 4) # Immune - but has no enrichment
+# test3 = test3[which(test3$Name %in% c("", "", "", "", "", "", "", "", "", "", "", "")),]
+test4 = readxl::read_excel("~/Downloads/cichlid_tooth_degs_and_tg_supp.xlsx", sheet = 5) # Glia
+test4 = test4[which(test4$Name %in% c("neurogenesis", "generation of neurons", "neuron projection development", "axon development", "neuron differentiation", "neuron development", "regulation of axonogenesis", "axon guidance", "neuron projection guidance", "cell projection organization")),]
+test5 = readxl::read_excel("~/Downloads/cichlid_tooth_degs_and_tg_supp.xlsx", sheet = 6) # Endothelial
+# test5 = test5[which(test5$Name %in% c("blood vessel development", "vasculature development", "blood vessel morphogenesis", "angiogenesis", "tube morphogenesis", "endothelial development", "endothelial cell differentiation", "regulation of angiogenesis", "transmembrane receptor protein tyrosine kinase signaling pathway", "regulation of endothelial cell proliferation", "regulation of vasculature development")),]
+test5 = test5[which(test5$Name %in% c("blood vessel development", "vasculature development", "blood vessel morphogenesis", "angiogenesis", "tube morphogenesis", "endothelial development", "endothelial cell differentiation", "regulation of angiogenesis", "regulation of endothelial cell proliferation", "regulation of vasculature development")),]
+
+test1[, c("cell_type", "col")] = data.frame(rep("Epithelial", nrow(test1)), rep("#2A9D8F", nrow(test1)))
+test2[, c("cell_type", "col")] = data.frame(rep("Mesenchymal", nrow(test2)), rep("#E24D28", nrow(test2)))
+test4[, c("cell_type", "col")] = data.frame(rep("Glia", nrow(test4)), rep("#F6B179", nrow(test4)))
+test5[, c("cell_type", "col")] = data.frame(rep("Endothelial", nrow(test5)), rep("#264653", nrow(test5)))
+
+tj_enrich = rbind(test1, test2, test4, test5)
+tj_enrich = tj_enrich[order(tj_enrich$cell_type),]
+tj_enrich = tj_enrich %>%
+  group_by(cell_type) %>%
+  arrange(`Hit Count in Query List`, .by_group = TRUE)
+tj_enrich$Name = factor(tj_enrich$Name, levels = tj_enrich$Name[order(tj_enrich$cell_type)])
+tj_enrich$neg_log_bon = -log10(tj_enrich$`q-value Bonferroni`)
+xtext_cols = tj_enrich$col
+xtext_unique_cols = unique(tj_enrich$col)
+pdf("~/Downloads/tj_cell_type_deg_enrich.pdf", width = 6, height = 9)
+print(ggplot(tj_enrich, aes(x = `Hit Count in Query List`, y = Name, color = col, size = neg_log_bon)) + geom_point() + theme_classic() + scale_color_identity() + theme(axis.text.y = element_text(colour = xtext_cols)) + xlab("Number of Genes") + ylab(""))
+dev.off()
+
+
+test1 = readxl::read_excel("~/Downloads/cichlid_jaw_degs_and_tg_supp.xlsx", sheet = 2) # Epithelial
+test1 = test1[which(test1$Name %in% c("morphogenesis of an epithelium", "cell-cell junction assembly", "epithelial cell morphogenesis", "epithelial cell differentiation", "epithelial cell proliferation", "positive regulation of epithelial cell proliferation", "regulation of epithelial cell proliferation", "epithelial cell migration")),]
+test2 = readxl::read_excel("~/Downloads/cichlid_jaw_degs_and_tg_supp.xlsx", sheet = 3) # Mesenchymal
+test2 = test2[which(test2$Name %in% c("mesenchyme development", "mesenchymal cell differentiation", "extracellular matrix structural constituent", "glycosaminoglycan binding", "extracellular matrix organization", "extracellular structure organization", "connective tissue development")),]
+test3 = readxl::read_excel("~/Downloads/cichlid_jaw_degs_and_tg_supp.xlsx", sheet = 4) # Pigmented
+test3 = test3[which(test3$Name %in% c("pigment cell differentiation", "pigmentation", "developmental pigmentation", "pigment accumulation", "cellular pigment accumulation", "endosome to pigment granule transport", "pigment granule maturation")),]
+test4 = readxl::read_excel("~/Downloads/cichlid_jaw_degs_and_tg_supp.xlsx", sheet = 5) # Immune
+test4 = test4[which(test4$Category == "GO: Biological Process" & test4$Name %in% c("cell activation", "leukocyte activation", "lymphocyte activation", "lymphocyte differentiation", "mononuclear cell differentiation", "T cell activation", "leukocyte differentiation")),]
+# test5 = readxl::read_excel("~/Downloads/cichlid_jaw_degs_and_tg_supp.xlsx", sheet = 6) # Mature TB
+# test5 = test5[which(test5$Name %in% c("", "", "", "", "", "", "")),]
+test6 = readxl::read_excel("~/Downloads/cichlid_jaw_degs_and_tg_supp.xlsx", sheet = 7) # Immature TB
+test6 = test6[which(test6$Name %in% c("gland morphogenesis", "gland development", "morphogenesis of an epithelial bud")),]
+
+test1[, c("cell_type", "col")] = data.frame(rep("Epithelial", nrow(test1)), rep("#2A9D8F", nrow(test1)))
+test2[, c("cell_type", "col")] = data.frame(rep("Mesenchymal", nrow(test2)), rep("#E24D28", nrow(test2)))
+test3[, c("cell_type", "col")] = data.frame(rep("Pigmented", nrow(test3)), rep("#F6B179", nrow(test3)))
+test4[, c("cell_type", "col")] = data.frame(rep("Immune", nrow(test4)), rep("#E9C46A", nrow(test4)))
+test6[, c("cell_type", "col")] = data.frame(rep("Immature TB", nrow(test6)), rep("#264653", nrow(test6)))
+
+jaw_enrich = rbind(test3, test6, test1, test4, test2)
+# jaw_enrich = jaw_enrich[order(jaw_enrich$cell_type),]
+jaw_enrich = jaw_enrich %>%
+  group_by(cell_type) %>%
+  arrange(`Hit Count in Query List`, .by_group = TRUE)
+jaw_enrich = rbind(jaw_enrich[which(jaw_enrich$cell_type == "Pigmented"),], jaw_enrich[which(jaw_enrich$cell_type == "Immature TB"),], jaw_enrich[which(! jaw_enrich$cell_type %in% c("Pigmented", "Immature TB")),])
+jaw_enrich$Name = factor(jaw_enrich$Name, levels = jaw_enrich$Name)
+jaw_enrich$neg_log_bon = -log10(jaw_enrich$`q-value Bonferroni`)
+xtext_cols = jaw_enrich$col
+xtext_unique_cols = unique(jaw_enrich$col)
+pdf("~/Downloads/jaw_cell_type_deg_enrich.pdf", width = 6, height = 9)
+print(ggplot(jaw_enrich, aes(x = `Hit Count in Query List`, y = Name, color = col, size = neg_log_bon)) + geom_point() + theme_classic() + scale_color_identity() + theme(axis.text.y = element_text(colour = xtext_cols)) + xlab("Number of Genes") + ylab(""))
+dev.off()
+
+
 # Semantic Plot
 library("rrvgo")
+# test3 = test3[which(test3$Category %in% "GO: Biological Process")[1:5],]
+test2 = rbind(test1, test3)
 test2 = read.table("~/Downloads/allt_yc_low_sig_pos_toppgene.txt", header = T, sep = "\t", nrows = 3966)
 test2 = test2[which( test2$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: CEllular Component") ),]
 test2 = test2[which(test2$q.value.Bonferroni < 0.05),]
@@ -1795,25 +1873,102 @@ regen_yc_not_nc_strict = regen_yc_not_nc_strict[which(regen_yc_not_nc_strict$clu
 regen_yc_not_nc_strict$cluster = factor(regen_yc_not_nc_strict$cluster, levels = c("Low", "Medium", "High"))
 regen_yc_deg_strict$cluster = factor(regen_yc_deg_strict$cluster, levels = c("Low", "Medium", "High"))
 
-pdf("~/scratch/d_tooth/results/igor/allt/second_draft/regen_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
-ggplot(regen_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=regen_yc_not_nc_strict_pct_fc[which(abs(regen_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 1),], aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/regen_yc_and_nc_pct_fc_strict_bin.pdf", width = 7, height = 7)
+# ggplot(regen_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + geom_text_repel(data=regen_yc_not_nc_strict_pct_fc[which(abs(regen_yc_not_nc_strict_pct_fc$avg_logFC_dif) > 4 & abs(regen_yc_not_nc_strict_pct_fc$pct_dif_dif) > 40),], aes(label = yc.genes)) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw() 
+ggplot(imm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("Difference in Percent Difference") + ylab(expression("Difference in "*Log["2"]*" Fold Change")) + theme_bw() 
 dev.off()
 
-regen_yc_deg = read.csv("regen_yc_deg2.csv")
-regen_yc_deg$cluster_gene = paste0(regen_yc_deg$cluster, "_", regen_yc_deg$gene)
-regen_yc_deg$isSig = regen_yc_deg$cluster_gene %in% regen_yc_deg_strict$cluster_gene
-celsr1_deg = regen_yc_deg
+regen_yc_nc = merge.data.table(as.data.table(regen_yc_deg), as.data.table(regen_nc_deg), by = c('cluster_gene'), suffixes = c(".yc", ".nc"), all = T)
+regen_yc_not_nc_strict_dt = regen_yc_nc[which(regen_yc_nc$cluster_gene_up.yc %in% regen_yc_not_nc_strict$cluster_gene_up),]
+regen_yc_not_nc_strict_dt$cluster_gene.yc = paste0(regen_yc_not_nc_strict_dt$cluster.yc, "_", regen_yc_not_nc_strict_dt$gene.yc)
+# regen_yc_not_nc_strict_dt$pct_dif_dif = regen_yc_not_nc_strict_dt$pct_dif.yc - regen_yc_not_nc_strict_dt$pct_dif.nc
+regen_yc_not_nc_strict_dt$avg_logFC_dif = regen_yc_not_nc_strict_pct_fc$avg_logFC_dif[match(regen_yc_not_nc_strict_dt$cluster_gene.yc, regen_yc_not_nc_strict_pct_fc$cluster_gene)]
+regen_yc_not_nc_strict_dt$pct_dif_dif = regen_yc_not_nc_strict_pct_fc$pct_dif_dif[match(regen_yc_not_nc_strict_dt$cluster_gene.yc, regen_yc_not_nc_strict_pct_fc$cluster_gene)]
+# regen_yc_not_nc_strict_dt$avg_logFC_dif = regen_yc_not_nc_strict_dt$avg_log2FC.yc - regen_yc_not_nc_strict_dt$avg_log2FC.nc
+regen_yc_not_nc_strict_dt$p_val.nc[which(is.na(regen_yc_not_nc_strict_dt$p_val.nc))] = 1
+regen_yc_not_nc_strict_dt$p_val_adj.nc[which(is.na(regen_yc_not_nc_strict_dt$p_val_adj.nc))] = 1
+regen_yc_not_nc_strict_dt$neg_log_p.yc = -log10(regen_yc_not_nc_strict_dt$p_val.yc)
+regen_yc_not_nc_strict_dt$neg_log_p.nc = -log10(regen_yc_not_nc_strict_dt$p_val.nc)
+regen_yc_not_nc_strict_dt$neg_log_padj.yc = -log10(regen_yc_not_nc_strict_dt$p_val_adj.yc)
+regen_yc_not_nc_strict_dt$neg_log_padj.nc = -log10(regen_yc_not_nc_strict_dt$p_val_adj.nc)
+regen_yc_not_nc_strict_dt$neg_log_p_dif = regen_yc_not_nc_strict_dt$neg_log_p.yc - regen_yc_not_nc_strict_dt$neg_log_p.nc
+regen_yc_not_nc_strict_dt$neg_log_padj_dif = regen_yc_not_nc_strict_dt$neg_log_padj.yc - regen_yc_not_nc_strict_dt$neg_log_padj.nc
+regen_yc_not_nc_strict_dt$cluster = factor(regen_yc_not_nc_strict_dt$cluster.yc, levels = c("Low", "Medium", "High"))
+
+# temp = rev(brewer.pal(11,"Spectral"))
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/regen_yc_and_nc_pct_fc_strict_bin_new.pdf", width = 7, height = 7)
+ggplot(regen_yc_not_nc_strict_dt, aes(x = pct_dif_dif, y = avg_logFC_dif, color = cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("% Difference Dif") + ylab("Average LogFC Dif") + theme_bw()
+# ggplot(imm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("Difference in Percent Difference") + ylab(expression("Difference in "*Log["2"]*" Fold Change")) + theme_bw() 
+dev.off()
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/regen_yc_and_nc_p_fc_strict_bin_new.pdf", width = 7, height = 7)
+ggplot(regen_yc_not_nc_strict_dt, aes(x = avg_logFC_dif, y = neg_log_p_dif, color = cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("Average LogFC Dif") + ylab("-Log10(P) Difference") + theme_bw()
+# ggplot(imm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("Difference in Percent Difference") + ylab(expression("Difference in "*Log["2"]*" Fold Change")) + theme_bw() 
+dev.off()
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/regen_yc_and_nc_padj_fc_strict_bin_new.pdf", width = 7, height = 7)
+ggplot(regen_yc_not_nc_strict_dt, aes(x = avg_logFC_dif, y = neg_log_padj_dif, color = cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("Average LogFC Dif") + ylab("-Log10(P Adjusted) Difference") + theme_bw()
+# ggplot(imm_yc_not_nc_strict_pct_fc, aes(x = pct_dif_dif, y = avg_logFC_dif, color = yc.cluster)) + geom_point() + scale_color_manual(values = c(temp[2], temp[6], temp[10]), guide = F) + xlab("Difference in Percent Difference") + ylab(expression("Difference in "*Log["2"]*" Fold Change")) + theme_bw() 
+dev.off()
+
+regen_nc_deg = read.csv("regen_nc_deg2.csv")
+regen_nc_deg$cluster_gene = paste0(regen_nc_deg$cluster, "_", regen_nc_deg$gene)
+regen_nc_deg$isSig = regen_nc_deg$cluster_gene %in% regen_nc_deg_strict$cluster_gene
+celsr1_deg = regen_nc_deg
 celsr1_deg$col = plyr::revalue(celsr1_deg$cluster, replace = c("Low" = rev(brewer.pal(11,"Spectral"))[2], "Medium" = "gold", "High" = rev(brewer.pal(11,"Spectral"))[10]))
 celsr1_deg$col = as.vector(celsr1_deg$col)
 celsr1_deg$col[which( !celsr1_deg$isSig )] = "gray"
 celsr1_deg = celsr1_deg[order(celsr1_deg$isSig),]
-pdf("~/scratch/d_tooth/results/igor/allt/second_draft/regen_yc_deg_strict.pdf", width = 5, height = 4)
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/regen_nc_deg_strict.pdf", width = 5, height = 5)
 ggplot(celsr1_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity()
 dev.off()
+
+# BEGIN REVIEWER 4
+
+celsr1_deg_h = celsr1_deg[which(celsr1_deg$cluster == "High"),]
+high_p_close_to_cutoff = celsr1_deg_h$p_val[which.min( abs(celsr1_deg_h$p_val_adj- 0.05) )]
+pdf("~/Downloads/regen_yc_deg_strict_h_r4.pdf", width = 3, height = 3)
+ggplot(celsr1_deg_h, aes(x = avg_log2FC, y = -log10(p_val_adj), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" Adjusted P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + geom_hline(yintercept = -log10(0.05), color = "gray40", linetype = "dashed") + geom_vline(xintercept = 0.25, color = "gray40", linetype = "dashed") + geom_vline(xintercept = -0.25, color = "gray40", linetype = "dashed")
+dev.off()
+
+celsr1_deg_m = celsr1_deg[which(celsr1_deg$cluster == "Medium"),]
+high_p_close_to_cutoff = celsr1_deg_m$p_val[which.min( abs(celsr1_deg_m$p_val_adj- 0.05) )]
+celsr1_deg_m$col[which(celsr1_deg_m$col == "gold")] = "gold2"
+pdf("~/Downloads/regen_yc_deg_strict_m_r4.pdf", width = 3, height = 3)
+ggplot(celsr1_deg_m, aes(x = avg_log2FC, y = -log10(p_val_adj), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" Adjusted P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + geom_hline(yintercept = -log10(0.05), color = "gray40", linetype = "dashed") + geom_vline(xintercept = 0.25, color = "gray40", linetype = "dashed") + geom_vline(xintercept = -0.25, color = "gray40", linetype = "dashed")
+dev.off()
+
+celsr1_deg_l = celsr1_deg[which(celsr1_deg$cluster == "Low"),]
+high_p_close_to_cutoff = celsr1_deg_l$p_val[which.min( abs(celsr1_deg_l$p_val_adj- 0.05) )]
+pdf("~/Downloads/regen_yc_deg_strict_l_r4.pdf", width = 3, height = 3)
+ggplot(celsr1_deg_l, aes(x = avg_log2FC, y = -log10(p_val_adj), color = col)) + geom_point(alpha = 0.3) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" Adjusted P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + geom_hline(yintercept = -log10(0.05), color = "gray40", linetype = "dashed") + geom_vline(xintercept = 0.25, color = "gray40", linetype = "dashed") + geom_vline(xintercept = -0.25, color = "gray40", linetype = "dashed")
+dev.off()
+
+deg = read.csv("~/Downloads/yc_nc_bin_simple_deg_all.csv")
+deg$isSig = deg$p_val_adj < 0.05
+this_deg = deg[which(deg$cluster == "Low"),]
+this_deg$col = plyr::revalue(this_deg$cluster, replace = c("Low" = rev(brewer.pal(11,"Spectral"))[2], "Medium" = "gold", "High" = rev(brewer.pal(11,"Spectral"))[10]))
+this_deg$col[which(! this_deg$isSig)] = "darkgray"
+this_deg$col[which(this_deg$col == "gold")] = "gold2"
+p_close_to_cutoff = this_deg$p_val[which.min( abs(this_deg$p_val_adj- 0.05) )]
+pdf("~/research/tooth/results/regen_yc_nc_low_deg.pdf", width = 3.5, height = 3.5)
+ggplot(this_deg, aes(x = avg_log2FC, y = -log10(p_val_adj), color = col)) + geom_point(aes(alpha = isSig)) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" Adjusted P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + scale_alpha_manual(values = c(0.3, 0.5), guide = 'none') + geom_hline(yintercept = -log10(0.05), color = "gray40", linetype = "dashed") + geom_vline(xintercept = 0.25, color = "gray40", linetype = "dashed") + geom_vline(xintercept = -0.25, color = "gray40", linetype = "dashed")
+dev.off()
+
+# END REVEIWER 4
 
 regen_yc_not_nc_strict_strict = regen_yc_deg_strict[which( paste0(regen_yc_deg_strict$cluster, "_", regen_yc_deg_strict$gene,"_", ! regen_yc_deg_strict$isUp) %in% regen_nc_deg$cluster_gene_up ),]
 regen_yc_not_nc_strict_strict = regen_yc_not_nc_strict_strict[which(regen_yc_not_nc_strict_strict$cluster_gene_up %in% regen_yc_not_nc_strict$cluster_gene_up),]
 regen_yc_only = regen_yc_not_nc_strict[which( (! regen_yc_not_nc_strict$cluster_gene_up %in% imm_yc_not_nc_strict$cluster_gene_up) & (! regen_yc_not_nc_strict$cluster_gene_up %in% hm_yc_not_nc_strict$cluster_gene_up) ),]
+
+
+deg = read.csv("~/Downloads/yc_nc_bin_simple_deg_all.csv")
+deg$isSig = deg$p_val_adj < 0.05
+this_deg = deg[which(deg$cluster == "Low"),]
+this_deg$col = plyr::revalue(this_deg$cluster, replace = c("Low" = rev(brewer.pal(11,"Spectral"))[2], "Medium" = "gold", "High" = rev(brewer.pal(11,"Spectral"))[10]))
+this_deg$col[which(! this_deg$isSig)] = "darkgray"
+pdf("~/research/tooth/results/regen_yc_nc_low_deg.pdf", width = 3.5, height = 3.5)
+ggplot(this_deg, aes(x = avg_log2FC, y = -log10(p_val), color = col)) + geom_point(aes(alpha = isSig)) + xlab(expression(Log["2"]*" Fold Change")) + ylab(expression(-Log["10"]*" P")) + scale_y_sqrt() + theme_light() + scale_color_identity() + scale_alpha_manual(values = c(0.3, 0.5), guide = 'none') + 
+dev.off()
+
 
 #*******************************************************************************
 # Fisher's Table ===============================================================
@@ -2021,3 +2176,11 @@ newCytoCor = function(obj) {
   names(gene_cors) = non_zero_genes
   return(gene_cors)
 }
+
+# Talha 04/28/22
+tgenes = c("Gas1", "Shh", "Sox2", "Pitx2", "lgr5")
+cgenes = c("gas1a", "gas1b", "shha", "sox2", "pitx2", "ENSMZEG00005020958")
+tj$tmp = colSums(tj@assays$RNA@counts[cgenes,] > 0)
+jaw$tmp = colSums(jaw@assays$RNA@counts[cgenes,] > 0)
+FeaturePlot(tj, "tmp", order = T, label = T, pt.size = 1.5)
+FeaturePlot(jaw, "tmp", order = T, label = T, pt.size = 1.5)
