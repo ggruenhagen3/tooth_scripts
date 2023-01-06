@@ -1992,6 +1992,18 @@ regen_yc_not_nc_strict_strict = regen_yc_deg_strict[which( paste0(regen_yc_deg_s
 regen_yc_not_nc_strict_strict = regen_yc_not_nc_strict_strict[which(regen_yc_not_nc_strict_strict$cluster_gene_up %in% regen_yc_not_nc_strict$cluster_gene_up),]
 regen_yc_only = regen_yc_not_nc_strict[which( (! regen_yc_not_nc_strict$cluster_gene_up %in% imm_yc_not_nc_strict$cluster_gene_up) & (! regen_yc_not_nc_strict$cluster_gene_up %in% hm_yc_not_nc_strict$cluster_gene_up) ),]
 
+regen_yc_not_nc_strict_dt$avg_log2FC.yc = regen_yc_not_nc_strict_pct_fc$yc.avg_logFC[match(regen_yc_not_nc_strict_dt$cluster_gene.yc, regen_yc_not_nc_strict_pct_fc$cluster_gene)]
+regen_yc_not_nc_strict_dt$pct_dif.yc = regen_yc_not_nc_strict_pct_fc$yc.pct_dif[match(regen_yc_not_nc_strict_dt$cluster_gene.yc, regen_yc_not_nc_strict_pct_fc$cluster_gene)]
+regen_yc_not_nc_strict_dt$avg_log2FC.nc = regen_yc_not_nc_strict_pct_fc$nc.avg_logFC[match(regen_yc_not_nc_strict_dt$cluster_gene.yc, regen_yc_not_nc_strict_pct_fc$cluster_gene)]
+regen_yc_not_nc_strict_dt$pct_dif.nc = regen_yc_not_nc_strict_pct_fc$nc.pct_dif[match(regen_yc_not_nc_strict_dt$cluster_gene.yc, regen_yc_not_nc_strict_pct_fc$cluster_gene)]
+
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/yc_nc_logFC_dif.pdf", width = 4, height = 4)
+ggplot(regen_yc_not_nc_strict_dt, aes(x = avg_log2FC.nc, y = avg_log2FC.yc, color = abs(avg_logFC_dif))) + geom_point(alpha = 0.8) + scale_color_gradientn(colors = viridis(100), guide = 'none') + xlab("Log Fold Change in Celsr1-") + ylab("Log Fold Change in Celsr1+") + theme_bw()
+dev.off()
+
+pdf("~/scratch/d_tooth/results/igor/allt/third_draft/yc_nc_pct_dif.pdf", width = 4, height = 4)
+ggplot(regen_yc_not_nc_strict_dt, aes(x = pct_dif.nc, y = pct_dif.yc, color = abs(pct_dif_dif))) + geom_point(alpha = 0.8) + scale_color_gradientn(colors = viridis(100), guide = 'none') + xlab("Percent Difference in Celsr1-") + ylab("Percent Difference in Celsr1+") + theme_bw()
+=======
 
 deg = read.csv("~/Downloads/yc_nc_bin_simple_deg_all.csv")
 deg$isSig = deg$p_val_adj < 0.05
@@ -2070,13 +2082,19 @@ pdf("C:/Users/miles/Downloads/yc_enrich.pdf", width = 10, height = 5)
 ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes")
 dev.off()
 
-deg = read.csv("C:/Users/miles/Downloads/regen_yc_not_nc_strict.csv")
-low_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_low.txt")
-medium_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_medium.txt")
-high_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_high.txt")
-low_n = length(unique(deg$gene[which(deg$cluster == "Low" & deg$avg_log2FC > 0)]))
-medium_n = length(unique(deg$gene[which(deg$cluster == "Medium" & deg$avg_log2FC > 0)]))
-high_n = length(unique(deg$gene[which(deg$cluster == "High" & deg$avg_log2FC > 0)]))
+options(java.parameters = "-Xmx8000m")
+# options(java.parameters="-Xmx2g")
+deg = read.csv("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig.csv")
+low_yc    = openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.xlsx", sheet = 4, rows = 1:5000)
+medium_yc = openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.xlsx", sheet = 3, rows = 1:5000)
+high_yc   = openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.xlsx", sheet = 2, rows = 1:5000)
+# deg = read.csv("C:/Users/miles/Downloads/regen_yc_not_nc_strict.csv")
+# low_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_low.txt")
+# medium_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_medium.txt")
+# high_yc = read.delim("C:/Users/miles/Downloads/regen_yc_not_nc_strict_high.txt")
+# low_n = length(unique(deg$gene[which(deg$cluster == "Low" & deg$avg_log2FC > 0)]))
+# medium_n = length(unique(deg$gene[which(deg$cluster == "Medium" & deg$avg_log2FC > 0)]))
+# high_n = length(unique(deg$gene[which(deg$cluster == "High" & deg$avg_log2FC > 0)]))
 all_res = rbind(low_yc[which(low_yc$Category == "GO: Biological Process")[1:5],], medium_yc[which(medium_yc$Category == "GO: Biological Process")[1:5],], high_yc[which(high_yc$Category == "GO: Biological Process")[1:5],])
 all_res$cluster = c(rep("Low", 5), rep("Medium", 5), rep("High", 5))
 all_res$n = c(rep(low_n, 5), rep(medium_n, 5), rep(high_n, 5))
@@ -2090,11 +2108,120 @@ all_res_t = melt(all_res)
 all_res_t = all_res_t[which(all_res_t$variable %in% c("obs", "exp")),]
 all_res_t$cluster_variable = paste0(all_res_t$cluster, "_", all_res_t$variable)
 all_res_t$col = plyr::revalue(all_res_t$cluster_variable, replace = c("Low_exp" = "#132B43", "Low_obs" = "#56B1F7", "Medium_exp" = "#DAA520", "Medium_obs" = "#edd815", "High_exp" = "darkred", "High_obs" = "red"))
-all_res_t$Name = factor(all_res_t$Name, levels = unique(all_res_t$Name[order(all_res_t$cluster)]))
-# ggplot(bin_yc_t, aes(x = Name, y = value, color = variable, fill = variable)) + geom_bar(stat = "identity", position = position_dodge2())
-pdf("C:/Users/miles/Downloads/yc_not_nc_enrich.pdf", width = 10, height = 5)
-ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes")
+all_res_t$cluster2 = factor(all_res_t$cluster, levels = c("High", "Medium", "Low"))
+all_res_t$Name = factor(all_res_t$Name, levels = unique(all_res_t$Name[order(all_res_t$cluster2)]))
+pdf("C:/Users/miles/Downloads/yc_enrich_new.pdf", width = 10, height = 5)
+# pdf("C:/Users/miles/Downloads/regen_yc_v_nc_yc_enrich.pdf", width = 12, height = 5)
+ggplot(all_res_t, aes(x = Name, y = value, color = col, fill = col)) + geom_bar(stat = "identity", position = position_dodge2()) + scale_color_identity() + scale_fill_identity() + theme_bw() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ylab("Number of Genes") + scale_y_continuous(expand = c(0,0))
 dev.off()
+
+# Compare all 4
+low_yc = fread("C:/Users/miles/Downloads/regen_yc_deg_strict_low.txt")
+low_nc = fread("C:/Users/miles/Downloads/regen_nc_deg_strict_low.txt")
+low_yc_nc_yc = as.data.table(openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.xlsx", sheet = 4, rows = 1:5000))
+low_yc_nc_nc = as.data.table(openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_neg.xlsx", sheet = 4, rows = 1:5000))
+
+medium_yc = fread("C:/Users/miles/Downloads/regen_yc_deg_strict_medium.txt")
+medium_nc = fread("C:/Users/miles/Downloads/regen_nc_deg_strict_medium.txt")
+medium_yc_nc_yc = as.data.table(openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.xlsx", sheet = 3, rows = 1:5000))
+medium_yc_nc_nc = as.data.table(openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_neg.xlsx", sheet = 3, rows = 1:5000))
+
+high_yc = fread("C:/Users/miles/Downloads/regen_yc_deg_strict_high.txt")
+high_nc = fread("C:/Users/miles/Downloads/regen_nc_deg_strict_high.txt")
+high_yc_nc_yc   = as.data.table(openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.xlsx", sheet = 2, rows = 1:5000))
+high_yc_nc_nc   = as.data.table(openxlsx::read.xlsx("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_neg.xlsx", sheet = 2, rows = 1:5000))
+
+low_yc = low_yc[which(low_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+low_nc = low_nc[which(low_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+low_yc_nc_yc = low_yc_nc_yc[which(low_yc_nc_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+low_yc_nc_nc = low_yc_nc_nc[which(low_yc_nc_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+
+medium_yc = medium_yc[which(medium_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+medium_nc = medium_nc[which(medium_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+medium_yc_nc_yc = medium_yc_nc_yc[which(medium_yc_nc_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+medium_yc_nc_nc = medium_yc_nc_nc[which(medium_yc_nc_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+
+high_yc = high_yc[which(high_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+high_nc = high_nc[which(high_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+high_yc_nc_yc = high_yc_nc_yc[which(high_yc_nc_yc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+high_yc_nc_nc = high_yc_nc_nc[which(high_yc_nc_nc$Category %in% c("GO: Molecular Function", "GO: Biological Process", "GO: Cellular Component")),]
+
+
+low_yc$neg_log_bon_value = -log10(low_yc$`q-value Bonferroni`)
+low_nc$neg_log_bon_value = -log10(low_nc$`q-value Bonferroni`)
+low_yc_nc_yc$neg_log_bon_value = -log10(low_yc_nc_yc$`q-value.Bonferroni`)
+low_yc_nc_nc$neg_log_bon_value = -log10(low_yc_nc_nc$`q-value.Bonferroni`)
+
+medium_yc$neg_log_bon_value = -log10(medium_yc$`q-value Bonferroni`)
+medium_nc$neg_log_bon_value = -log10(medium_nc$`q-value Bonferroni`)
+medium_yc_nc_yc$neg_log_bon_value = -log10(medium_yc_nc_yc$`q-value.Bonferroni`)
+medium_yc_nc_nc$neg_log_bon_value = -log10(medium_yc_nc_nc$`q-value.Bonferroni`)
+
+high_yc$neg_log_bon_value = -log10(high_yc$`q-value Bonferroni`)
+high_nc$neg_log_bon_value = -log10(high_nc$`q-value Bonferroni`)
+high_yc_nc_yc$neg_log_bon_value = -log10(high_yc_nc_yc$`q-value.Bonferroni`)
+high_yc_nc_nc$neg_log_bon_value = -log10(high_yc_nc_nc$`q-value.Bonferroni`)
+
+single_low    = merge.data.table(low_yc,    low_nc,    by = c('Category', 'ID', 'Name'), suffixes = c("_yc", "_nc"), all = T)
+single_medium = merge.data.table(medium_yc, medium_nc, by = c('Category', 'ID', 'Name'), suffixes = c("_yc", "_nc"), all = T)
+single_high   = merge.data.table(high_yc,   high_nc,   by = c('Category', 'ID', 'Name'), suffixes = c("_yc", "_nc"), all = T)
+
+multi_low    = merge.data.table(low_yc_nc_yc,    low_yc_nc_nc,    by = c('Category', 'ID', 'Name'), suffixes = c("_yc_nc_yc", "_yc_nc_nc"), all = T)
+multi_medium = merge.data.table(medium_yc_nc_yc, medium_yc_nc_nc, by = c('Category', 'ID', 'Name'), suffixes = c("_yc_nc_yc", "_yc_nc_nc"), all = T)
+multi_high   = merge.data.table(high_yc_nc_nc,   high_yc_nc_nc,   by = c('Category', 'ID', 'Name'), suffixes = c("_yc_nc_yc", "_yc_nc_nc"), all = T)
+
+l2_low = merge.data.table(single_low,       multi_low,    by = c('Category', 'ID', 'Name'), suffixes = c("", ""), all = T)
+l2_medium = merge.data.table(single_medium, multi_medium, by = c('Category', 'ID', 'Name'), suffixes = c("", ""), all = T)
+l2_high = merge.data.table(single_high,     multi_high,   by = c('Category', 'ID', 'Name'), suffixes = c("", ""), all = T)
+
+value_names = colnames(l2_low)[which(grepl("value" , colnames(l2_low)))]
+l2_low = l2_low  %>% mutate_at(value_names, ~replace_na(., 1))
+value_names = colnames(l2_medium)[which(grepl("value" , colnames(l2_medium)))]
+l2_medium = l2_medium  %>% mutate_at(value_names, ~replace_na(., 1))
+value_names = colnames(l2_high)[which(grepl("value" , colnames(l2_high)))]
+l2_high = l2_high  %>% mutate_at(value_names, ~replace_na(., 1))
+
+low_df = medium_df = high_df = data.frame()
+analysis_lists = c("neg_log_bon_value_yc", "neg_log_bon_value_nc", "neg_log_bon_value_yc_nc_yc", "neg_log_bon_value_yc_nc_nc")
+for (al1 in analysis_lists) {
+  for (al2 in analysis_lists) {
+    low_df    = rbind(low_df,    data.frame(bin = "low",    al1 = al1, al2 = al2, cor =  unname(cor(l2_low[, ..al1], l2_low[, ..al2]))))
+    medium_df = rbind(medium_df, data.frame(bin = "medium", al1 = al1, al2 = al2, cor =  unname(cor(l2_medium[, ..al1], l2_medium[, ..al2]))))
+    high_df   = rbind(high_df,   data.frame(bin = "high",   al1 = al1, al2 = al2, cor =  unname(cor(l2_high[, ..al1], l2_high[, ..al2]))))
+  }
+}
+all_df = rbind(low_df, medium_df, high_df)
+all_df$al1 = plyr::revalue(all_df$al1, replace = c("neg_log_bon_value_yc" = "Celsr1+", "neg_log_bon_value_nc" = "Celsr1-","neg_log_bon_value_yc_nc_yc" = "Celsr1+ vs Celsr1-, Celsr1+","neg_log_bon_value_yc_nc_nc" = "Celsr1+ vs Celsr1-, Celsr1-"))
+all_df$al2 = plyr::revalue(all_df$al2, replace = c("neg_log_bon_value_yc" = "Celsr1+", "neg_log_bon_value_nc" = "Celsr1-","neg_log_bon_value_yc_nc_yc" = "Celsr1+ vs Celsr1-, Celsr1+","neg_log_bon_value_yc_nc_nc" = "Celsr1+ vs Celsr1-, Celsr1-"))
+all_df$al1b = paste(toupper(substr(all_df$bin, 1, 1)), all_df$al1)
+all_df$al2b = paste(toupper(substr(all_df$bin, 1, 1)), all_df$al2)
+ggplot(low_df, aes(x = al1, y = al2, fill = cor)) + geom_tile() + scale_fill_gradientn(colors = brewer.pal(5, "YlOrRd"))
+
+pdf("C:/Users/miles/Downloads/enrich_cor.pdf", width = 8, height = 4)
+ggplot(all_df, aes(x = al1b, y = al2, fill = cor)) + geom_raster() + scale_fill_gradientn(colors = viridis(100)) + xlab("") + ylab("") + theme_classic() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + coord_fixed()
+dev.off()
+# value_names = colnames(l2_low)[which(grepl("neg_log" , colnames(l2_low)))]
+# l2_low_melt = melt(l2_low %>% select(c(c('Category', 'ID', 'Name'), value_names)), id.vars = c('Category', 'ID', 'Name'))
+
+yc = read.csv("C:/Users/miles/Downloads/regen_yc_deg_strict.csv")
+nc = read.csv("C:/Users/miles/Downloads/regen_nc_deg_strict.csv")
+yc_nc_yc = read.csv("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_pos.csv")
+yc_nc_nc = read.csv("C:/Users/miles/Downloads/yc_nc_bin_simple_deg_sig_neg.csv")
+
+yc = yc[which(yc$avg_log2FC > 0),]
+nc = nc[which(nc$avg_log2FC > 0),]
+
+
+library(VennDiagram)
+reds = c("#660708", "#a4161a", "#ba181b", "#e5383b")
+yellows = c("#E06C00", "#ff8800", "#ffa200", "#ffaa00", "#ffb700", "#ffc300", "#FFDD00", "#ffea00")
+blues = c("#03045e", "#023e8a", "#0077b6", "#0096c7", "#00b4d8", "#48cae4", "#90e0ef", "#ade8f4")
+yellows = yellows[c(1, 3, 6, 8)]
+blues = blues[c(1, 3, 6, 8)]
+venn.diagram( x = list(yc$gene[which(yc$cluster == "Low")], nc$gene[which(nc$cluster == "Low")], yc_nc_yc$gene[which(yc_nc_yc$cluster == "Low")], yc_nc_nc$gene[which(yc_nc_nc$cluster == "Low")]),
+              category.names = c("Celsr1+" , "Celsr1-" , "Celsr1+ vs Celsr1-, Celsr1+", "Celsr1+ vs Celsr1-, Celsr1-"),
+              filename = 'C:/Users/miles/Downloads/venn_degs_low.png',
+              col = blues, fill = alpha(blues, alpha = 0.1), lwd = 4)
 
 #*************************************************************************************************
 # CM Celsr1+ Special ToppGene Circle Plot ========================================================
