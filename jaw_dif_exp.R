@@ -212,3 +212,52 @@ mouseToMzebra <- function(mouse_genes, mzebra_all) {
   
   return(ensembl_genes[,2])
 }
+
+# DEGs to Oral Epithelium
+msg = readxl::read_xlsx("C:/Users/miles/Downloads/41591_2021_1296_MOESM2_ESM.xlsx", sheet = "Human_MSG_Atlas")
+ging = readxl::read_xlsx("C:/Users/miles/Downloads/41591_2021_1296_MOESM2_ESM.xlsx", sheet = "Human_Gingival_Atlas")
+integrated = readxl::read_xlsx("C:/Users/miles/Downloads/41591_2021_1296_MOESM2_ESM.xlsx", sheet = "Human_Integrated_Oral_Atlas")
+
+msg$cluster = factor(msg$cluster)
+ging$cluster = factor(ging$cluster)
+integrated$cluster = factor(integrated$cluster)
+
+jaw_deg = read.table("C:/Users/miles/Downloads/d_tooth/results/jpool_deg_description_hgnc.tsv", header = T, sep = "\t")
+jaw_deg$genes = jaw_deg$hgnc # for inner_join later on
+
+msg_df = data.frame()
+ging_df = data.frame()
+integrated_df = data.frame()
+for (cluster in levels(jaw$seurat_clusters)) {
+  this_rows = jaw_deg[which(jaw_deg$cluster == cluster),]
+  msg_rows = inner_join(msg, this_rows, by = "genes")
+  ging_rows = inner_join(ging, this_rows, by = "genes")
+  integrated_rows = inner_join(integrated, this_rows, by = "genes")
+  
+  this_msg_df = data.frame( as.data.frame(table(msg_rows$cluster.x)), jaw_cluster = cluster )
+  this_ging_df = data.frame( as.data.frame(table(ging_rows$cluster.x)), jaw_cluster = cluster )
+  this_integrated_df = data.frame( as.data.frame(table(integrated_rows$cluster.x)), jaw_cluster = cluster )
+  
+  msg_df = rbind(msg_df, this_msg_df)
+  ging_df = rbind(ging_df, this_ging_df)
+  integrated_df = rbind(integrated_df, this_integrated_df)
+}
+
+png("C:/Users/miles/Downloads/d_tooth/results/jaw_msg_ovlp_pos_deg.png", height = 900, res = 100)
+print(ggplot(msg_df, aes(x=jaw_cluster, y = Var1, fill = Freq)) + geom_tile() + scale_fill_viridis() + coord_fixed() + xlab("Jaw Cluster") + ylab("Human MSG Cluster"))
+dev.off()
+
+png("C:/Users/miles/Downloads/d_tooth/results/jaw_ging_ovlp_pos_deg.png", height = 900, res = 100)
+print(ggplot(ging_df, aes(x=jaw_cluster, y = Var1, fill = Freq)) + geom_tile() + scale_fill_viridis() + coord_fixed() + xlab("Jaw Cluster") + ylab("Human Gingival Cluster"))
+dev.off()
+
+png("C:/Users/miles/Downloads/d_tooth/results/jaw_integrated_ovlp_pos_deg.png", height = 900, res = 100)
+print(ggplot(integrated_df, aes(x=jaw_cluster, y = Var1, fill = Freq)) + geom_tile() + scale_fill_viridis() + coord_fixed() + xlab("Jaw Cluster") + ylab("Human Integrated Oral Cluster"))
+dev.off()
+
+jaw$annot = jaw$seurat_clusters
+Idents(jaw) <- "annot"
+new.cluster.ids <- c("Epithelial", "Epithelial", "Immune", "Epithelial", "Epithelial", "Pigmented", "Mesenchyme","Epithelial", "Immune", "Immune", "Mature TB", "Immature TB")
+names(new.cluster.ids) <- levels(jaw)
+jaw <- RenameIdents(jaw, new.cluster.ids)
+DimPlot(jaw, label = T, pt.size = 2)
