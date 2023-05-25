@@ -28,7 +28,7 @@ tj <- RunPCA(tj, npcs = 30, verbose = FALSE, features = tj@assays$RNA@var.featur
 
 tj <- RunUMAP(tj, reduction = "pca", dims = 1:12) 
 tj <- FindNeighbors(tj, reduction = "umap", dims = 1:2)
-tj <- FindClusters(tj, resolution = 0.25)
+tj <- FindClusters(tj, resolution = 0.40)
 DimPlot(tj, reduction = "umap", split.by = "cond", label = TRUE)
 # saveRDS(tj, "C:/Users/miles/Downloads/d_tooth/tooth_scripts/tj_shiny/data/tj.rds")
 

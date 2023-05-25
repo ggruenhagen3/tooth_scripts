@@ -40,7 +40,7 @@ combined <- RunPCA(combined, npcs = 30, verbose = FALSE)
 # Steep dropoff after PC 12
 combined <- RunUMAP(combined, reduction = "pca", dims = 1:12)
 combined <- FindNeighbors(combined, reduction = "umap", dims = 1:2)
-combined <- FindClusters(combined, resolution = 0.50)
+combined <- FindClusters(combined, resolution = 1)
 DimPlot(combined, reduction = "umap", split.by = "cond", label = TRUE)
 # saveRDS(combined, "C:/Users/miles/Downloads/d_tooth/tooth_scripts/jaw_shiny/data/jaw.rds")
 

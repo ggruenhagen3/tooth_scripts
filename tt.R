@@ -153,8 +153,102 @@ tt.ct = FindClusters(tt.ct, resolution = 0.3, verbose = FALSE)
 DimPlot(tt.ct, label = TRUE) + coord_fixed() + theme_void()
 
 #*******************************************************************************
+# Integration w/ Old Data ======================================================
+#*******************************************************************************
+tj.tmp.counts = Read10X(paste0(data_dir, "TJ/outs/filtered_feature_bc_matrix/"))
+jpool.tmp.counts = Read10X(paste0(data_dir, "JPOOL/outs/filtered_feature_bc_matrix/"))
+good_gene_info = gene_info[which(! is.na(gene_info$ens) & gene_info$ens != "" & gene_info$ens %in% rownames(tj.tmp.counts) ),]
+good_gene_info = good_gene_info[which(! duplicated(good_gene_info$mzebra) ),]
+good_gene_info = good_gene_info[which(! duplicated(good_gene_info$ens) ),]
+good_ncbi = good_gene_info$mzebra
+good_ens = good_gene_info$ens
+
+tj.tmp.counts = tj.tmp.counts[good_ens,]
+jpool.tmp.counts = jpool.tmp.counts[good_ens,]
+rownames(jpool.tmp.counts) = rownames(tj.tmp.counts) = good_gene_info$mzebra
+
+b10.counts.merge = b10.counts[good_ncbi,]
+d2.counts.merge  = d2.counts[good_ncbi,]
+d10.counts.merge = d10.counts[good_ncbi,]
+g10.counts.merge = g10.counts[good_ncbi,]
+
+tj.tmp = CreateSeuratObject(counts = tj.tmp.counts, project = "TJ")
+jpool.tmp = CreateSeuratObject(counts = jpool.tmp.counts, project = "JPOOL")
+
+b10.merge = CreateSeuratObject(counts = b10.counts.merge, project = "b10.merge")
+d2.merge = CreateSeuratObject(counts = d2.counts.merge, project = "d2.merge")
+d10.merge = CreateSeuratObject(counts = d10.counts.merge, project = "d10.merge")
+g10.merge = CreateSeuratObject(counts = g10.counts.merge, project = "g10.merge")
+
+b10.merge$sample = "B10"
+d2.merge$sample = "D2"
+d10.merge$sample = "D10"
+g10.merge$sample = "G10"
+tj.tmp$sample = "TJ"
+jpool.tmp$sample = "JPOOL"
+
+b10.merge = RenameCells(b10.merge, "b10")
+d2.merge  = RenameCells(d2.merge, "d2")
+d10.merge = RenameCells(d10.merge, "d10")
+g10.merge = RenameCells(g10.merge, "g10")
+tj.tmp = RenameCells(tj.tmp, "TJ")
+jpool.tmp = RenameCells(jpool.tmp, "JPOOL")
+
+b10.merge = subset(b10.merge, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+d2.merge  = subset(d2.merge,  subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+d10.merge = subset(d10.merge, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+g10.merge = subset(g10.merge, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+tj.tmp = subset(tj.tmp, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+jpool.tmp = subset(jpool.tmp, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+
+tt.w.old = merge(b10.merge, c(d2.merge, d10.merge, g10.merge, tj.tmp, jpool.tmp))
+tt.w.old = SCTransform(tt.w.old)
+tt.w.old = RunPCA(tt.w.old, npcs = 30, verbose = FALSE)
+tt.w.old = RunUMAP(tt.w.old, dims = 1:30, verbose = FALSE)
+# tt.w.old = FindNeighbors(tt.w.old, dims = 1:30)
+tt.w.old = FindNeighbors(tt.w.old, reduction = "umap", dims = 1:2)
+tt.w.old = FindClusters(tt.w.old, resolution = 0.3, verbose = FALSE)
+DimPlot(tt.w.old, label = TRUE) + coord_fixed() + theme_void()
+Idents(tt.w.old) = tt.w.old$sample
+DimPlot(tt.w.old, label = FALSE) + coord_fixed() + theme_void()
+
+tt.w.old$new_cluster = "none"
+tt.w.old$new_cluster[colnames(tt)] = as.vector(tt$seurat_clusters)
+tt.w.old$new_cluster = factor(tt.w.old$new_cluster, c("none", levels(tt$seurat_clusters)))
+Idents(tt.w.old) = tt.w.old$new_cluster
+DimPlot(tt.w.old, label = T) + coord_fixed() + theme_void()
+
+tt.w.old.tj$orig_cluster = "none"
+tt.w.old.tj$orig_cluster[paste0(colnames(tj), "-1")] = as.vector(tj$seurat_clusters)
+tt.w.old.tj$orig_cluster = factor(tt.w.old.tj$orig_cluster, levels = c("none", as.character(1:10)))
+Idents(tt.w.old.tj) = tt.w.old.tj$orig_cluster
+DimPlot(tt.w.old.tj, label = TRUE, cols = c("gray40", hue_pal()(10)[2:10])) + coord_fixed() + theme_void()
+
+#*******************************************************************************
 # Cluster Annotations ==========================================================
 #*******************************************************************************
+tal = as.data.frame(readxl::read_excel("~/research/tooth/data/mouse_and_human_100_unique_cell_type_degs.xlsx", skip = 1, sheet = 3))
+tal = as.data.frame(readxl::read_excel("~/research/tooth/data/Specific and enriched Dental Genes.xlsx", skip = 0, sheet = 1))
+tal.melt = reshape2::melt(as.matrix(tal))
+colnames(tal.melt) = c("id", "cluster", "gene")
+tal.melt$cluster = as.vector(tal.melt$cluster)
+tal.melt$hgnc = toupper(tal.melt$gene)
+tt.deg %>% group_by(cluster) %>% top_n(n = 100, wt = avg_log2FC) -> top100
+this.list = list(top100, tal.melt)
+names(this.list) = c("TT", "MIM")
+res = bigHeatmap(this.list, rm.self = T)
+
+amb_markers = rbind(data.frame(hgnc = c("Sox2", "Bex1", "Six1", "Moxd1", "Sox11", "Etv4"), mzebra = c("sox2", "", "six1", "LOC101477797", "sox11", "etv4"), class = "SR"), 
+                    data.frame(hgnc = c("Ascl5", "Moxd1", "Sox11", "Etv4"), mzebra = c("", "LOC101477797", "sox11", "etv4"), class = "Pre-Am"),
+                    data.frame(hgnc = c("Ascl5", "Ell2", "Satb2", "Sox21", "Mafb"), mzebra = c("", "ell2", "satb2", "sox21", "mafb"), class = "Secr"),
+                    data.frame(hgnc = c("Mafb", "Foxq1", "Foxo1", "Cdkn2b", "Runx2"), mzebra = c("mafb", "LOC101479104", "LOC101469585", "LOC101471656", "runx2"), class = "Mat"),
+                    data.frame(hgnc = c("Foxq1", "Foxo1", "Cdkn2b", "Runx2", "Klf5", "Prmd1"), mzebra = c("LOC101479104", "LOC101469585", "LOC101471656", "runx2", "LOC101479207", ""), class = "Post"),
+                    data.frame(hgnc = c("Enam", "Klk4", "Odam", "Gm17660"), mzebra = c("LOC101482019", "", "LOC101468182", ""), class = "Known"))
+FeaturePlot(tt, features = amb_markers$mzebra[which(amb_markers$mzebra != "" & amb_markers$class == "SR")], order = T)
+
+nestin_gene = "LOC101479744"
+eng_gene = "LOC101484493"
+
 tal = as.data.frame(readxl::read_excel("~/research/tooth/data/mouse_and_human_100_unique_cell_type_degs.xlsx", skip = 1, sheet = 1))
 tj_deg_all = tt.deg
 tj_deg_all$cluster = as.vector(tj_deg_all$cluster)
