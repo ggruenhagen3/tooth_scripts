@@ -559,21 +559,34 @@ ggplot(st.clust.deg, aes(x = label2, y = -log10(p_val_adj), fill = avg_logFC)) +
 #*******************************************************************************
 # Soup =========================================================================
 #*******************************************************************************
-soup2 = data.table::fread("soup_out_pred_2.tsv", data.table = F)
-soup3 = data.table::fread("soup_out_pred.tsv", data.table = F)
-soup2_assign = data.table::fread("soup_out_dbl_2.tsv", data.table = F)
-soup3_assign = data.table::fread("soup_out_dbl.tsv", data.table = F)
-soup2$norm2 = as.numeric(! soup2$V2)
-soup2$norm3 = soup3$V2
-soup2$status2 = soup2_assign$status
-soup2$status3 = soup3_assign$status
-soup2$agree = soup2$norm2 == soup2$norm3
-soup2$best = NA
-soup2$best[which(soup2$agree)] = soup2$norm2
-soup2$best[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")]
-soup2$best[which(!soup2$agree & soup2$status3 != "singlet" & soup2$status3 == "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 != "singlet" & soup2$status3 == "singlet")]
-length(which( soup2$agree )) / nrow(soup2)
-length(which( !is.na(soup2$best) )) / nrow(soup2)
+# soup_path_df = data.frame(sample = c("plk7_p12", "plk7_c12", "plk60_p12", "plk60_p34", "plk60_c12", "plk60_c34", "plk1_p12", "plk1_c12", "plk3_p12", "plk3_c12"),
+#                           path = c("JTS15/JTS15_clp12_bcl_cr7", "JTS15/JTS15_cn12_bcl_cr7", "JTS16/JTS16_p12_bcl", "JTS16/JTS16_p34_bcl", "JTS16/JTS16_c12_bcl", "JTS16/JTS16_c34_bcl", "JTS17/JTS17_Plk01_1_2_bcl", "JTS17/JTS17_Cont01_1_2_bcl", "JTS17/JTS17_Plk03_1_2_bcl", "JTS17/JTS17_Cont03_1_2_bcl"))
+soup_path_df = data.frame(sample = c("plk7_p12", "plk7_c12", "plk60_p12", "plk60_p34", "plk60_c12", "plk60_c34", "plk1_c12", "plk3_p12", "plk3_c12"),
+                          path = c("JTS15/JTS15_clp12_bcl_cr7", "JTS15/JTS15_cnt12_bcl_cr7", "JTS16/JTS16_p12_bcl", "JTS16/JTS16_p34_bcl", "JTS16/JTS16_c12_bcl", "JTS16/JTS16_c34_bcl", "JTS17/JTS17_Cont01_1_2_bcl", "JTS17/JTS17_Plk03_1_2_bcl", "JTS17/JTS17_Cont03_1_2_bcl"))
+for (i in 1:nrow(soup_path_df)) {
+  soup2 = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_pred_2.tsv"), data.table = F)
+  soup3 = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_pred_3.tsv"), data.table = F)
+  soup2_assign = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_dbl_2.tsv"), data.table = F)
+  soup3_assign = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_dbl_3.tsv"), data.table = F)
+  soup2$norm2 = as.numeric(! soup2$V2)
+  soup2$norm3 = soup3$V2
+  same_pct = length(which(soup2$V2 == soup2$norm3)) / nrow(soup2)
+  if (same_pct > 0.5) { soup2$norm2 = soup2$V2 }
+  soup2$status2 = soup2_assign$status
+  soup2$status3 = soup3_assign$status
+  soup2$agree = soup2$norm2 == soup2$norm3
+  soup2$best = NA
+  soup2$best[which(soup2$agree)] = soup2$norm2[which(soup2$agree)] 
+  soup2$best[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")]
+  soup2$best[which(!soup2$agree & soup2$status3 != "singlet" & soup2$status3 == "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 != "singlet" & soup2$status3 == "singlet")]
+  print(paste0( soup_path_df$path[i], "==> % of agreement: ", length(which( soup2$agree )) / nrow(soup2) ))
+  print(paste0( soup_path_df$path[i], "==> % of unassigned: ", length(which( is.na(soup2$best) )) / nrow(soup2) ))
+  system(paste0("ls -lh ~/scratch/brain/bs/", soup_path_df$path[i], "/outs/filtered_final.bam"))
+  write.csv(soup2, paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_assign.csv"))
+  print ("--------------------------------------------------------------------------------------------------------")
+}
+ref = Matrix::readMM(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_ref.mtx"))
+alt = Matrix::readMM(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_alt.mtx"))
 
 #*******************************************************************************
 # CellChat =====================================================================
