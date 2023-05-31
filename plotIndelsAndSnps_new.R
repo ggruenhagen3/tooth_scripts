@@ -141,16 +141,18 @@ fst$id = 1:nrow(fst)
 fst$WEIGHTED_FST[which(fst$WEIGHTED_FST < 0)] = 0
 fst$Zfst <- (( fst$WEIGHTED_FST - mean(fst$WEIGHTED_FST) ) / sd(fst$WEIGHTED_FST)) + 1
 
+fst$LG = lgConverter(fst$CHROM)
 fst$CHROM <- sub("^NW.*", "unplaced", fst$CHROM)
 fst$CHROM <- sub("^NC_027944.1", "unplaced", fst$CHROM)
 fst$CHROM <- gsub(".1$", "", fst$CHROM)
+fst$LG[which(fst$CHROM == "unplaced")] = "unplaced"
 
 test = sample(1:nrow(fst), 5000)
-my_breaks = which(! duplicated(fst$CHROM))
+my_breaks = which(! duplicated(fst$LG))
 
 image_name <- "~/scratch/brain/fst/rc.png"
 png(image_name, type="cairo", width = 12, height = 4, units = 'in', res=300)
-p = ggplot(fst, aes(id, Zfst, color = CHROM)) + geom_point(alpha = 0.7, size = 1) + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$CHROM), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+p = ggplot(fst, aes(id, Zfst, color = LG)) + geom_point(alpha = 0.7, size = 1) + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$LG), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 print(p)
 dev.off()
 system(paste0("rclone copy ", image_name, " dropbox:BioSci-Streelman/George/Brain/fst/"))
@@ -181,6 +183,161 @@ png(image_name, type="cairo", width = 12, height = 4, units = 'in', res=300)
 p = ggplot(fst, aes(id, Zfst, color = CHROM)) + geom_point(alpha = 0.7, size = 1) + theme_classic() + scale_color_manual(values = rep(brewer.pal(n=8,name="Dark2"), 6)) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$CHROM), expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("") + ggtitle("Pit vs Castle in Tanganyka")
 print(p)
 dev.off()
+
+#***************************************************************************************
+# MC vs Pit ============================================================================
+#***************************************************************************************
+pcrc2030 = read.csv("C:/Users/miles/Downloads/brain/data/markers/pcrc_FST20_30_LG11_evolution_genes_031821.csv")
+pat = read.table("C:/Users/miles/Downloads/all_research/MZ_treefam_annot_umd2a_ENS_2.bash", sep = "\t", header = FALSE, fill = TRUE)
+pcrc2030[,c("LG", "START", "END")] = pat[match(pcrc2030$mzebra, pat$V2), c("V3", "V4", "V5")]
+pcrc2030$START = as.numeric(pcrc2030$START)
+pcrc2030$END   = as.numeric(pcrc2030$END)
+
+fst = read.table("C:/Users/miles/Downloads/JTS09_pit_10kb.fst", header = T)
+image_name = "C:/Users/miles/Downloads/JTS09_pit_10kb_highlight.png"
+fst$id = 1:nrow(fst)
+fst$WEIGHTED_FST[which(fst$WEIGHTED_FST < 0)] = 0
+fst$Zfst <- (( fst$WEIGHTED_FST - mean(fst$WEIGHTED_FST) ) / sd(fst$WEIGHTED_FST)) + 1
+
+fst$LG = lgConverter(fst$CHROM)
+fst$CHROM <- sub("^NW.*", "unplaced", fst$CHROM)
+fst$CHROM <- sub("^NC_027944.1", "unplaced", fst$CHROM)
+fst$CHROM <- gsub(".1$", "", fst$CHROM)
+fst$LG[which(fst$CHROM == "unplaced")] = "unplaced"
+fst$p = 2*pnorm(-abs(fst$Zfst))
+
+test = sample(1:nrow(fst), 5000)
+my_breaks = which(! duplicated(fst$LG))
+
+fst$inHigh = F
+fst$inHighGene = ""
+fst$inHighStart = 0
+fst$inHighEnd = 0
+for (i in 1:nrow(pcrc2030)) {
+  this_bool = fst$LG == pcrc2030$LG[i] & fst$BIN_START >= pcrc2030$START[i] & fst$BIN_END <= pcrc2030$END[i]
+  this_idx = which(! fst$inHigh & this_bool )
+  fst$inHigh[this_idx] = T
+  fst$inHighGene[this_idx] = pcrc2030$mzebra[i]
+  fst$inHighStart[this_idx] = pcrc2030$START[i]
+  fst$inHighEnd[this_idx] = pcrc2030$END[i]
+}
+fst = fst[order(fst$inHigh),]
+fst$LG = factor(fst$LG, levels = c(unique(fst$LG), "special"))
+fst$LG[which(fst$inHigh)] = "special"
+my_cols = lighten(rep(paste0(brewer.pal(n=8,name="Dark2"), "70"), 6), 0.2)
+my_cols = my_cols[1:length(levels(fst$LG))]
+my_cols[length(my_cols)] = "red"
+
+# test$inHigh2 = test$inHigh
+# test$inHigh2[which(! (test$inHighGene %in% c("mrpl13", "adamts16", "LOC101472004") | test$BIN_START >= 20740001 ) )] = F
+png(image_name, type="cairo", width = 5, height = 4, units = 'in', res=300)
+# p = ggplot(fst, aes(id, Zfst, color = LG)) + geom_point(size = 1) + theme_classic() + scale_color_manual(values = my_cols) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = levels(fst$LG)[1:22], expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("")
+p = ggplot(fst[which(fst$CHROM == "NC_036790"),], aes(id, Zfst, color = inHigh)) + geom_point(size = 1.5) + theme_classic() + scale_color_manual(values = my_cols[c(11, 23)]) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(breaks = my_breaks, labels = levels(fst$LG)[1:22], expand=c(0,0)) + NoLegend() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + xlab("")
+print(p)
+dev.off()
+
+fst_mc_v_pit$CHROM_START = paste0(fst_mc_v_pit$CHROM, fst_mc_v_pit$BIN_START)
+fst_mc_v_castle$CHROM_START = paste0(fst_mc_v_castle$CHROM, fst_mc_v_castle$BIN_START)
+fst_mc_merge = list(fst_mc_v_pit, fst_mc_v_castle) %>% reduce(inner_join, by = "CHROM_START", suffix = c('_mc_v_pit', '_mc_v_castle'))
+fst_mc_merge$Zfst_dif = fst_mc_merge$Zfst_mc_v_pit - fst_mc_merge$Zfst_mc_v_castle
+my_breaks = which(! duplicated(fst_mc_merge$LG_mc_v_pit))
+ggplot(fst_mc_merge, aes(x = id_mc_v_pit, y = Zfst_dif, color = LG_mc_v_pit)) + geom_point() + scale_color_manual(values = c(rep(brewer.pal(8, 'Dark2'), 6)[1:22], 'red') ) + scale_x_continuous(breaks = my_breaks, labels = unique(fst_mc_merge$LG_mc_v_pit), expand=c(0,0)) + ylab("Difference in Zfst (MC v Pit - MC v Castle)") + xlab("")
+
+fst_rvp$CHROM_START = paste0(fst_rvp$CHROM, fst_rvp$BIN_START)
+fst_rvc$CHROM_START = paste0(fst_rvc$CHROM, fst_rvc$BIN_START)
+fst_r_merge = list(fst_rvp[which(fst_rvp$CHROM != "unplaced"),], fst_rvc[which(fst_rvc$CHROM != "unplaced"),]) %>% reduce(inner_join, by = "CHROM_START", suffix = c('_rvp', '_rvc'))
+# fst_r_merge = merge(fst_rvp, fst_rvc, by = "CHROM_START", suffixes = c('_rvp', '_rvc'))
+fst_r_merge$Zfst_dif = fst_r_merge$Zfst_rvp - fst_r_merge$Zfst_rvc
+my_breaks = which(! duplicated(fst_r_merge$LG_rvp))
+ggplot(fst_r_merge, aes(x = id_rvp, y = Zfst_dif, color = LG_rvp)) + geom_point() + scale_color_manual(values = c(rep(brewer.pal(8, 'Dark2'), 6)[1:22], 'red') ) + scale_x_continuous(breaks = my_breaks, labels = unique(fst_r_merge$LG_rvp), expand=c(0,0)) + ylab("Difference in Zfst (Rock v Pit - Rock v Castle)") + xlab("")
+
+
+#***********************************
+fst_mc_v_pit = fst
+fst_pvc = fst
+fst_rvc = fst
+
+fst_mc_v_pit = fst_mc_v_pit[,c("CHROM", "BIN_START", "BIN_END", "N_VARIANTS", "WEIGHTED_FST", "MEAN_FST", "id", "Zfst", "LG", "p")]
+fst_pvc = fst_pvc[,c("CHROM", "BIN_START", "BIN_END", "N_VARIANTS", "WEIGHTED_FST", "MEAN_FST", "id", "Zfst", "LG", "p")]
+fst_rvc = fst_rvc[,c("CHROM", "BIN_START", "BIN_END", "N_VARIANTS", "WEIGHTED_FST", "MEAN_FST", "id", "Zfst", "LG", "p")]
+
+fst_mc_v_pit$CHROM_START = paste0(fst_mc_v_pit$CHROM, fst_mc_v_pit$BIN_START)
+fst_pvc$CHROM_START = paste0(fst_pvc$CHROM, fst_pvc$BIN_START)
+fst_rvc$CHROM_START = paste0(fst_rvc$CHROM, fst_rvc$BIN_START)
+
+library('tidyverse')
+fst_merge = list(fst_mc_v_pit, fst_pvc, fst_rvc) %>% reduce(inner_join, by = "CHROM_START", suffix = c('_mc_v_pit', '_pvc'))
+colnames(fst_merge)[(ncol(fst_merge)-9):ncol(fst_merge)] = paste0(tail(colnames(fst_merge), 10), '_rvc')
+
+library("psych")
+fst_merge$hmp = harmonic.mean(x=t(fst_merge[,c("p_pvc", 'p_mc_v_pit', 'p_rvc')]))
+fst_merge$neg_log_hmp = -log10(fst_merge$hmp)
+# fst_merge$num = as.numeric(reshape2::colsplit(fst_merge$LG_mc_v_pit, "LG", c('1', '2'))[,2])
+# fst_merge = fst_merge[order(fst_merge$num),]
+# fst_merge$new_id = 1:nrow(fst_merge)
+my_breaks = which(! duplicated(fst$LG))
+ggplot(fst_merge, aes(x = id_pvc, y = neg_log_hmp, color = LG_mc_v_pit)) + geom_point() + scale_color_manual(values = c(rep(brewer.pal(8, 'Dark2'), 6)[1:22], 'red') ) + scale_x_continuous(breaks = my_breaks, labels = unique(fst$LG), expand=c(0,0))
+
+fst_merge$q_mc_v_pit = p.adjust(fst_merge$p_mc_v_pit, method = "BH")
+fst_merge$q_pvc      = p.adjust(fst_merge$p_pvc,      method = "BH")
+fst_merge$q_rvc      = p.adjust(fst_merge$p_rvc,      method = "BH")
+
+all_sig_gene = c()
+for (gene in unique(fst_merge$inHighGene)) {
+  this_gene_df = fst_merge[which(fst_merge$inHighGene == gene),]
+  is_mc_v_pit_sig = any(this_gene_df$q_mc_v_pit < 0.05)
+  is_pvc_sig = any(this_gene_df$q_pvc < 0.05)
+  is_pvc_sig = any(this_gene_df$q_rvc < 0.05)
+  if (is_mc_v_pit_sig && is_pvc_sig && is_rvc_sig) { all_sig_gene = c(all_sig_gene, gene) }
+}
+
+#***************************************************************************************
+# Zack PC RC Plot ======================================================================
+#***************************************************************************************
+pc_fst = read.table("C:/Users/miles/Downloads/pit_castle_10kb.windowed.weir.fst", header = T)
+rc_fst = read.table("C:/Users/miles/Downloads/rock_castle_10kb.windowed.weir.fst", header = T)
+
+pc_fst$id = 1:nrow(pc_fst)
+pc_fst$WEIGHTED_FST[which(pc_fst$WEIGHTED_FST < 0)] = 0
+pc_fst$Zfst <- (( pc_fst$WEIGHTED_FST - mean(pc_fst$WEIGHTED_FST) ) / sd(pc_fst$WEIGHTED_FST)) + 1
+pc_fst$LG = lgConverter(pc_fst$CHROM)
+pc_fst$LG_BIN_START = paste0(pc_fst$LG, "_", pc_fst$BIN_START)
+pc_fst = pc_fst[which(pc_fst$LG != "na"),]
+
+rc_fst$id = 1:nrow(rc_fst)
+rc_fst$WEIGHTED_FST[which(rc_fst$WEIGHTED_FST < 0)] = 0
+rc_fst$Zfst <- (( rc_fst$WEIGHTED_FST - mean(rc_fst$WEIGHTED_FST) ) / sd(rc_fst$WEIGHTED_FST)) + 1
+rc_fst$LG = lgConverter(rc_fst$CHROM)
+rc_fst$LG_BIN_START = paste0(rc_fst$LG, "_", rc_fst$BIN_START)
+rc_fst = rc_fst[which(rc_fst$LG != "na"),]
+
+pcrc_fst = inner_join(pc_fst, rc_fst, by = "LG_BIN_START", suffix = c("_PC", "_RC"))
+# write.csv(pcrc_fst, "C:/Users/miles/Downloads/pcrc_fst.csv")
+# write.table(pcrc_fst_closest[,c(1, 2, 3)], "C:/Users/miles/Downloads/pcrc_fst_closest.bed", sep = "\t", row.names = F, col.names = F, quote = F)
+pcrc_fst_closest = read.table("C:/Users/miles/Downloads/pcrc_fst_closest.bed", sep = "\t")
+pcrc_fst_closest$gene = colsplit(pcrc_fst_closest$V12, ";", c("a", "b"))[,1]
+pcrc_fst$gene = colsplit(pcrc_fst_closest$gene, "gene_id ", c("a", "b"))[,2]
+pcrc_fst$gene_dist = pcrc_fst_closest$V13
+
+pcrc_fst$Zfst_tot = pcrc_fst$Zfst_PC + pcrc_fst$Zfst_RC
+pcrc_fst$isPCRC2030 = pcrc_fst$gene %in% pcrc2030$mzebra
+ggplot(pcrc_fst, aes(x = Zfst_PC, y = Zfst_RC, color = Zfst_tot)) + geom_point() + geom_text_repel(data = pcrc_fst[which(pcrc_fst$Zfst_tot > 12 & pcrc_fst$isPCRC2030),], aes( label = gene)) + scale_color_gradientn(colors = plasma(100))
+pcrc_fst = pcrc_fst[order(pcrc_fst$isPCRC2030),]
+ggplot(pcrc_fst, aes(x = Zfst_PC, y = Zfst_RC, color = isPCRC2030)) + geom_point() + geom_text_repel(data = pcrc_fst[which(pcrc_fst$Zfst_tot > 12 & pcrc_fst$isPCRC2030),], aes( label = gene))
+
+mc_pit$comp = "pit"
+mc_castle$comp = "castle"
+mc_all = rbind(mc_pit[which(mc_pit$inHigh),], mc_castle[which(mc_castle$inHigh),])
+# ggplot(mc_all, aes(x = comp, y = Zfst)) + geom_boxplot() + geom_point(position = position_jitter())+ xlab("") + ggtitle("ZFst of BINs within PCRC2030 Genes")
+mc_all = rbind(mc_pit, mc_castle)
+ggplot(mc_all, aes(x = comp, y = Zfst, color = inHigh)) + geom_boxplot() + xlab("") + guides(color = guide_legend(title = "PCRC2030 Gene BIN"))
+
+lg11_peak_start = min(pcrc_fst$BIN_START_PC[which(pcrc_fst$LG_PC == "LG11" & pcrc_fst$Zfst_PC >= 5.5)])
+lg11_peak_end   = max(pcrc_fst$BIN_START_PC[which(pcrc_fst$LG_PC == "LG11" & pcrc_fst$Zfst_PC >= 5.5)])
+mc_all$cat = "all"
+mc_all$cat[which(mc_all$inHigh)] = "PCRC2030 Gene Bin"
+mc_all$cat[which(mc_all$LG == "LG11" & mc_all$BIN_START >= lg11_peak_start & mc_all$BIN_START <= lg11_peak_end)] = "LG11 Peak"
+ggplot(mc_all, aes(x = comp, y = Zfst, color = cat)) + geom_boxplot() + xlab("") + guides(color = guide_legend(title = ""))
 
 #=======================================================================================
 # Plot PCA =============================================================================

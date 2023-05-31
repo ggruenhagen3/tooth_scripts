@@ -28,18 +28,24 @@ names(var_fst_data) <- c("LG", "POS", "FST")
 # Convert the negative fst scores to 0
 var_fst_data[, c(3)][var_fst_data[, c(3)] < 0] <- 0
 
-output_folder = "C:/Users/miles/Downloads/d_tooth/results/ts_ms/talha/"
+output_folder = "C:/Users/miles/Downloads/d_tooth/results/ts_ms/genes_near_bhlhe40/"
 # gene_info = read.table("C:/Users/miles/Downloads/all_research/gene_info.txt", sep="\t", header = T, stringsAsFactors = F) 
 pat <- read.table("C:/Users/miles/Downloads/all_research/MZ_treefam_annot_umd2a_ENS_2.bash", sep = "\t", header = FALSE, fill = TRUE, stringsAsFactors = F)
 
 buffer = 100e3
 ish_genes_df = data.frame()
 ish_genes = c("bmp2", "fst", "shh", "fgf3", "LOC101468418", "LOC101468567", "notch1", "LOC101467699", "hes1", "bhlhe40")
-ish_genes_hgnc = read.csv("C:/Users/miles/Downloads/d_tooth/ts_ms_markers_to_check.txt", header = F, stringsAsFactors = F)[,1]
-gene_info = read.table("C:/Users/miles/Downloads/all_research/gene_info.txt", sep="\t", header = T, stringsAsFactors = F) 
-ish_genes = gene_info$mzebra[match(ish_genes_hgnc, gene_info$human)]
-ish_genes = ish_genes[which( ! is.na(ish_genes) )]
-for (gene in ish_genes) {
+ish_genes = plot_genes
+# ish_genes_hgnc = read.csv("C:/Users/miles/Downloads/d_tooth/ts_ms_markers_to_check.txt", header = F, stringsAsFactors = F)[,1]
+gene_info = read.table("C:/Users/miles/Downloads/all_research/gene_info.txt", sep="\t", header = T, stringsAsFactors = F)
+ish_genes_df = data.frame(ish_genes = ish_genes)
+ish_genes_df$hgnc = gene_info$human[match(ish_genes_df$ish_genes, gene_info$mzebra)]
+ish_genes_df$col = as.vector(col_pal[match(ish_genes_df$ish_genes, names(col_pal))])
+for (i in 1:nrow(ish_genes_df)) {
+  gene = as.character(ish_genes_df$ish_genes[i])
+  highlight_col = "green4"
+  if ("col" %in% colnames(ish_genes_df)) 
+    highlight_col = as.character(ish_genes_df$col[i])
   print(gene)
   gene_start = as.numeric(pat$V4[which(pat$V2 == gene)])
   gene_stop = as.numeric(pat$V5[which(pat$V2 == gene)])
@@ -56,22 +62,26 @@ for (gene in ish_genes) {
   
   data = var_fst_data[which( var_fst_data$LG == lg_nc & var_fst_data$POS < plot_stop & var_fst_data$POS > plot_start ),]
   data$COL = "gray50"
-  data$COL[which(data$POS < gene_stop & data$POS > gene_start)] = "green4"
+  data$COL[which(data$POS < gene_stop & data$POS > gene_start)] = highlight_col
   data = data[order(data$COL),]
   
   data_b = fst_data[which( fst_data$CHROM == lg_nc & fst_data$BIN_START < plot_stop & fst_data$BIN_END > plot_start ),]
   data_b$COL = "gray50"
-  data_b$COL[which(data_b$BIN_START < gene_stop & data_b$BIN_END > gene_start)] = "green4"
+  data_b$COL[which(data_b$BIN_START < gene_stop & data_b$BIN_END > gene_start)] = highlight_col
   # data_b = data_b[order(data_b$COL),]
+  
+  my_title = gene
+  if ( startsWith(gene, "LOC") )
+    my_title = paste0(gene, " (", as.character(ish_genes_df$hgnc[i]), ")")
   
   png_name = paste0(output_folder, gene, ".png")
   Cairo(png_name, type="png", width = 7, height = 4, res = 300, units = "in")
-  plot(data$POS, data$FST, col = data$COL, ylim=c(0,1), xaxs="i", xlab = paste0("Position on ", lg), ylab = "FST", main = gene, pch = 20)
+  plot(data$POS, data$FST, col = data$COL, ylim=c(0,1), xaxs="i", xlab = paste0("Position on ", lg), ylab = "FST", main = my_title, pch = 20)
   dev.off()
   
   png_name = paste0(output_folder, gene, "_b.png")
   Cairo(png_name, type="png", width = 7, height = 4, res = 300, units = "in")
-  plot(data_b$ID, data_b$Zfst, col = data_b$COL, xaxs="i", xlab = paste0("Position on ", lg), ylab = "Zfst", main = gene, pch = 16, xaxt = "n")
+  plot(data_b$ID, data_b$Zfst, col = data_b$COL, xaxs="i", xlab = paste0("Position on ", lg), ylab = "Zfst", main = my_title, pch = 16, xaxt = "n")
   text(data_b$ID[1] + 2, 1, pos=3, labels=c("10 kb bins"), cex=0.8)
   dev.off()
 }
@@ -98,7 +108,7 @@ write.csv(ish_genes_df, "C:/Users/miles/Downloads/d_tooth/results/ts_ms/talha_ma
 
 # Plot some high FST genes that are close to bhlhe40
 library("scales")
-plot_genes = c("id1", "sema3f", "LOC101484715", "sox13", "sema3f", "bhlhe40")
+plot_genes = c("id1", "sema3f", "LOC101484715", "sox13", "bhlhe40")
 col_pal = hue_pal()(length(plot_genes))
 names(col_pal) = plot_genes
 data = fst_data[which( fst_data$CHROM == "NC_036784.1" ),]
@@ -110,6 +120,8 @@ for (i in 1:length(plot_genes)) {
   data$COL[which(data$BIN_START < gene_stop & data$BIN_END > gene_start)] = col_pal[i]
 }
 
+names(col_pal)[which(names(col_pal) == "LOC101484715")] = "wnt7a"
+col_pal = factor(col_pal, levels = c("#00BF7D", "#00B0F6", "#E76BF3", "#F8766D", "#A3A500"))
 data2 = data[which(data$COL != "gray50"),]
 data = data[which(data$COL == "gray50"),]
 png_name = paste0("C:/Users/miles/Downloads/d_tooth/results/ts_ms/lg5_high_fst_genes_near_bhlhe40.png")
@@ -120,6 +132,8 @@ axis(1, at=label_pos, label=1:length(label_pos))
 points(data2$ID, data2$Zfst, col = data2$COL, pch = 20)
 text(data$ID[1] + 100, 4, pos=3, labels=c("10 kb bins"), cex=0.8)
 for (i in 1:length(col_pal)) {
-  text(data2$ID[which(data2$COL == col_pal[i])], 3 + i*0.25, pos = 3, labels = c(names(col_pal[i])), cex = 0.8, col = col_pal[i])
+  this_col = as.character(levels(col_pal)[i])
+  this_name = as.character(names(col_pal)[which(col_pal == this_col)])
+  text(data2$ID[which(data2$COL == this_col)[1]], 2.5 + i*0.35, pos = 3, labels = this_name, cex = 0.8, col = this_col)
 }
 dev.off()

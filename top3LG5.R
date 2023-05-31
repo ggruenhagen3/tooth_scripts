@@ -4,8 +4,10 @@ library(Cairo)
 # Remember that the path must have forward slashes, not backwards
 # path_to_fst <- "C:/Users/miles_000/Downloads/Research/Tooth/results/fst.vcf.windowed.weir.fst"
 # path_to_var <- "C:/Users/miles_000/Downloads/Research/Tooth/results/no_window.fst"
-path_to_fst = "C:/Users/miles/Downloads/d_tooth/data/whole_filter_rm_window_08_31_20.fst"
-path_to_var = "C:/Users/miles/Downloads/d_tooth/data/whole_filter_rm_no_window_08_31_20.fst"
+# path_to_fst = "C:/Users/miles/Downloads/d_tooth/data/whole_filter_rm_window_08_31_20.fst"
+# path_to_var = "C:/Users/miles/Downloads/d_tooth/data/whole_filter_rm_no_window_08_31_20.fst"
+path_to_fst = "~/research/tooth/data/whole_filter_rm_window_08_31_20.fst"
+path_to_var = "~/research/tooth/data/whole_filter_rm_no_window_08_31_20.fst"
 
 # Load the binned data
 fst_data <- read.table(path_to_fst, sep="\t", header=TRUE)

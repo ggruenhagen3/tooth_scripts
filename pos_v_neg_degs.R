@@ -80,3 +80,17 @@ regen_yc_epi_deg = FindAllMarkers(regen_yc_epi)
 regen_yc_epi_deg_sig = regen_yc_epi_deg[which(regen_yc_epi_deg$p_val_adj < 0.05),]
 write.csv(regen_yc_epi_deg, "regen_yc_epi_bin_deg.csv")
 write.csv(regen_yc_epi_deg_sig, "regen_yc_epi_bin_deg_sig.csv")
+
+regen_yc$MesEpi = "Other"
+regen_yc$MesEpi[which(regen_yc$isMes)] = "Mesenchyme"
+regen_yc$MesEpi[which(regen_yc$isEpi)] = "Epithelium"
+df = aggregate(nCount_RNA ~ MesEpi + bin, regen_yc@meta.data, length)
+bin_df = aggregate(nCount_RNA ~ bin, regen_yc@meta.data, length)
+df$prop_of_bin = df$nCount_RNA / bin_df$nCount_RNA[match(df$bin, bin_df$bin)] * 100
+df$bin = factor(df$bin, levels = c("High", "Medium", "Low"))
+
+temp = rev(brewer.pal(11,"Spectral"))
+temp[6] = "gold" # this is what plotCytoTRACE uses
+png("~/scratch/d_tooth/results/igor/allt/third_draft/regen_yc_mes_epi.png")
+ggplot(df, aes(x = bin, y = prop_of_bin, fill = MesEpi)) + geom_bar(stat = 'identity', position = position_dodge2()) + scale_fill_manual(values = brewer.pal(9,"Blues")[c(3, 5, 8)]) + xlab("") + ylab("Proportion of Cells in Bin") + theme_bw() + scale_y_continuous(expand = c(0,0))
+dev.off()

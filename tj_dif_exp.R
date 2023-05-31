@@ -28,7 +28,7 @@ tj <- RunPCA(tj, npcs = 30, verbose = FALSE, features = tj@assays$RNA@var.featur
 
 tj <- RunUMAP(tj, reduction = "pca", dims = 1:12) 
 tj <- FindNeighbors(tj, reduction = "umap", dims = 1:2)
-tj <- FindClusters(tj, resolution = 0.65)
+tj <- FindClusters(tj, resolution = 0.40)
 DimPlot(tj, reduction = "umap", split.by = "cond", label = TRUE)
 # saveRDS(tj, "C:/Users/miles/Downloads/d_tooth/tooth_scripts/tj_shiny/data/tj.rds")
 
@@ -63,7 +63,7 @@ tj_jaw <- FindVariableFeatures(object = tj_jaw, mean.function = ExpMean, dispers
 tj_jaw <- RunPCA(tj_jaw, npcs = 30, verbose = FALSE, features = tj_jaw@assays$RNA@var.features)
 tj_jaw <- RunUMAP(tj_jaw, reduction = "pca", dims = 1:12) 
 tj_jaw <- FindNeighbors(tj_jaw, reduction = "umap", dims = 1:2)
-tj_jaw <- FindClusters(tj_jaw, resolution = 0.34)
+tj_jaw <- FindClusters(tj_jaw, resolution = 0.25)
 DimPlot(tj_jaw, reduction = "umap", split.by = "cond", label = TRUE)
 Idents(tj_jaw) <- "cond"
 VlnPlot(tj_jaw, features = "fgfr2", split.by = "cond", slot = "data")

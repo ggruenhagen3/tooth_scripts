@@ -1,14 +1,15 @@
 # Read Input ===================================================================
 # this.run = 1; do.down = T; is.real = F; num.perms = 100;
-# this.run = 1; do.down = F; is.real = T; num.perms = 1; ind = 0;
+# this.run = 1; do.down = F; is.real = T; num.perms = 1; ind = 0; cond.use = "all";
 args = commandArgs(trailingOnly=TRUE)
 this.run  = as.numeric(args[1])
 do.down   = as.logical(args[2])
 is.real   = as.logical(args[3])
-num.perms = as.numeric(args[4])
-if (length(args) == 5) { ind = as.numeric(args[5]) } else { ind = 0 }
+cond.use  = as.character(argrs[4])
+num.perms = as.numeric(args[5])
+if (length(args) == 6) { ind = as.numeric(args[6]) } else { ind = 0 }
 set.seed(this.run)
-message(paste0("Initializng run with parameters: this.run=", this.run, ", do.down=", do.down, ", is.real=", is.real, ", num.perms=", num.perms, ", ind=", ind, "."))
+message(paste0("Initializng run with parameters: this.run=", this.run, ", do.down=", do.down, ", is.real=", is.real, ", cond.use=", cond.use, ", num.perms=", num.perms, ", ind=", ind, "."))
 
 # Load Libraries ===============================================================
 suppressMessages(library('CellChat',  quietly = T, warn.conflicts = F, verbose = F))
@@ -28,14 +29,23 @@ genePopFnc = function(x) {
   return(subset(combined, cells = this.cells))
 }
 
-message("Loading bb...")
-setwd("~/scratch/d_tooth/cellchat/")
-gene_info = read.table("~/scratch/m_zebra_ref/gene_info_2.txt", sep="\t", header = T, stringsAsFactors = F) 
+message("Loading the object...")
+# setwd("~/scratch/d_tooth/cellchat/")
+gene_info = read.table("~/scratch/m_zebra_ref/gene_info_2.txt", header = T, stringsAsFactors = F)
 combined = readRDS("~/scratch/d_tooth/data/plk_120922.rds")
-
-simple = F
-combined$label = combined$seurat_clusters
+combined$label = paste0("cluster.", combined$seurat_clusters)
 message("Done.")
+
+# Condition ====================================================================
+if (cond.use == "all") {
+  message("Using cells from both conditions")
+} else if (cond.use == "plk") {
+  message("Using cells from pluck")
+  combined = subset(combined, cells = colnames(combined)[which(combined$cond == "plk")])
+} else if (cond.use == "con") {
+  message("Using cells from control")
+  combined = subset(combined, cells = colnames(combined)[which(combined$cond == "con")])
+}
 
 # Downsample ===================================================================
 if (do.down) {
@@ -62,14 +72,9 @@ message("Done.")
 
 # Human Object =================================================================
 message("Creating a Human Object...")
-mz.df = data.frame(mz = rownames(combined), human = gene_info$human[match(rownames(combined), gene_info$mzebra)])
-mz.df$rowsums = rowSums(combined@assays$RNA@data)
-mz.df = mz.df[order(-mz.df$rowsums),]
-mz.df = mz.df[which(mz.df$rowsums != 0 & mz.df$human != "" & !is.na(mz.df$human)),]
-
-mz.df = mz.df[!duplicated(mz.df$human),]
-data.input = as.matrix(combined@assays$RNA@data[mz.df$mz,])
-rownames(data.input) = mz.df$human
+gene_info_3 = read.csv("~/scratch/m_zebra_ref/gene_info_3.csv")
+data.input = as.matrix(combined@assays$RNA@data[gene_info_3$seurat_name[which(!is.na(gene_info_3$one_to_one_human))],])
+rownames(data.input) = gene_info_3$one_to_one_human[which(!is.na(gene_info_3$one_to_one_human))]
 message("Done.")
 
 rm(combined) # delete original Seurat object to save memory
