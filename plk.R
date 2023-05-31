@@ -32,7 +32,8 @@ setwd(out_dir)
 # Load Objects =================================================================
 #*******************************************************************************
 gene_info = read.csv(paste0(gene_info_path, "gene_info_3.csv"))
-plk = readRDS(paste0(data_dir, "plkall_040523.rds"))
+plk = readRDS(paste0(data_dir, "plkall_053023.rds"))
+plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
 
 #*******************************************************************************
 # Initial clustering ===========================================================
@@ -559,21 +560,71 @@ ggplot(st.clust.deg, aes(x = label2, y = -log10(p_val_adj), fill = avg_logFC)) +
 #*******************************************************************************
 # Soup =========================================================================
 #*******************************************************************************
-soup2 = data.table::fread("soup_out_pred_2.tsv", data.table = F)
-soup3 = data.table::fread("soup_out_pred.tsv", data.table = F)
-soup2_assign = data.table::fread("soup_out_dbl_2.tsv", data.table = F)
-soup3_assign = data.table::fread("soup_out_dbl.tsv", data.table = F)
-soup2$norm2 = as.numeric(! soup2$V2)
-soup2$norm3 = soup3$V2
-soup2$status2 = soup2_assign$status
-soup2$status3 = soup3_assign$status
-soup2$agree = soup2$norm2 == soup2$norm3
-soup2$best = NA
-soup2$best[which(soup2$agree)] = soup2$norm2
-soup2$best[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")]
-soup2$best[which(!soup2$agree & soup2$status3 != "singlet" & soup2$status3 == "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 != "singlet" & soup2$status3 == "singlet")]
-length(which( soup2$agree )) / nrow(soup2)
-length(which( !is.na(soup2$best) )) / nrow(soup2)
+soup_path_df = data.frame(sample = c("plk7_p12", "plk7_c12", "plk60_p12", "plk60_c12", "plk60_p34", "plk60_c34", "plk1_p12", "plk1_c12", "plk3_p12", "plk3_c12"),
+                          path = c("JTS15/JTS15_clp12_bcl_cr7", "JTS15/JTS15_cnt12_bcl_cr7", "JTS16/JTS16_p12_bcl", "JTS16/JTS16_c12_bcl", "JTS16/JTS16_p34_bcl", "JTS16/JTS16_c34_bcl", "JTS17/JTS17_Plk01_1_2_bcl", "JTS17/JTS17_Cont01_1_2_bcl", "JTS17/JTS17_Plk03_1_2_bcl", "JTS17/JTS17_Cont03_1_2_bcl"))
+for (i in 1:nrow(soup_path_df)) {
+  soup2 = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_pred_2.tsv"), data.table = F)
+  soup3 = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_pred_3.tsv"), data.table = F)
+  soup2_assign = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_dbl_2.tsv"), data.table = F)
+  soup3_assign = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_out_dbl_3.tsv"), data.table = F)
+  soup2$norm2 = as.numeric(! soup2$V2)
+  soup2$norm3 = soup3$V2
+  same_pct = length(which(soup2$V2 == soup2$norm3)) / nrow(soup2)
+  if (same_pct > 0.5) { soup2$norm2 = soup2$V2 }
+  soup2$status2 = soup2_assign$status
+  soup2$status3 = soup3_assign$status
+  soup2$agree = soup2$norm2 == soup2$norm3
+  soup2$best = NA
+  soup2$best[which(soup2$agree)] = soup2$norm2[which(soup2$agree)] 
+  soup2$best[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 == "singlet" & soup2$status3 != "singlet")]
+  soup2$best[which(!soup2$agree & soup2$status3 != "singlet" & soup2$status3 == "singlet")] = soup2$norm2[which(!soup2$agree & soup2$status2 != "singlet" & soup2$status3 == "singlet")]
+  print(paste0( soup_path_df$path[i], "==> % of agreement: ", length(which( soup2$agree )) / nrow(soup2) ))
+  print(paste0( soup_path_df$path[i], "==> % of unassigned: ", length(which( is.na(soup2$best) )) / nrow(soup2) ))
+  system(paste0("ls -lh ~/scratch/brain/bs/", soup_path_df$path[i], "/outs/filtered_final.bam"))
+  write.csv(soup2, paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_assign.csv"))
+  print ("--------------------------------------------------------------------------------------------------------")
+}
+# ref = Matrix::readMM(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_ref.mtx"))
+# alt = Matrix::readMM(paste0("~/scratch/brain/bs/", soup_path_df$path[i], "/outs/soup_alt.mtx"))
+
+for (j in seq(1, nrow(soup_path_df), by = 2)) {
+  vcf_plk = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[j],   "/outs/cluster_genotypes_filter.vcf"), skip = 1710, data.table = F)
+  vcf_cnt = data.table::fread(paste0("~/scratch/brain/bs/", soup_path_df$path[j+1], "/outs/cluster_genotypes_filter.vcf"), skip = 1710, data.table = F)
+  vcf_plk$id = paste0(vcf_plk[,1], "_", vcf_plk[,2])
+  vcf_cnt$id = paste0(vcf_cnt[,1], "_", vcf_cnt[,2])
+  vcf_merge = merge(vcf_plk, vcf_cnt, by = "id", suffixes = c("_plk", "_cnt"))
+  vcf_merge$plk_0_gt = substr(vcf_merge[,"0_plk"], 1, 3)
+  vcf_merge$plk_1_gt = substr(vcf_merge[,"1_plk"], 1, 3)
+  vcf_merge$cnt_0_gt = substr(vcf_merge[,"0_cnt"], 1, 3)
+  vcf_merge$cnt_1_gt = substr(vcf_merge[,"1_cnt"], 1, 3)
+  same_pct_0 = length(which(vcf_merge$plk_0_gt == vcf_merge$cnt_0_gt)) / nrow(vcf_merge)
+  dif_pct_0  = length(which(vcf_merge$plk_0_gt == vcf_merge$cnt_1_gt)) / nrow(vcf_merge)
+  if (same_pct_0 > 0.5) { print(paste0("Soup 0 in Plk is Soup 0 in Cnt: ", same_pct_0, "% agreement")); flop_0 = F}
+  if (dif_pct_0  > 0.5) { print(paste0("Soup 0 in Plk is Soup 1 in Cnt: ", dif_pct_0,  "% agreement")); flop_0 = T}
+  
+  same_pct_1 = length(which(vcf_merge$plk_1_gt == vcf_merge$cnt_1_gt)) / nrow(vcf_merge)
+  dif_pct_1  = length(which(vcf_merge$plk_1_gt == vcf_merge$cnt_0_gt)) / nrow(vcf_merge)
+  if (same_pct_1 > 0.5) { print(paste0("Soup 1 in Plk is Soup 1 in Cnt: ", same_pct_1, "% agreement")); flop_1 = F}
+  if (dif_pct_1  > 0.5) { print(paste0("Soup 1 in Plk is Soup 0 in Cnt: ", dif_pct_1,  "% agreement")); flop_1 = T}
+  if (flop_0 != flop_1) { print("We're in trouble!!!") }
+  if (flop_0 && flop_1) { print("Both in agreement to flop")}
+  print ("--------------------------------------------------------------------------------------------------------")
+  
+  this_pool = stringr::str_split(soup_path_df$sample[j], "_")[[1]][1]
+  soup_plk = read.csv(paste0("~/scratch/brain/bs/", soup_path_df$path[j],   "/outs/soup_assign.csv"))
+  soup_cnt = read.csv(paste0("~/scratch/brain/bs/", soup_path_df$path[j+1], "/outs/soup_assign.csv"))
+  soup_plk$X = NULL; soup_plk$cond = "plk"; soup_plk$pool = this_pool; soup_plk$sample = soup_path_df$sample[j];
+  soup_cnt$X = NULL; soup_cnt$cond = "con"; soup_cnt$pool = this_pool; soup_cnt$sample = soup_path_df$sample[j+1];
+  soup_plk$subject = as.numeric(soup_plk$best)+1
+  soup_cnt$subject = as.numeric(soup_cnt$best)+1
+  if (flop_0 && flop_1) { soup_plk$subject = plyr::revalue(as.character(soup_plk$subject), c("1" = "2", "2" = "1")) }
+  write.csv(soup_plk, paste0("~/scratch/d_tooth/data/plk_soup/", soup_path_df$sample[j], "_soup.csv"))
+  write.csv(soup_cnt, paste0("~/scratch/d_tooth/data/plk_soup/", soup_path_df$sample[j+1], "_soup.csv"))
+  plk$subject_num[which(plk$sample == soup_path_df$sample[j])]   = soup_plk$subject[match(colnames(plk)[which(plk$sample == soup_path_df$sample[j])],   paste0(soup_path_df$sample[j],   "_", soup_plk$V1))]
+  plk$subject_num[which(plk$sample == soup_path_df$sample[j+1])] = soup_cnt$subject[match(colnames(plk)[which(plk$sample == soup_path_df$sample[j+1])], paste0(soup_path_df$sample[j+1], "_", soup_cnt$V1))]
+}
+plk$subject = paste0(plk$exp, "_", plk$subject_num)
+plk$subject[which(plk$sample %in% c("plk60_c34", "plk60_p34"))] = paste0("plk60_", as.numeric(plk$subject_num[which(plk$sample %in% c("plk60_c34", "plk60_p34"))])+2)
 
 #*******************************************************************************
 # CellChat =====================================================================
@@ -989,4 +1040,47 @@ plk = readRDS("~/scratch/d_tooth/data/plk60_7_022223.rds")
 #                    dispersion = disp,
 #                    progress = TRUE)
 
+#*******************************************************************************
+# Glmmseq ======================================================================
+#*******************************************************************************
+.libPaths("/storage/coda1/p-js585/0/ggruenhagen3/George/rich_project_pb1/conda_envs/SeuratDisk/lib/R/library")
+library(glmmSeq) # need
+library(Seurat)
+library(lme4) # need
+library(lmerTest) # need
+library(parallel)
+library(edgeR) # need
+library(DESeq2) # need
+library(glmGamPoi) # need
+# library(scran) # need
 
+data = plk_subject
+data$pair = data$subject
+
+this_cells  = colnames(data) # TODO
+this_counts = data@assays$RNA@counts[,this_cells]
+this_meta   = data.frame(data@meta.data[this_cells,])
+
+gene_not_present_in_pairs = lapply(unique(this_meta$pair), function(x) rowSums(this_counts[,which(this_meta$pair == x)]) == 0)
+gene_not_present_in_pairs = Reduce(`+`, gene_not_present_in_pairs)
+genes_present_in_all_pairs = names(gene_not_present_in_pairs[which(gene_not_present_in_pairs == 0)])
+this_counts = this_counts[genes_present_in_all_pairs,]
+
+this_max_cluster_size = max(table(this_meta$seurat_clusters))
+dds = DESeqDataSetFromMatrix(countData = this_counts, colData = this_meta, design = ~ sample + cond)
+size_factors = calculateSumFactors(this_counts, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)           
+sizeFactors(dds) = size_factors
+dds = estimateDispersions(dds, fitType = "glmGamPoi", useCR = TRUE, maxit = 100, weightThreshold = 0.01, quiet = FALSE, modelMatrix = NULL, minmu = 1e-06)
+disp = as.matrix(mcols(dds))
+disp = disp[,11]
+names(disp) = genes_present_in_all_pairs
+
+results <- glmmSeq(~ cond + (1|sample/subject), id = "subject",
+                   countdata = this_counts,
+                   metadata = coldata,
+                   dispersion = disp,
+                   removeDuplicatedMeasures = FALSE,
+                   removeSingles=FALSE,
+                   progress=TRUE,
+                   cores = 3
+)
