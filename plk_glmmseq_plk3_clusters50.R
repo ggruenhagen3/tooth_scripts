@@ -60,6 +60,6 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
     message(paste0("Not all pairs present in cluster ", this_clust))
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
-    res = fastGlmm(obj, this_cells, num_cores = 20, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
+    res = fastGlmm(obj, this_cells, num_cores = 2, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
   }
 }
