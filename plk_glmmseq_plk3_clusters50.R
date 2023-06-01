@@ -52,8 +52,14 @@ plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
 # Main =====
 message('Starting glmmseq analysis')
 obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk3")])
-for (this_clust in unique(obj$seurat_clusters)) {
-  message(paste0("Performing glmmSeq on cluster ", this_clust))
+obj$pair = obj$subject
+n_pairs = length(unique(obj$pair))
+for (this_clust in sort(unique(obj$seurat_clusters))) {
   this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
-  res = fastGlmm(obj, this_cells, num_cores = 20, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv"))
+  if (length(unique(obj$pair[this_cells])) < n_pairs) {
+    message(paste0("Not all pairs present in cluster ", this_clust))
+  } else {
+    message(paste0("Performing glmmSeq on cluster ", this_clust))
+    res = fastGlmm(obj, this_cells, num_cores = 20, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
+  }
 }
