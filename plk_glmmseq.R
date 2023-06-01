@@ -47,6 +47,7 @@ fastGlmm = function(obj, cells, num_cores = 24, out_path = NULL) {
                      countdata = this_counts,
                      metadata = this_meta,
                      dispersion = disp,
+                     sizeFactors = size_factors,
                      removeSingles=FALSE,
                      progress=TRUE,
                      cores = num_cores)
