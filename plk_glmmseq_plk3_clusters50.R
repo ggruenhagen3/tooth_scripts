@@ -1,6 +1,7 @@
 #*******************************************************************************
 # Load Libraries ===============================================================
 #*******************************************************************************
+message('Loading Libraries')
 wdstr = substr(getwd(), 1, 12)
 switch(wdstr,
        "C:/Users/mil" = { main_path = "C:/Users/miles/Downloads/";        },
@@ -26,7 +27,7 @@ brain_dir = paste0(main_path, "brain/")
 data_dir  = paste0(full_path, "data/")
 out_dir   = paste0(full_path, "results/")
 source(paste0(brain_dir, "/brain_scripts/all_f.R"))
-source(paste0(tooth_path, "/tooth_scripts/plk_glmmseq.R"))
+source(paste0(full_path, "/tooth_scripts/plk_glmmseq.R"))
 setwd(out_dir)
 
 library(glmmSeq)
@@ -43,11 +44,13 @@ library(BiocParallel)
 #*******************************************************************************
 # Load Objects =================================================================
 #*******************************************************************************
+message('Loading Objects')
 gene_info = read.csv(paste0(gene_info_path, "gene_info_3.csv"))
 plk = readRDS(paste0(data_dir, "plkall_053023.rds"))
 plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
 
 # Main =====
+message('Starting glmmseq analysis')
 obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk3")])
 for (this_clust in unique(obj$seurat_clusters)) {
   message(paste0("Performing glmmSeq on cluster ", this_clust))
