@@ -24,9 +24,8 @@
 #'
 #' @export
 fastGlmm = function(obj, cells, num_cores = 24, out_path = NULL) {
-  cells  = colnames(data) # TODO
-  this_counts = data@assays$RNA@counts[,cells]
-  this_meta   = data.frame(data@meta.data[cells,])
+  this_counts = obj@assays$RNA@counts[,cells]
+  this_meta   = obj.frame(obj@meta.data[cells,])
   
   gene_not_present_in_pairs = lapply(unique(this_meta$pair), function(x) rowSums(this_counts[,which(this_meta$pair == x)]) == 0)
   gene_not_present_in_pairs = Reduce(`+`, gene_not_present_in_pairs)
