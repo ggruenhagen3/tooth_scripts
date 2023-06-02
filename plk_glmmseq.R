@@ -23,7 +23,7 @@
 #' @return - dndscv_group2: output of dndscv for group 2
 #'
 #' @export
-fastGlmm = function(obj, cells, num_cores = 24, out_path = NULL) {
+fastGlmm = function(obj, cells, my_formula, num_cores = 24, out_path = NULL) {
   this_counts = obj@assays$RNA@counts[,cells]
   this_meta   = data.frame(obj@meta.data[cells,])
   if (!"pair" %in% colnames(this_meta)) { message("Required metadata column 'pair' not found in metadata. Exiting."); return(NULL); }

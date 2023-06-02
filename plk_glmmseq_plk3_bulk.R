@@ -62,4 +62,5 @@ glmm_out_dir = "~/scratch/d_tooth/results/"
 
 this_cells = colnames(obj)
 message(paste0("Performing glmmSeq on bulk"))
-res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0(glmm_out_dir, "plk_glmmseq_plk3_bulk.csv")) 
+my_formula = ~ cond + (1|subject)
+res = fastGlmm(obj, this_cells, num_cores = 24, my_formula = my_formula, out_path = paste0(glmm_out_dir, "plk_glmmseq_plk3_bulk.csv")) 

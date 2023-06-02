@@ -68,7 +68,8 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
     message(paste0("There are not 3 cells present from all pairs in cluster ", this_clust))
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
-    res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")) 
+    my_formula = ~ cond + (1|subject)
+    res = fastGlmm(obj, this_cells, my_formula = my_formula, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")) 
     if (!is.null(res)) { 
       res$gene = rownames(res)
       res$cluster = this_clust
