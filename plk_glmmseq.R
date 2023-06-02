@@ -43,7 +43,7 @@ fastGlmm = function(obj, cells, my_formula, num_cores = 24, out_path = NULL) {
   disp = disp[,11]
   names(disp) = genes_present_in_all_pairs
   
-  results <- glmmSeq(~ cond + (1|sample/subject), id = "subject",
+  results <- glmmSeq(my_formula, id = "subject",
                      countdata = this_counts,
                      metadata = this_meta,
                      dispersion = disp,
