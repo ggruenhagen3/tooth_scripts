@@ -27,7 +27,7 @@ brain_dir = paste0(main_path, "brain/")
 data_dir  = paste0(full_path, "data/")
 out_dir   = paste0(full_path, "results/")
 # source(paste0(brain_dir, "/brain_scripts/all_f.R"))
-# source(paste0(full_path, "/tooth_scripts/plk_glmmseq.R"))
+source(paste0(full_path, "/tooth_scripts/plk_glmmseq.R"))
 setwd(out_dir)
 
 .libPaths(c("/storage/coda1/p-js585/0/ggruenhagen3/George/rich_project_pb1/conda_envs/glmmseq/lib/R/library", "/usr/local/lib/R/site-library", "/usr/local/lib/R/library"))
