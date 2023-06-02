@@ -51,19 +51,23 @@ gene_info = read.csv(paste0(gene_info_path, "gene_info_3.csv"))
 plk = readRDS(paste0(data_dir, "plkall_053023.rds"))
 plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
 
-# Main =====
+#*******************************************************************************
+# Load Objects =================================================================
+#*******************************************************************************
 message('Starting glmmseq analysis')
 obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk3")])
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
 big_res = data.frame()
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/"
+
 for (this_clust in sort(unique(obj$seurat_clusters))) {
   this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
   if (length(unique(obj$pair[this_cells])) < n_pairs) {
     message(paste0("Not all pairs present in cluster ", this_clust))
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
-    res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
+    res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")) 
     if (!is.null(res)) { 
       res$cluster = this_clust
       big_res = rbind(res, big_res)
@@ -71,3 +75,4 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
   }
   message("===============================")
 }
+write.csv(big_res, paste0(out_dir, "all.csv"))
