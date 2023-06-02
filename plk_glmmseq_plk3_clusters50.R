@@ -63,16 +63,22 @@ glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/"
 
 for (this_clust in sort(unique(obj$seurat_clusters))) {
   this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
-  if (length(unique(obj$pair[this_cells])) < n_pairs) {
-    message(paste0("Not all pairs present in cluster ", this_clust))
+  pair_count = table(obj$pair[this_cells])
+  if (length(pair_count) < n_pairs || any(pair_count < 3)) {
+    message(paste0("There are not 3 cells present from all pairs in cluster ", this_clust))
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
     res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")) 
     if (!is.null(res)) { 
+      res$gene = rownames(res)
       res$cluster = this_clust
       big_res = rbind(res, big_res)
     } else { message("fastGlmm returned NULL.") }
   }
   message("===============================")
 }
-write.csv(big_res, paste0(out_dir, "all.csv"))
+big_res$bh = p.adjust(big_res$bh, method = "BH")
+big_res$hgnc = gene_info$seurat_name[match(big_res$gene, gene_info$seurat_name)]
+write.csv(big_res, paste0(glmm_out_dir, "all.csv"))
+deg_sig = big_res[which(big_res$bh < 0.05),]
+write.csv(big_res, paste0(glmm_out_dir, "sig.csv"))
