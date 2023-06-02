@@ -56,6 +56,7 @@ message('Starting glmmseq analysis')
 obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk3")])
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
+big_res = data.frame()
 for (this_clust in sort(unique(obj$seurat_clusters))) {
   this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
   if (length(unique(obj$pair[this_cells])) < n_pairs) {
@@ -63,5 +64,10 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
     res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
+    if (!is.null(res)) { 
+      res$cluster = this_clust
+      big_res = rbind(res, big_res)
+    } else { message("fastGlmm returned NULL.") }
   }
+  message("==============")
 }
