@@ -26,12 +26,14 @@ gene_info_path = paste0(main_path, gene_info_path)
 brain_dir = paste0(main_path, "brain/")
 data_dir  = paste0(full_path, "data/")
 out_dir   = paste0(full_path, "results/")
-source(paste0(brain_dir, "/brain_scripts/all_f.R"))
-source(paste0(full_path, "/tooth_scripts/plk_glmmseq.R"))
+# source(paste0(brain_dir, "/brain_scripts/all_f.R"))
+# source(paste0(full_path, "/tooth_scripts/plk_glmmseq.R"))
 setwd(out_dir)
 
+.libPaths(c("/storage/coda1/p-js585/0/ggruenhagen3/George/rich_project_pb1/conda_envs/glmmseq/lib/R/library", "/usr/local/lib/R/site-library", "/usr/local/lib/R/library"))
 library(glmmSeq)
 library(Seurat)
+library(SeuratObject)
 library(lme4)
 library(lmerTest)
 library(parallel)
@@ -60,6 +62,6 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
     message(paste0("Not all pairs present in cluster ", this_clust))
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
-    res = fastGlmm(obj, this_cells, num_cores = 2, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
+    res = fastGlmm(obj, this_cells, num_cores = 24, out_path = paste0("~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/cluster_", this_clust, ".csv")) 
   }
 }
