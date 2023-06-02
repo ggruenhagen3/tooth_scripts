@@ -69,5 +69,5 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
       big_res = rbind(res, big_res)
     } else { message("fastGlmm returned NULL.") }
   }
-  message("==============")
+  message("===============================")
 }

@@ -51,7 +51,7 @@ fastGlmm = function(obj, cells, num_cores = 24, out_path = NULL) {
                      removeSingles=FALSE,
                      progress=TRUE,
                      cores = num_cores)
-  results_df = data.frame(results@stats)
+  results_df = summary(results)
   if(!is.null(out_path)) { write.csv(results_df, out_path) }
   return(results_df)
 }
