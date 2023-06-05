@@ -1043,21 +1043,24 @@ plk = readRDS("~/scratch/d_tooth/data/plk60_7_022223.rds")
 #*******************************************************************************
 # Glmmseq ======================================================================
 #*******************************************************************************
-.libPaths("/storage/coda1/p-js585/0/ggruenhagen3/George/rich_project_pb1/conda_envs/SeuratDisk/lib/R/library")
-library(glmmSeq) # need
+library(glmmSeq)
 library(Seurat)
-library(lme4) # need
-library(lmerTest) # need
+library(lme4)
+library(lmerTest)
 library(parallel)
-library(edgeR) # need
-library(DESeq2) # need
-library(glmGamPoi) # need
-# library(scran) # need
+library(edgeR)
+library(DESeq2)
+library(glmGamPoi)
+library(scran)
+# library(BiocParallel)
 
 data = plk_subject
 data$pair = data$subject
+obj = data
+# this_cells = colnames(data)[which(data$seurat_clusters == 0)]
+this_cells = colnames(data)
 
-this_cells  = colnames(data) # TODO
+# this_cells  = colnames(data) # TODO
 this_counts = data@assays$RNA@counts[,this_cells]
 this_meta   = data.frame(data@meta.data[this_cells,])
 
@@ -1066,9 +1069,11 @@ gene_not_present_in_pairs = Reduce(`+`, gene_not_present_in_pairs)
 genes_present_in_all_pairs = names(gene_not_present_in_pairs[which(gene_not_present_in_pairs == 0)])
 this_counts = this_counts[genes_present_in_all_pairs,]
 
-this_max_cluster_size = max(table(this_meta$seurat_clusters))
-dds = DESeqDataSetFromMatrix(countData = this_counts, colData = this_meta, design = ~ sample + cond)
-size_factors = calculateSumFactors(this_counts, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)           
+this_max_cluster_size = max(table(this_meta$seurat_clusters)) # TODO make clusters as a variable
+multicoreParam <- MulticoreParam(workers = 24)
+dds = DESeqDataSetFromMatrix(countData = this_counts, colData = this_meta, design = ~ cond)
+size_factors = calculateSumFactors(this_counts, BPPARAM = multicoreParam, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)
+# size_factors = calculateSumFactors(this_counts, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)
 sizeFactors(dds) = size_factors
 dds = estimateDispersions(dds, fitType = "glmGamPoi", useCR = TRUE, maxit = 100, weightThreshold = 0.01, quiet = FALSE, modelMatrix = NULL, minmu = 1e-06)
 disp = as.matrix(mcols(dds))
@@ -1077,10 +1082,32 @@ names(disp) = genes_present_in_all_pairs
 
 results <- glmmSeq(~ cond + (1|sample/subject), id = "subject",
                    countdata = this_counts,
-                   metadata = coldata,
+                   metadata = this_meta,
                    dispersion = disp,
-                   removeDuplicatedMeasures = FALSE,
                    removeSingles=FALSE,
                    progress=TRUE,
-                   cores = 3
-)
+                   cores = 24)
+
+
+#
+# options(MulticoreParam=quote(MulticoreParam(workers=4)))
+# FUN <- function(x) { round(sqrt(x), 4) }
+# FUN1 <- function(x) { print(x); sleep(1); }
+# bplapply(1:4, FUN)
+# bplapply(1:8, FUN1)
+
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk1_clusters50/"
+big_res = data.frame()
+for (this_clust in sort(unique(obj$seurat_clusters))) {
+  this_file = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")
+  if ( file.exists(this_file) ) {
+    res = read.csv(this_file)
+    res$cluster = this_clust
+    big_res = rbind(res, big_res)
+  }
+}
+big_res$bh = p.adjust(big_res$P_cond, method = "BH")
+deg_sig = big_res[which(big_res$bh < 0.05),]
+head(deg_sig[order(deg_sig$bh, decreasing = F),])
+deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
+write.csv(deg_sig, paste0(glmm_out_dir, "all_sig.csv"))
