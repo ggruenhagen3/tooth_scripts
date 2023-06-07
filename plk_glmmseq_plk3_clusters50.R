@@ -78,7 +78,7 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
   }
   message("===============================")
 }
-big_res$bh = p.adjust(big_res$bh, method = "BH")
+big_res$bh = p.adjust(big_res$P_cond, method = "BH")
 big_res$hgnc = gene_info$seurat_name[match(big_res$gene, gene_info$seurat_name)]
 write.csv(big_res, paste0(glmm_out_dir, "all.csv"))
 deg_sig = big_res[which(big_res$bh < 0.05),]

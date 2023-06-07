@@ -1111,3 +1111,12 @@ deg_sig = big_res[which(big_res$bh < 0.05),]
 head(deg_sig[order(deg_sig$bh, decreasing = F),])
 deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
 write.csv(deg_sig, paste0(glmm_out_dir, "all_sig.csv"))
+
+#*******************************************************************************
+# Ophir ========================================================================
+#*******************************************************************************
+mtx = Matrix::readMM("~/scratch/msc/GSE131204_raw_counts_8594x27998.mtx.gz")
+# mtx  = ReadMtx(mtx = "~/scratch/msc/GSE131204_raw_counts_8594x27998.mtx.gz")
+meta = data.table::fread("~/scratch/msc/GSE131204_cell_info_8594x25.tsv")
+
+ophir = CreateSeuratObject(counts = mtx, meta.data = meta)
