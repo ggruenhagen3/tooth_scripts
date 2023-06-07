@@ -1096,18 +1096,61 @@ results <- glmmSeq(~ cond + (1|sample/subject), id = "subject",
 # bplapply(1:4, FUN)
 # bplapply(1:8, FUN1)
 
-glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk1_clusters50/"
+message('Starting glmmseq analysis')
+obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk60")])
+obj$pair = obj$subject
+n_pairs = length(unique(obj$pair))
+n_cond  = length(unique(obj$cond))
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk7_clusters50/"
 big_res = data.frame()
 for (this_clust in sort(unique(obj$seurat_clusters))) {
+  print(this_clust)
   this_file = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")
   if ( file.exists(this_file) ) {
     res = read.csv(this_file)
     res$cluster = this_clust
+    # res$q = qvalue::qvalue(res$P_cond)$qvalues
+    this_counts = obj@assays$RNA@counts[res$X, which(obj$seurat_clusters == this_clust)]
+    this_meta = obj@meta.data[which(obj$seurat_clusters == this_clust),]
+    plk_num = rowSums(this_counts[,which(this_meta$cond == "plk")] > 0)
+    con_num = rowSums(this_counts[,which(this_meta$cond == "con")] > 0)
+    res$num_plk = plk_num
+    res$con_num = con_num
+    res$pct_plk = plk_num / length(which(this_meta$cond == "plk"))
+    res$pct_con = con_num / length(which(this_meta$cond == "con"))
     big_res = rbind(res, big_res)
   }
 }
 big_res$bh = p.adjust(big_res$P_cond, method = "BH")
-deg_sig = big_res[which(big_res$bh < 0.05),]
+big_res$up_pct = big_res$pct_plk
+big_res$up_pct[which( big_res$condplk < 0 )] = big_res$pct_con[which( big_res$condplk < 0 )]
+deg_sig = big_res[which(big_res$bh < 0.05 & big_res$up_pct > 0.1),]
 head(deg_sig[order(deg_sig$bh, decreasing = F),])
 deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
-write.csv(deg_sig, paste0(glmm_out_dir, "all_sig.csv"))
+# write.csv(deg_sig, paste0(glmm_out_dir, "all_sig.csv"))
+write.csv(deg_sig, paste0(glmm_out_dir, "all_sig_pct.csv"))
+
+bulk = read.csv("plk60_plk_v_ctrl_bulk_sig.csv")
+this_counts = obj@assays$RNA@counts[bulk$X, ]
+this_meta = obj@meta.data
+plk_num = rowSums(this_counts[,which(this_meta$cond == "plk")] > 0)
+con_num = rowSums(this_counts[,which(this_meta$cond == "con")] > 0)
+bulk$num_plk = plk_num
+bulk$con_num = con_num
+bulk$pct_plk = plk_num / length(which(this_meta$cond == "plk"))
+bulk$pct_con = con_num / length(which(this_meta$cond == "con"))
+bulk$up_pct = bulk$pct_plk
+bulk$up_pct[which( bulk$condplk < 0 )] = bulk$pct_con[which( bulk$condplk < 0 )]
+bulk = bulk[which(bulk$up_pct > 0.1),]
+write.csv(bulk, "~/scratch/d_tooth/results/plk60_plk_v_ctrl_bulk_sig_pct.csv")
+
+# # Calculate pct.1 and pct.2
+# tot = data.frame(table(obj$cond, obj$seurat_clusters))
+# colnames(tot) = c("cond", "seurat_clusters", "num_cells")
+# count_by_gene = data.frame(gene = rownames(this_counts))
+# for (i in 1:nrow(tot)) {
+#   this_sum = data.frame(rowSums(this_counts[,which(this_meta$cond == tot$cond[i] & this_meta$seurat_clusters == tot$seurat_clusters[i])]))
+#   colnames(this_sum) = i
+#   # this_sum = this_sum / length(which(this_meta$seurat_clusters == tot$seurat_clusters[i]))
+#   count_by_gene = cbind(this_sum, count_by_gene)
+# }

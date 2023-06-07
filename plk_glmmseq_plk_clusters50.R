@@ -54,25 +54,20 @@ plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
 #*******************************************************************************
 # Load Objects =================================================================
 #*******************************************************************************
-message('Starting glmmseq analysis')
-obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk3")])
+obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$cond == "plk")])
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
-n_cond  = length(unique(obj$cond))
 big_res = data.frame()
-glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/"
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk_clusters50/"
 
 for (this_clust in sort(unique(obj$seurat_clusters))) {
   this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
   pair_count = table(obj$pair[this_cells])
-  cond_count = table(obj$cond[this_cells])
   if (length(pair_count) < n_pairs || any(pair_count < 3)) {
     message(paste0("There are not 3 cells present from all pairs in cluster ", this_clust))
-  } else if (length(cond_count) < n_cond || any(cond_count < 3)) {
-    message(paste0("There are not 3 cells present from both conditions in cluster ", this_clust))
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
-    my_formula = ~ cond + (1|subject)
+    my_formula = ~ exp + (1|subject)
     res = fastGlmm(obj, this_cells, my_formula = my_formula, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")) 
     if (!is.null(res)) { 
       res$gene = rownames(res)
@@ -87,3 +82,4 @@ big_res$hgnc = gene_info$seurat_name[match(big_res$gene, gene_info$seurat_name)]
 write.csv(big_res, paste0(glmm_out_dir, "all.csv"))
 deg_sig = big_res[which(big_res$bh < 0.05 & big_res$up_pct > 0.1),]
 write.csv(big_res, paste0(glmm_out_dir, "sig.csv"))
+
