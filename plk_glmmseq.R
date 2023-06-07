@@ -23,7 +23,7 @@
 #' @return - dndscv_group2: output of dndscv for group 2
 #'
 #' @export
-fastGlmm = function(obj, cells, my_formula, num_cores = 24, out_path = NULL) {
+fastGlmm = function(obj, cells, my_formula, calc_pct = TRUE, num_cores = 24, out_path = NULL) {
   this_counts = obj@assays$RNA@counts[,cells]
   this_meta   = data.frame(obj@meta.data[cells,])
   if (!"pair" %in% colnames(this_meta)) { message("Required metadata column 'pair' not found in metadata. Exiting."); return(NULL); }
@@ -52,6 +52,20 @@ fastGlmm = function(obj, cells, my_formula, num_cores = 24, out_path = NULL) {
                      progress=TRUE,
                      cores = num_cores)
   results_df = data.frame(summary(results))
+  results_df$gene = rownames(results_df)
+  
+  # Calculate pct.1 and pct.2
+  if (calc_pct) {
+    plk_num = rowSums(this_counts[,which(this_meta$cond == "plk")])
+    con_num = rowSums(this_counts[,which(this_meta$cond == "con")])
+    results_df$num_plk = plk_num
+    results_df$con_num = con_num
+    results_df$pct_plk = plk_num / length(which(this_meta$cond == "plk"))
+    results_df$pct_con = con_num / length(which(this_meta$cond == "con"))
+    results_df$up_pct = results_df$pct_plk
+    results_df$up_pct[which( results_df$condplk < 0 )] = results_df$pct_con[which( results_df$condplk < 0 )]
+  }
+  
   if(!is.null(out_path)) { write.csv(results_df, out_path) }
   return(results_df)
 }
