@@ -23,7 +23,7 @@
 #' @return - dndscv_group2: output of dndscv for group 2
 #'
 #' @export
-fastGlmm = function(obj, cells, my_formula, calc_pct = TRUE, num_cores = 24, out_path = NULL) {
+fastGlmm = function(obj, cells, my_formula, my_formula2 = NULL, calc_pct = TRUE, num_cores = 24, out_path = NULL) {
   this_counts = obj@assays$RNA@counts[,cells]
   this_meta   = data.frame(obj@meta.data[cells,])
   if (!"pair" %in% colnames(this_meta)) { message("Required metadata column 'pair' not found in metadata. Exiting."); return(NULL); }
@@ -35,7 +35,8 @@ fastGlmm = function(obj, cells, my_formula, calc_pct = TRUE, num_cores = 24, out
   
   this_max_cluster_size = max(table(this_meta$seurat_clusters)) # TODO make clusters as a variable
   multicoreParam <- MulticoreParam(workers = num_cores)
-  dds = DESeqDataSetFromMatrix(countData = this_counts, colData = this_meta, design = ~ cond)
+  if (is.null(my_formula2)) { my_formula2 = ~ cond }
+  dds = DESeqDataSetFromMatrix(countData = this_counts, colData = this_meta, design = my_formula2)
   size_factors = calculateSumFactors(this_counts, BPPARAM = multicoreParam, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)
   sizeFactors(dds) = size_factors
   dds = estimateDispersions(dds, fitType = "glmGamPoi", useCR = TRUE, maxit = 100, weightThreshold = 0.01, quiet = FALSE, modelMatrix = NULL, minmu = 1e-06)
