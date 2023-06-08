@@ -23,7 +23,7 @@
 #' @return - dndscv_group2: output of dndscv for group 2
 #'
 #' @export
-fastGlmm = function(obj, cells, my_formula, my_formula2 = NULL, calc_pct = TRUE, num_cores = 24, out_path = NULL) {
+fastGlmm = function(obj, cells, my_formula, return_means = TRUE, do_contrasts = FALSE, my_formula2 = NULL, calc_pct = TRUE, num_cores = 24, out_path = NULL) {
   this_counts = obj@assays$RNA@counts[,cells]
   this_meta   = data.frame(obj@meta.data[cells,])
   if (!"pair" %in% colnames(this_meta)) { message("Required metadata column 'pair' not found in metadata. Exiting."); return(NULL); }
@@ -65,6 +65,18 @@ fastGlmm = function(obj, cells, my_formula, my_formula2 = NULL, calc_pct = TRUE,
     results_df$pct_con = con_num / length(which(this_meta$cond == "con"))
     results_df$up_pct = results_df$pct_plk
     results_df$up_pct[which( results_df$condplk < 0 )] = results_df$pct_con[which( results_df$condplk < 0 )]
+  }
+  
+  if (do_contrasts) {
+    my_contrasts = parallel::mclapply(1:nrow(results_df), function(x) {fit <- glmmRefit(results, gene = rownames(results_df)[x]); return(data.frame(emmeans(fit, specs = pairwise ~ exp)$contrasts)) }, mc.cores = num_cores)
+    my_contrasts = data.frame(data.table::rbindlist(my_contrasts))
+    # my_contrasts_melt = reshape2::melt(my_contrasts, id.var = "gene")
+    my_contrasts_df = reshape2::dcast(my_contrasts, gene ~ contrast, value.var = "p.value")
+    results_df[, colnames(my_contrasts_df)[2:ncol(my_contrasts_df)]] = my_contrasts_df[match(rownames(results_df), my_contrasts_df$gene), colnames(my_contrasts_df)[2:ncol(my_contrasts_df)]]
+  }
+  if (return_means) {
+    mean_cols = colnames(results@predict)[which(startsWith(colnames(results@predict), "y_"))]
+    results_df[,mean_cols] = results@predict[,mean_cols]
   }
   
   if(!is.null(out_path)) { write.csv(results_df, out_path) }
