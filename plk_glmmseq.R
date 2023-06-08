@@ -69,7 +69,8 @@ fastGlmm = function(obj, cells, my_formula, return_means = TRUE, do_contrasts = 
   
   if (do_contrasts) {
     my_contrasts = parallel::mclapply(1:nrow(results_df), function(x) {this_gene = rownames(results_df)[x]; fit <- glmmRefit(results, gene = this_gene); this_df = data.frame(emmeans(fit, specs = pairwise ~ exp)$contrasts); this_df$gene = this_gene; return(this_df) }, mc.cores = num_cores)
-    my_contrasts = data.frame(data.table::rbindlist(my_contrasts))
+    # my_contrasts = data.frame(data.table::rbindlist(my_contrasts))
+    my_contrasts = do.call('rbind', my_contrasts)
     # my_contrasts_melt = reshape2::melt(my_contrasts, id.var = "gene")
     my_contrasts_df = reshape2::dcast(my_contrasts, gene ~ contrast, value.var = "p.value")
     results_df[, colnames(my_contrasts_df)[2:ncol(my_contrasts_df)]] = my_contrasts_df[match(rownames(results_df), my_contrasts_df$gene), colnames(my_contrasts_df)[2:ncol(my_contrasts_df)]]
