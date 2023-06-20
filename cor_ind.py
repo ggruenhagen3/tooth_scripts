@@ -161,7 +161,8 @@ for ind in np.sort(sct.obs['subject'].unique()):
     df_list.append(df['cor'])
 
 df2 = pandas.concat(df_list, axis=1, join = "inner")
-
+df2.columns = np.sort(sct.obs['subject'].unique())
+df2.to_csv('/storage/home/hcoda1/6/ggruenhagen3/scratch/d_tooth/data/all_ind_cor.csv')
 
     cluster_set = list(set(cluster_labels))
 
