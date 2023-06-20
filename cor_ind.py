@@ -141,21 +141,27 @@ gene_labels = sct.var_names
 cluster_labels = sct.obs['seurat_clusters']
 
 df_list = []
+# dict_list = []
 for ind in np.sort(sct.obs['subject'].unique()):
-print(ind)
-sct_ind = sct[sct.obs['subject'] == ind,]
-this_mat = sct_ind.X.T
-cor = pandas.DataFrame(data=sparse_corrcoef(this_mat.todense()), index=sct.var_names, columns=sct.var_names)
-le_zero_mask = np.array(cor[cor.le()] > 0)[0]
-rows = cor.nonzero()[0][le_zero_mask]
-cols = cor.nonzero()[1][le_zero_mask]
-cor[rows, cols] = NaN
-df = cor.where(np.triu(np.ones(cor.shape)).astype(np.bool))
-df = df.stack().reset_index()
-df.columns = ['gene1', 'gene2', 'cor']
-df = df[df['cor'] > 0]
-df['id'] = df['gene1'] + df['gene2']
-df_list.append(df)
+    print(ind)
+    sct_ind = sct[sct.obs['subject'] == ind,]
+    this_mat = sct_ind.X.T
+    cor = pandas.DataFrame(data=sparse_corrcoef(this_mat.todense()), index=sct.var_names, columns=sct.var_names)
+    # le_zero_mask = np.array(cor[cor.le()] > 0)[0]
+    # rows = cor.nonzero()[0][le_zero_mask]
+    # cols = cor.nonzero()[1][le_zero_mask]
+    # cor[rows, cols] = NaN
+    df = cor.where(np.triu(np.ones(cor.shape)).astype(np.bool))
+    df = df.stack().reset_index()
+    df.columns = ['gene1', 'gene2', 'cor']
+    df = df[df['cor'] > 0]
+    df['id'] = df['gene1'] + '_' + df['gene2']
+    df.index = df['id']
+    df = df.drop(['gene1', 'gene2', 'id'], axis = 1)
+    df_list.append(df['cor'])
+
+df2 = pandas.concat(df_list, axis=1, join = "inner")
+
 
     cluster_set = list(set(cluster_labels))
 
