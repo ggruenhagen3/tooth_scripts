@@ -1043,61 +1043,10 @@ plk = readRDS("~/scratch/d_tooth/data/plk60_7_022223.rds")
 #*******************************************************************************
 # Glmmseq ======================================================================
 #*******************************************************************************
-library(glmmSeq)
-library(Seurat)
-library(lme4)
-library(lmerTest)
-library(parallel)
-library(edgeR)
-library(DESeq2)
-library(glmGamPoi)
-library(scran)
-# library(BiocParallel)
 
-data = plk_subject
-data$pair = data$subject
-obj = data
-# this_cells = colnames(data)[which(data$seurat_clusters == 0)]
-this_cells = colnames(data)
-
-# this_cells  = colnames(data) # TODO
-this_counts = data@assays$RNA@counts[,this_cells]
-this_meta   = data.frame(data@meta.data[this_cells,])
-
-gene_not_present_in_pairs = lapply(unique(this_meta$pair), function(x) rowSums(this_counts[,which(this_meta$pair == x)]) == 0)
-gene_not_present_in_pairs = Reduce(`+`, gene_not_present_in_pairs)
-genes_present_in_all_pairs = names(gene_not_present_in_pairs[which(gene_not_present_in_pairs == 0)])
-this_counts = this_counts[genes_present_in_all_pairs,]
-
-this_max_cluster_size = max(table(this_meta$seurat_clusters)) # TODO make clusters as a variable
-multicoreParam <- MulticoreParam(workers = 24)
-dds = DESeqDataSetFromMatrix(countData = this_counts, colData = this_meta, design = ~ cond)
-size_factors = calculateSumFactors(this_counts, BPPARAM = multicoreParam, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)
-# size_factors = calculateSumFactors(this_counts, max.cluster.size = this_max_cluster_size, clusters = NULL, ref.clust = NULL, positive = TRUE, scaling = NULL,  min.mean = NULL, subset.row = NULL)
-sizeFactors(dds) = size_factors
-dds = estimateDispersions(dds, fitType = "glmGamPoi", useCR = TRUE, maxit = 100, weightThreshold = 0.01, quiet = FALSE, modelMatrix = NULL, minmu = 1e-06)
-disp = as.matrix(mcols(dds))
-disp = disp[,11]
-names(disp) = genes_present_in_all_pairs
-
-results <- glmmSeq(~ cond + (1|sample/subject), id = "subject",
-                   countdata = this_counts,
-                   metadata = this_meta,
-                   dispersion = disp,
-                   removeSingles=FALSE,
-                   progress=TRUE,
-                   cores = 24)
-
-
-#
-# options(MulticoreParam=quote(MulticoreParam(workers=4)))
-# FUN <- function(x) { round(sqrt(x), 4) }
-# FUN1 <- function(x) { print(x); sleep(1); }
-# bplapply(1:4, FUN)
-# bplapply(1:8, FUN1)
-
+# Pluck vs Control
 message('Starting glmmseq analysis')
-obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk60")])
+obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk7")])
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
 n_cond  = length(unique(obj$cond))
@@ -1130,7 +1079,7 @@ deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
 # write.csv(deg_sig, paste0(glmm_out_dir, "all_sig.csv"))
 write.csv(deg_sig, paste0(glmm_out_dir, "all_sig_pct.csv"))
 
-bulk = read.csv("plk60_plk_v_ctrl_bulk_sig.csv")
+bulk = read.csv("plk7_plk_v_ctrl_bulk_sig.csv")
 this_counts = obj@assays$RNA@counts[bulk$X, ]
 this_meta = obj@meta.data
 plk_num = rowSums(this_counts[,which(this_meta$cond == "plk")] > 0)
@@ -1142,7 +1091,75 @@ bulk$pct_con = con_num / length(which(this_meta$cond == "con"))
 bulk$up_pct = bulk$pct_plk
 bulk$up_pct[which( bulk$condplk < 0 )] = bulk$pct_con[which( bulk$condplk < 0 )]
 bulk = bulk[which(bulk$up_pct > 0.1),]
-write.csv(bulk, "~/scratch/d_tooth/results/plk60_plk_v_ctrl_bulk_sig_pct.csv")
+write.csv(bulk, "~/scratch/d_tooth/results/plk7_plk_v_ctrl_bulk_sig_pct.csv")
+
+
+# Experiment vs Experiment
+message('Starting glmmseq analysis')
+obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$cond == "con")])
+obj$pair = obj$subject
+n_pairs = length(unique(obj$pair))
+n_cond  = length(unique(obj$cond))
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_con_clusters50/"
+big_res = data.frame()
+for (this_clust in sort(unique(obj$seurat_clusters))) {
+  print(this_clust)
+  this_file = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")
+  if ( file.exists(this_file) ) {
+    res = read.csv(this_file)
+    res$cluster = this_clust
+    # res$q = qvalue::qvalue(res$P_cond)$qvalues
+    this_counts = obj@assays$RNA@counts[res$X, which(obj$seurat_clusters == this_clust)]
+    this_meta = obj@meta.data[which(obj$seurat_clusters == this_clust),]
+    count_list = lapply(unique(this_meta$exp), function(x) data.frame(gene = rownames(this_counts), count = rowSums(this_counts[,which(this_meta$exp == x)] > 0), exp = x))
+    count_pct  = lapply(unique(this_meta$exp), function(x) data.frame(gene = rownames(this_counts), pct   = rowSums(this_counts[,which(this_meta$exp == x)] > 0) / length(which(this_meta$exp == x)), exp = x))
+    count_df = data.frame(data.table::rbindlist(count_list))
+    pct_df   = data.frame(data.table::rbindlist(count_pct))
+    count_df = reshape2::dcast(count_df, gene ~ exp, value.var = "count")
+    pct_df   = reshape2::dcast(pct_df,   gene ~ exp, value.var = "pct")
+    res[, paste0("ncells_",   colnames(count_df)[2:ncol(count_df)])] = count_df[match(res$gene, count_df$gene), 2:ncol(count_df)]
+    res[, paste0("pctcells_", colnames(pct_df)[2:ncol(pct_df)])]     = pct_df[match(res$gene, pct_df$gene),     2:ncol(pct_df)]
+    big_res = rbind(res, big_res)
+  }
+}
+p_cols = colnames(big_res)[which(startsWith(colnames(big_res), "p."))]
+bh_cols = gsub("p\\.", "bh.", p_cols)
+for (i in 1:length(p_cols)) { big_res[,bh_cols[i]] = p.adjust(big_res[,p_cols[i]], method = "BH") }
+
+sig_df = data.frame()
+for (this_bh in bh_cols) {
+  this_est_col = gsub("bh", "estimate", this_bh)
+  this_p_col = gsub("bh", "p", this_bh)
+  this_split = strsplit(this_bh, "\\.\\.\\.")[[1]]
+  exp1 = this_split[2]
+  exp2 = this_split[3]
+  pos_sig_idx = which(big_res[,this_bh] < 0.05 & big_res[,paste0("pctcells_", exp1)] > 0.1 & big_res[,this_est_col] > 0)
+  neg_sig_idx = which(big_res[,this_bh] < 0.05 & big_res[,paste0("pctcells_", exp2)] > 0.1 & big_res[,this_est_col] < 0)
+  all_sig_idx = c(pos, neg_sig_idx)
+  if (length(neg_sig_idx) > 0) {
+    this_df = big_res[neg_sig_idx, c("gene", "cluster", this_p_col, this_bh, this_est_col, paste0("pctcells_", exp1), paste0("pctcells_", exp2), paste0("y_", exp1), paste0("y_", exp2))]
+    colnames(this_df) = c("gene", "cluster", "p", "bh", "estimate", "pct.1", "pct.2", "mean.1", "mean.2")
+    this_df$exp1Up = F
+    this_df$exp1 = exp1
+    this_df$exp2 = exp2
+    sig_df = rbind(sig_df, this_df)
+  }
+  if (length(pos_sig_idx) > 0) {
+    this_df = big_res[pos_sig_idx, c("gene", "cluster", this_p_col, this_bh, this_est_col, paste0("pctcells_", exp1), paste0("pctcells_", exp2), paste0("y_", exp1), paste0("y_", exp2))]
+    colnames(this_df) = c("gene", "cluster", "p", "bh", "estimate", "pct.1", "pct.2", "mean.1", "mean.2")
+    this_df$exp1Up = T
+    this_df$exp1 = exp1
+    this_df$exp2 = exp2
+    sig_df = rbind(sig_df, this_df)
+  }
+}
+
+sig_df = sig_df[order(sig_df$exp1, sig_df$bh, decreasing = F),]
+sig_df$hgnc = gene_info$human[match(sig_df$gene, gene_info$seurat_name)]
+big_res$hgnc = gene_info$human[match(big_res$gene, gene_info$seurat_name)]
+sig_df = sig_df[,c(ncol(sig_df), 1:(ncol(sig_df)-1))]
+write.csv(big_res, paste0(glmm_out_dir, "all.csv"))
+write.csv(sig_df,  paste0(glmm_out_dir, "all_sig_pct.csv"))
 
 # # Calculate pct.1 and pct.2
 # tot = data.frame(table(obj$cond, obj$seurat_clusters))
@@ -1158,8 +1175,56 @@ write.csv(bulk, "~/scratch/d_tooth/results/plk60_plk_v_ctrl_bulk_sig_pct.csv")
 #*******************************************************************************
 # Ophir ========================================================================
 #*******************************************************************************
-mtx = Matrix::readMM("~/scratch/msc/GSE131204_raw_counts_8594x27998.mtx.gz")
-# mtx  = ReadMtx(mtx = "~/scratch/msc/GSE131204_raw_counts_8594x27998.mtx.gz")
-meta = data.table::fread("~/scratch/msc/GSE131204_cell_info_8594x25.tsv")
+# mtx = Matrix::readMM("~/scratch/msc/GSE131204_raw_counts_8594x27998.mtx.gz")
+# # mtx  = ReadMtx(mtx = "~/scratch/msc/GSE131204_raw_counts_8594x27998.mtx.gz")
+# meta = data.table::fread("~/scratch/msc/GSE131204_cell_info_8594x25.tsv")
+# 
+# ophir = CreateSeuratObject(counts = mtx, meta.data = meta)
 
-ophir = CreateSeuratObject(counts = mtx, meta.data = meta)
+meta = data.table::fread("~/scratch/msc/GSE131204_cell_info_8594x25.tsv", data.table = F)
+meta$barcode2 = paste0(meta$barcode, "_1")
+ophir_inj = Read10X("~/scratch/msc/ffm_injury/")
+ophir_con = Read10X("~/scratch/msc/ffm_control/")
+ophir_inj = CreateSeuratObject(ophir_inj)
+ophir_con = CreateSeuratObject(ophir_con)
+ophir_inj$barcode = colnames(ophir_inj)
+ophir_con$barcode = colnames(ophir_con)
+ophir_inj$cond = "injured"
+ophir_con$cond = "control"
+ophir = merge(ophir_inj, ophir_con)
+ophir$my_barcode_id = paste0(ophir$cond, "_", ophir$barcode)
+meta$my_barcode_id = paste0(meta$condition, "_", meta$barcode)
+ophir@meta.data[,colnames(meta)] = meta[match(ophir$my_barcode_id, meta$my_barcode_id), colnames(meta)]
+ophir = subset(ophir, cells = colnames(ophir)[which(ophir$pass_quality_filters)])
+saveRDS(ophir, "~/scratch/d_tooth/data/ophir.rds")
+
+#*******************************************************************************
+# GO ===========================================================================
+#*******************************************************************************
+library("GOfuncR")
+all_enrich = data.frame()
+exps = c("plk60", "plk1", "plk3", "plk7")
+for (this_exp in exps) {
+  print(this_exp)
+  glmm_out_dir = paste0("~/scratch/d_tooth/results/plk_glmmseq_", this_exp, "_clusters50/")
+  deg_sig = read.csv(paste0(glmm_out_dir, "all_sig_pct.csv"))
+  deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
+  this_enrich = GOfuncR::go_enrich(data.frame(gene = deg_sig_hgnc, test = 1), silent = T)$results
+  # this_enrich$bon = p.adjust(this_enrich$results$raw_p_overrep, method = "bonferroni")
+  if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
+  else                     { all_enrich = cbind(all_enrich, this_enrich[, "FWER_overrep"]) }
+}
+colnames(all_enrich) = c("Ontology", "ID", "Name", paste0(exps, "_FWER"))
+
+all_enrich_bulk = data.frame()
+for (this_exp in c("plk60", "plk1", "plk3", "plk7")) {
+  print(this_exp)
+  this_file = paste0("~/scratch/d_tooth/results/plk_glmmseq_", this_exp, "_bulk.csv")
+  deg_sig = read.csv(this_file)
+  deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
+  deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
+  this_enrich = GOfuncR::go_enrich(data.frame(gene = deg_sig_hgnc, test = 1), silent = T)$results
+  # this_enrich$bon = p.adjust(this_enrich$results$raw_p_overrep, method = "bonferroni")
+  if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
+  else                     { all_enrich = cbind(all_enrich, this_enrich[, "FWER_overrep"]) }
+}
