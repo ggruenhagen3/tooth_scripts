@@ -1064,7 +1064,7 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
     plk_num = rowSums(this_counts[,which(this_meta$cond == "plk")] > 0)
     con_num = rowSums(this_counts[,which(this_meta$cond == "con")] > 0)
     res$num_plk = plk_num
-    res$con_num = con_num
+    res$num_con = con_num
     res$pct_plk = plk_num / length(which(this_meta$cond == "plk"))
     res$pct_con = con_num / length(which(this_meta$cond == "con"))
     big_res = rbind(res, big_res)
@@ -1073,9 +1073,12 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
 big_res$bh = p.adjust(big_res$P_cond, method = "BH")
 big_res$up_pct = big_res$pct_plk
 big_res$up_pct[which( big_res$condplk < 0 )] = big_res$pct_con[which( big_res$condplk < 0 )]
-deg_sig = big_res[which(big_res$bh < 0.05 & big_res$up_pct > 0.1),]
+big_res$up_num = big_res$num_plk
+big_res$up_num[which( big_res$condplk < 0 )] = big_res$num_con[which( big_res$condplk < 0 )]
+deg_sig = big_res[which(big_res$bh < 0.05 & big_res$up_pct > 0.1 & big_res$up_num > 5),]
 head(deg_sig[order(deg_sig$bh, decreasing = F),])
 deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
+write.csv(big_res, paste0(glmm_out_dir, "all.csv"))
 # write.csv(deg_sig, paste0(glmm_out_dir, "all_sig.csv"))
 write.csv(deg_sig, paste0(glmm_out_dir, "all_sig_pct.csv"))
 
@@ -1228,3 +1231,136 @@ for (this_exp in c("plk60", "plk1", "plk3", "plk7")) {
   if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
   else                     { all_enrich = cbind(all_enrich, this_enrich[, "FWER_overrep"]) }
 }
+
+
+#*******************************************************************************
+# WGCNA ========================================================================
+#*******************************************************************************
+library("Seurat")
+library("SeuratObject")
+good_libPaths = .libPaths()
+.libPaths(c(.libPaths(), "/storage/coda1/p-js585/0/ggruenhagen3/George/rich_project_pb1/conda_envs/r4/lib/R/library"))
+library("cluster")
+library("WGCNA")
+.libPaths(good_libPaths)
+obj = plk
+# non_low_genes = rownames(obj)[which( rowSums(obj@assays$RNA@counts[rownames(obj),]) > 10 )]
+# data_mat_c = t(obj@assays$RNA@data[non_low_genes,])
+# powers = c(c(1:10), seq(from = 12, to=20, by=2))
+# # sft_c = pickSoftThreshold(data_mat_c, powerVector = powers, verbose = 5)
+# adjacency = adjacency(data_mat_c, type = "signed", power = 1)
+# TOM = adjacency
+# dissTOM = 1-TOM
+
+# Load Correlation Matrix computed in python
+library("rhdf5")
+h5f = H5Fopen("~/scratch/d_tooth/results/py_ns/plk_real_cor.h5")
+cor_mat = h5f$name
+h5closeAll()
+
+# Use WGCNA's adjacency.fromSimilarity function, which will use the power 6
+rownames(cor_mat) = colnames(cor_mat) = rownames(obj@assays$SCT@data)
+adjacency_6 = adjacency.fromSimilarity(cor_mat, type = "signed")
+TOM_6 = adjacency_6
+dissTOM_6 = 1-TOM_6
+distDissTOM_6 = as.dist(dissTOM_6)
+geneTree_6 = hclust(distDissTOM_6, method = "average")
+
+# Regular hierarchical clustering of correlation matrix
+adjacency_raw = cor_mat
+TOM_raw = adjacency_raw
+dissTOM_raw = 1 - TOM_raw
+distDissTOM_raw = as.dist(dissTOM_raw)
+geneTree_raw = hclust(distDissTOM_raw)
+
+# Cluster
+dynamicMods_6     = cutreeDynamic(dendro = geneTree_6, distM = dissTOM_6, pamRespectsDendro = FALSE, minClusterSize = 5)
+dynamicMods30_6   = cutreeDynamic(dendro = geneTree_6, distM = dissTOM_6, pamRespectsDendro = FALSE, minClusterSize = 30)
+dynamicMods_raw   = cutreeDynamic(dendro = geneTree_raw, distM = dissTOM_raw, pamRespectsDendro = FALSE, minClusterSize = 5)
+dynamicMods30_raw = cutreeDynamic(dendro = geneTree_raw, distM = dissTOM_raw, pamRespectsDendro = FALSE, minClusterSize = 30)
+df = data.frame(gene = colnames(cor_mat), hgnc = gene_info$human[match(colnames(cor_mat), gene_info$seurat_name)], 
+                module_5_6 = dynamicMods_6, module_30_6 = dynamicMods30_6, 
+                module_5_raw = dynamicMods_raw, module_30_raw = dynamicMods30_raw, row.names = colnames(cor_mat))
+fossil::rand.index(df$module_5_6,  df$module_5_raw)
+fossil::rand.index(df$module_30_6, df$module_30_raw)
+
+# DBSCAN
+library("dbscan")
+cl5_6 = hdbscan(distDissTOM_6, minPts = 5)
+cl5_raw = hdbscan(distDissTOM_raw, minPts = 5)
+df$dbscan_5_6   = cl5_6$cluster
+df$dbscan_5_raw = cl5_raw$cluster
+# df$dbscan_membership = cl5$membership_prob
+# test = dbscan(distDissTOM_raw, minPts = 5, eps = 0.60)
+# km_model <- ClusterR::MiniBatchKmeans(cor_mat, clusters = 50, batch_size = 1000, num_init = 10, max_iters = 100, 
+#                                       init_fraction = 0.2, initializer = 'kmeans++', early_stop_iter = 10,
+#                                       verbose = T)
+# pred <- ClusterR::predict_MBatchKMeans(cor_mat, km_model$centroids)
+
+# Evaluate Quality of Clustering
+sum_df = evaluateClustering(df[,3], distDissTOM_6, cor_mat)
+sum_df = rbind(sum_df, evaluateClustering(df[,4], distDissTOM_6,   cor_mat))
+sum_df = rbind(sum_df, evaluateClustering(df[,5], distDissTOM_raw, cor_mat))
+sum_df = rbind(sum_df, evaluateClustering(df[,6], distDissTOM_raw, cor_mat))
+sum_df = rbind(sum_df, evaluateClustering(df[,7], distDissTOM_6,   cor_mat))
+sum_df = rbind(sum_df, evaluateClustering(df[,8], distDissTOM_raw, cor_mat))
+
+# Iterative cutree
+geneTree = geneTree_raw
+distDissTOM = distDissTOM_raw
+kdf = data.frame(gene = colnames(cor_mat), hgnc = gene_info$human[match(colnames(cor_mat), gene_info$seurat_name)], row.names = colnames(cor_mat))
+my_ks = seq(50, 750, by = 25)
+for (i in my_ks) {
+  print(i)
+  this_clustering = cutree(geneTree, k = i)
+  kdf = cbind(kdf, this_clustering)
+}
+res = parallel::mclapply(3:ncol(kdf), function(x) evaluateClustering(kdf[,x], distDissTOM, cor_mat), mc.cores = 1)
+sum_kdf = do.call('rbind', res)
+
+evaluateClustering = function(this_clustering, distDissTOM, cor_mat) {
+  print(".")
+  cluster_sum = summary(silhouette(this_clustering, distDissTOM))
+  this_avg_clus_avg_width = mean(cluster_sum$clus.avg.widths)
+  this_median_clus_avg_width = median(cluster_sum$clus.avg.widths)
+  this_avg_width = cluster_sum$avg.width
+  this_cors = lapply(unique(this_clustering), function(x) as.vector(cor_mat[which(this_clustering==x), which(this_clustering==x)]))
+  this_avg_cor = mean(unlist(this_cors))
+  this_avg_clus_avg_cor    = mean(  unlist(lapply(1:length(this_cors), function(x) mean(this_cors[[x]]))))
+  this_median_clus_avg_cor = median(unlist(lapply(1:length(this_cors), function(x) mean(this_cors[[x]]))))
+  return(data.frame(avg_width = this_avg_width, avg_clus_avg_width = this_avg_clus_avg_width, median_clus_avg_width = this_median_clus_avg_width, avg_cor = this_avg_cor, avg_clus_avg_cor = this_avg_clus_avg_cor, median_clus_avg_cor = this_median_clus_avg_cor))
+}
+
+# Iterative kmeans clustering
+distDissTOM = as.dist(dissTOM)
+kdf = data.frame(k = seq(10, 150, by = 5), avg.sil.width = 0)
+for (i in 1:nrow(kdf)) {
+  print(i)
+  kdf$avg.sil.width[i] = pam(distDissTOM, kdf$k[i], diss = T)[["silinfo"]]$avg.width
+}
+kdfk = data.frame(gene = colnames(cor_mat), hgnc = gene_info$human[match(colnames(cor_mat), gene_info$seurat_name)], row.names = colnames(cor_mat))
+my_ks = seq(10, 150, by = 5)
+for (i in my_ks) {
+  print(i)
+  this_clustering = cutree(geneTree, k = i)
+  kdfk = cbind(kdfk, this_clustering)
+}
+res = parallel::mclapply(3:ncol(kdfk), function(x) evaluateClustering(kdfk[,x], distDissTOM, cor_mat), mc.cores = 1)
+sum_kdfk = do.call('rbind', res)
+
+#*******************************************************************************
+# Diff Cor =====================================================================
+#*******************************************************************************
+df2 = data.table::fread("~/scratch/d_tooth/data/all_ind_cor.csv", data.table = F)
+ind_counts = lapply(colnames(df2)[2:ncol(df2)], function(x) rowSums(plk_subject@assays$RNA@counts[,which(plk_subject$subject == x)] > 0))
+ind_counts = do.call("cbind", ind_counts)
+colnames(ind_counts) = colnames(df2)[2:ncol(df2)]
+df2[,c("gene1", "gene2")] = reshape2::colsplit(df2$id, "_", c('1', '2'))
+
+df_exp = df2[,c('id', 'gene1', 'gene2', 'plk1_1', 'plk1_2')]
+ind_exp = ind_counts[,c("plk1_1", "plk1_2")]
+big_genes = rowSums(ind_exp > 5)
+big_genes = names(big_genes)[which(big_genes == ncol(df_exp)-3)]
+df_exp = df_exp[which(df_exp$gene1 %in% big_genes & df_exp$gene2 %in% big_genes),]
+df_exp = df_exp[which(df_exp$gene1 != df_exp$gene2),]
+
