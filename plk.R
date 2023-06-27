@@ -1316,6 +1316,42 @@ all_enrich_bulk_sig_melt$Name = factor(all_enrich_bulk_sig_melt$Name, levels = t
 ggplot(all_enrich_bulk_sig_melt, aes(x = variable, y = Name, size = value2, color = sig)) + geom_point() + theme_classic() + scale_color_manual(values = c("gray60", "goldenrod1")) + scale_size_continuous(range=c(1,4))
 ggsave("~/scratch/d_tooth/results/plk_v_con_bulk_go_dot.pdf", width = 10, height = 20)
 
+
+# KEGG
+library(clusterProfiler)
+library(createKEGGdb)
+createKEGGdb::create_kegg_db('hsa')
+install.packages("KEGG.db_1.0.tar.gz", repos=NULL,type="source")
+library(KEGG.db)
+
+# library(org.Hs.eg.db)
+# gene.df <- bitr(deg_sig_hgnc, fromType = "SYMBOL",
+#                 toType = c("ENTREZID", "SYMBOL"),
+#                 OrgDb = org.Hs.eg.db)
+# human_ensembl = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# mapping = getBM(attributes=c('entrezgene_id', 'hgnc_symbol'), filters = 'hgnc_symbol', values = deg_sig_hgnc, mart = human_ensembl)
+# pathways.list <- keggList("pathway", "hsa")
+# myKeggTest = function(x) {
+#   
+# }
+# hsa = search_kegg_organism('hsa', by='kegg_code')
+all_enrich = data.frame()
+exps = c("plk60", "plk1", "plk3", "plk7")
+for (this_exp in exps) {
+  print(this_exp)
+  glmm_out_dir = paste0("~/scratch/d_tooth/results/plk_glmmseq_", this_exp, "_clusters50/")
+  deg_sig = read.csv(paste0(glmm_out_dir, "all_sig_pct.csv"))
+  deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
+  # this_enrich = GOfuncR::go_enrich(data.frame(gene = deg_sig_hgnc, test = 1), silent = T)$results
+  this_enrich = enrichKEGG(gene = deg_sig_hgnc, keyType = "ncbi-geneid", organism = 'hsa', pvalueCutoff = 1, use_internal_data=T)
+  # this_enrich$bon = p.adjust(this_enrich$results$raw_p_overrep, method = "bonferroni")
+  if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
+  else                     { all_enrich = cbind(all_enrich, this_enrich[, "FWER_overrep"]) }
+}
+colnames(all_enrich) = c("Ontology", "ID", "Name", paste0(exps, "_FWER"))
+# END KEGG
+
+
 #*******************************************************************************
 # WGCNA ========================================================================
 #*******************************************************************************
