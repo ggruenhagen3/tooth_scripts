@@ -540,6 +540,25 @@ s.clust.pdenom.melt$Cluster = factor(s.clust.pdenom.melt$Cluster)
 ggplot(s.clust.pdenom.melt, aes(x = Condition, y = value, color = Cluster, fill = Cluster)) + geom_bar(alpha = 0.3, stat = 'identity') + theme_bw() + guides(color = "none")
 dev.off()
 
+# Check for plk vs control cluster proportion differences by experiment
+for (this_exp in unique(plk$exp)) {
+  this_cells = colnames(plk)[which(plk$exp == this_exp)]
+  plk.cluster.mat = as.matrix(table(plk$seurat_clusters[this_cells], plk$cond[this_cells]))
+  s.clust.cdenom = plk.cluster.mat / rowSums(plk.cluster.mat)
+  s.clust.cdenom.melt = reshape2::melt(s.clust.cdenom)
+  colnames(s.clust.pdenom.melt) = c("Cluster", "Condition", "value")
+  colnames(s.clust.cdenom.melt) = c("Cluster", "Condition", "value")
+  s.clust.cdenom.melt$Cluster = factor(s.clust.cdenom.melt$Cluster, levels = sort(unique(s.clust.cdenom.melt$Cluster)))
+  s.clust.cdenom.melt$num = reshape2::melt(plk.cluster.mat)$value
+  s.clust.cdenom.melt$label_y = s.clust.cdenom.melt$value / 2
+  s.clust.cdenom.melt$label_y[which(s.clust.cdenom.melt$Condition == "con")] = 1 - (s.clust.cdenom.melt$value[which(s.clust.cdenom.melt$Condition == "con")]/2)
+  # s.clust.cdenom.melt2 = s.clust.cdenom.melt %>% arrange(Cluster, Condition) %>% group_by(Cluster) %>% mutate(label_y = cumsum(value))
+  
+  Cairo::Cairo(paste0("~/research/tooth/results/plkall_", this_exp, "_cluster_prop_by_plk.png"), width = 3000, height = 800, res = 200)
+  print(ggplot(s.clust.cdenom.melt, aes(x = Cluster, y = value, fill = Condition)) + geom_bar(stat = 'identity') + theme_bw() + scale_y_continuous(expand = c(0,0)) + geom_text(aes(y = label_y, label = num), color = "white"))
+  dev.off()
+}
+
 plk.cluster.mat = as.matrix(table(plk$seurat_clusters, plk$exp))
 s.clust.cdenom = plk.cluster.mat / rowSums(plk.cluster.mat)
 s.clust.cdenom.melt = reshape2::melt(s.clust.cdenom)
@@ -645,6 +664,7 @@ for (this_exp in exps) {
 }
 
 # Plot the celltype interactions
+t_order = c (1, 9, 12, 19, 26, 27, 34, 10, 14, 15, 16, 17, 28, 31, 35, 0, 4, 8, 13, 20, 32, 2, 3, 5, 11, 21, 23, 22, 29, 7, 25, 38, 41, 42, 45, 6, 18, 30, 39, 37, 46, 48, 33, 36, 44, 24, 40, 43, 47, 49)
 exps = c("plk60", "plk1", "plk3", "plk7")
 conds = c("plk", "con")
 for (this_exp in exps) {
@@ -652,10 +672,12 @@ for (this_exp in exps) {
     cc_df = read.csv(paste0("~/scratch/d_tooth/results/plkall_", this_exp, "_", this_cond, "_one_050423.csv"))
     cc_df$Sender   = reshape2::colsplit(reshape2::colsplit(cc_df$Sender,   "_", c('1', '2'))[,2], "_", c('1', '2'))[,2]
     cc_df$Receiver = reshape2::colsplit(reshape2::colsplit(cc_df$Receiver, "_", c('1', '2'))[,2], "_", c('1', '2'))[,2]
-    cc_df$Sender   = factor(cc_df$Sender,   levels = 0:max(as.numeric(cc_df$Sender)))
-    cc_df$Receiver = factor(cc_df$Receiver, levels = 0:max(as.numeric(cc_df$Receiver)))
+    # cc_df$Sender   = factor(cc_df$Sender,   levels = 0:max(as.numeric(cc_df$Sender)))
+    # cc_df$Receiver = factor(cc_df$Receiver, levels = 0:max(as.numeric(cc_df$Receiver)))
+    cc_df$Sender   = factor(cc_df$Sender,   levels = t_order)
+    cc_df$Receiver = factor(cc_df$Receiver, levels = t_order)
     
-    fname = paste0("~/scratch/d_tooth/results/plkall_", this_exp, "_", this_cond, "_one_050423.pdf")
+    fname = paste0("~/scratch/d_tooth/results/plkall_", this_exp, "_", this_cond, "_one_062623.pdf")
     ggplot(cc_df, aes(x = Sender, y = Receiver, fill = value)) + geom_raster() + scale_fill_viridis() + ggtitle(paste0("CellChat on Experiment: ", this_exp, " and Condition: ", this_cond)) + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(size = 10, angle = 45, vjust = 1.2, hjust = 1)) + coord_fixed() + ggh4x::force_panelsizes(cols = unit(length(unique(cc_df$Sender))/7, "in"), rows = unit(length(unique(cc_df$Sender))/7, "in"))
     ggsave(fname, width = 9, height = 9)
     system(paste0("rclone copy ", fname, " dropbox:BioSci-Streelman/George/Tooth/plk/analysis/cellchat"))
@@ -670,8 +692,8 @@ for (this_exp in exps) {
   cc_df$cond   = reshape2::colsplit(reshape2::colsplit(cc_df$Sender,   "_", c('1', '2'))[,2], "_", c('1', '2'))[,1]
   cc_df$Sender   = reshape2::colsplit(reshape2::colsplit(cc_df$Sender,   "_", c('1', '2'))[,2], "_", c('1', '2'))[,2]
   cc_df$Receiver = reshape2::colsplit(reshape2::colsplit(cc_df$Receiver, "_", c('1', '2'))[,2], "_", c('1', '2'))[,2]
-  cc_df$Sender   = factor(cc_df$Sender,   levels = 0:max(as.numeric(cc_df$Sender)))
-  cc_df$Receiver = factor(cc_df$Receiver, levels = 0:max(as.numeric(cc_df$Receiver)))
+  cc_df$Sender   = factor(cc_df$Sender,   levels = t_order)
+  cc_df$Receiver = factor(cc_df$Receiver, levels = t_order)
   cc_df$id = paste0(cc_df$exp, "_", cc_df$Sender, "_", cc_df$Receiver)
   cc_df_plk = cc_df
   
@@ -680,8 +702,8 @@ for (this_exp in exps) {
   cc_df$cond   = reshape2::colsplit(reshape2::colsplit(cc_df$Sender,   "_", c('1', '2'))[,2], "_", c('1', '2'))[,1]
   cc_df$Sender   = reshape2::colsplit(reshape2::colsplit(cc_df$Sender,   "_", c('1', '2'))[,2], "_", c('1', '2'))[,2]
   cc_df$Receiver = reshape2::colsplit(reshape2::colsplit(cc_df$Receiver, "_", c('1', '2'))[,2], "_", c('1', '2'))[,2]
-  cc_df$Sender   = factor(cc_df$Sender,   levels = 0:max(as.numeric(cc_df$Sender)))
-  cc_df$Receiver = factor(cc_df$Receiver, levels = 0:max(as.numeric(cc_df$Receiver)))
+  cc_df$Sender   = factor(cc_df$Sender,   levels = t_order)
+  cc_df$Receiver = factor(cc_df$Receiver, levels = t_order)
   cc_df$id = paste0(cc_df$exp, "_", cc_df$Sender, "_", cc_df$Receiver)
   cc_df_con = cc_df
   
@@ -690,10 +712,10 @@ for (this_exp in exps) {
   cc_df$con = cc_df_con$value[match(cc_df$id, cc_df_con$id)]
   cc_df$dif = cc_df$plk - cc_df$con
   cc_df = cc_df[which(!is.na(cc_df$dif)),]
-  # fname = paste0("~/scratch/d_tooth/results/plkall_", this_exp, "_plkvcon_one_050423.pdf")
-  # ggplot(cc_df, aes(x = Sender, y = Receiver, fill = dif)) + geom_raster() + scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(11, "RdBu")), limits = c(-max(abs(cc_df$dif)), max(abs(cc_df$dif))), oob = scales::squish) + ggtitle(paste0("CellChat Plucked - Control Weights for Experiment: ", this_exp)) + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(size = 10, angle = 45, vjust = 1.2, hjust = 1)) + coord_fixed() + ggh4x::force_panelsizes(cols = unit(length(unique(cc_df$Sender))/7, "in"), rows = unit(length(unique(cc_df$Sender))/7, "in"))
-  # ggsave(fname, width = 9, height = 9)
-  # system(paste0("rclone copy ", fname, " dropbox:BioSci-Streelman/George/Tooth/plk/analysis/cellchat"))
+  fname = paste0("~/scratch/d_tooth/results/plkall_", this_exp, "_plkvcon_one_062623.pdf")
+  ggplot(cc_df, aes(x = Sender, y = Receiver, fill = dif)) + geom_raster() + scale_fill_gradientn(colors = rev(RColorBrewer::brewer.pal(11, "RdBu")), limits = c(-max(abs(cc_df$dif)), max(abs(cc_df$dif))), oob = scales::squish) + ggtitle(paste0("CellChat Plucked - Control Weights for Experiment: ", this_exp)) + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(size = 10, angle = 45, vjust = 1.2, hjust = 1)) + coord_fixed() + ggh4x::force_panelsizes(cols = unit(length(unique(cc_df$Sender))/7, "in"), rows = unit(length(unique(cc_df$Sender))/7, "in"))
+  ggsave(fname, width = 9, height = 9)
+  system(paste0("rclone copy ", fname, " dropbox:BioSci-Streelman/George/Tooth/plk/analysis/cellchat"))
   # fname2 = paste0("~/scratch/d_tooth/results/plkall_", this_exp, "_plkvcon_one_050423.csv")
   # write.csv(cc_df, fname2)
   # system(paste0("rclone copy ", fname2, " dropbox:BioSci-Streelman/George/Tooth/plk/analysis/cellchat"))
@@ -1204,6 +1226,37 @@ saveRDS(ophir, "~/scratch/d_tooth/data/ophir.rds")
 #*******************************************************************************
 # GO ===========================================================================
 #*******************************************************************************
+
+# Venn Diagram of Overlapping Cluster Level DEGs
+all_hgnc = data.frame()
+all_hgnc_list = list()
+exps = c("plk60", "plk1", "plk3", "plk7")
+for (this_exp in exps) {
+  glmm_out_dir = paste0("~/scratch/d_tooth/results/plk_glmmseq_", this_exp, "_clusters50/")
+  deg_sig = read.csv(paste0(glmm_out_dir, "all_sig_pct.csv"))
+  deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
+  all_hgnc = rbind(all_hgnc, data.frame(hgnc = deg_sig_hgnc, exp = this_exp))
+  all_hgnc_list[[this_exp]] = deg_sig_hgnc
+}
+ggvenn::ggvenn(all_hgnc_list, fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"), stroke_size = 0.5, set_name_size = 4)
+ggsave("~/scratch/d_tooth/results/plk_v_con_cluster_level_hgnc_venn.pdf", width = 6, height = 6)
+
+# Venn Diagram of Overlapping Bulk DEGs
+all_hgnc = data.frame()
+all_hgnc_list = list()
+exps = c("plk60", "plk1", "plk3", "plk7")
+for (this_exp in exps) {
+  this_file = paste0("~/scratch/d_tooth/results/", this_exp, "_plk_v_ctrl_bulk_sig_pct.csv")
+  deg_sig = read.csv(this_file)
+  deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
+  deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
+  all_hgnc = rbind(all_hgnc, data.frame(hgnc = deg_sig_hgnc, exp = this_exp))
+  all_hgnc_list[[this_exp]] = deg_sig_hgnc
+}
+ggvenn::ggvenn(all_hgnc_list, fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"), stroke_size = 0.5, set_name_size = 4)
+ggsave("~/scratch/d_tooth/results/plk_v_con_bulk_hgnc_venn.pdf", width = 6, height = 6)
+
+# Cluster Level GO
 library("GOfuncR")
 all_enrich = data.frame()
 exps = c("plk60", "plk1", "plk3", "plk7")
@@ -1214,24 +1267,52 @@ for (this_exp in exps) {
   deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
   this_enrich = GOfuncR::go_enrich(data.frame(gene = deg_sig_hgnc, test = 1), silent = T)$results
   # this_enrich$bon = p.adjust(this_enrich$results$raw_p_overrep, method = "bonferroni")
-  if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
-  else                     { all_enrich = cbind(all_enrich, this_enrich[, "FWER_overrep"]) }
+  if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")]                           }
+  else                     { all_enrich = cbind(all_enrich, this_enrich[match(all_enrich$node_id, this_enrich$node_id), "FWER_overrep"]) }
 }
-colnames(all_enrich) = c("Ontology", "ID", "Name", paste0(exps, "_FWER"))
 
+# Plotting
+colnames(all_enrich) = c("Ontology", "ID", "Name", paste0(exps, "_FWER"))
+all_enrich_sig = all_enrich[which( rowSums(all_enrich[,paste0(exps, "_FWER")] < 0.05) > 0 ),]
+all_enrich_sig_melt = reshape2::melt(all_enrich_sig, id.vars = c("Ontology", "ID", "Name"))
+all_enrich_sig_melt$value2 = (1-all_enrich_sig_melt$value) * 1000
+ggplot(all_enrich_sig_melt, aes(x = value2, y = Name, fill = variable)) + geom_bar(stat='identity', position = position_dodge()) + theme_classic() + scale_x_continuous(expand = c(0,0))
+ggsave("~/scratch/d_tooth/results/plk_v_con_cluster_level_go.pdf", width = 8, height = 10)
+
+tmp = all_enrich_sig[,paste0(exps, "_FWER")] < 0.05
+rownames(tmp) = all_enrich_sig$Name
+tmp = hclust(dist(tmp))
+all_enrich_sig_melt$sig = all_enrich_sig_melt$value < 0.05
+all_enrich_sig_melt$Name = factor(all_enrich_sig_melt$Name, levels = tmp$labels[tmp$order])
+ggplot(all_enrich_sig_melt, aes(x = variable, y = Name, size = value2, color = sig)) + geom_point() + theme_classic() + scale_color_manual(values = c("gray60", "goldenrod1")) + scale_size_continuous(range=c(1,4))
+ggsave("~/scratch/d_tooth/results/plk_v_con_cluster_level_go_dot.pdf", width = 8, height = 10)
+
+# Bulk DEGs GO
 all_enrich_bulk = data.frame()
 for (this_exp in c("plk60", "plk1", "plk3", "plk7")) {
   print(this_exp)
-  this_file = paste0("~/scratch/d_tooth/results/plk_glmmseq_", this_exp, "_bulk.csv")
+  this_file = paste0("~/scratch/d_tooth/results/", this_exp, "_plk_v_ctrl_bulk_sig_pct.csv")
   deg_sig = read.csv(this_file)
   deg_sig$hgnc = gene_info$human[match(deg_sig$X, gene_info$seurat_name)]
   deg_sig_hgnc = sort(unique(deg_sig$hgnc[which(deg_sig$hgnc != "" & !is.na(deg_sig$hgnc))]))
   this_enrich = GOfuncR::go_enrich(data.frame(gene = deg_sig_hgnc, test = 1), silent = T)$results
   # this_enrich$bon = p.adjust(this_enrich$results$raw_p_overrep, method = "bonferroni")
-  if (this_exp == "plk60") { all_enrich = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
-  else                     { all_enrich = cbind(all_enrich, this_enrich[, "FWER_overrep"]) }
+  if (this_exp == "plk60") { all_enrich_bulk = this_enrich[,c("ontology", "node_id", "node_name", "FWER_overrep")] }
+  else                     { all_enrich_bulk = cbind(all_enrich_bulk, this_enrich[match(all_enrich_bulk$node_id, this_enrich$node_id), "FWER_overrep"]) }
 }
 
+# Plotting
+colnames(all_enrich_bulk) = c("Ontology", "ID", "Name", paste0(exps, "_FWER"))
+all_enrich_bulk_sig = all_enrich_bulk[which( rowSums(all_enrich_bulk[,paste0(exps, "_FWER")] < 0.05) > 0 ),]
+all_enrich_bulk_sig_melt = reshape2::melt(all_enrich_bulk_sig, id.vars = c("Ontology", "ID", "Name"))
+all_enrich_bulk_sig_melt$value2 = (1-all_enrich_bulk_sig_melt$value) * 1000
+tmp = all_enrich_bulk_sig[,paste0(exps, "_FWER")] < 0.05
+rownames(tmp) = all_enrich_bulk_sig$Name
+tmp = hclust(dist(tmp))
+all_enrich_bulk_sig_melt$sig = all_enrich_bulk_sig_melt$value < 0.05
+all_enrich_bulk_sig_melt$Name = factor(all_enrich_bulk_sig_melt$Name, levels = tmp$labels[tmp$order])
+ggplot(all_enrich_bulk_sig_melt, aes(x = variable, y = Name, size = value2, color = sig)) + geom_point() + theme_classic() + scale_color_manual(values = c("gray60", "goldenrod1")) + scale_size_continuous(range=c(1,4))
+ggsave("~/scratch/d_tooth/results/plk_v_con_bulk_go_dot.pdf", width = 10, height = 20)
 
 #*******************************************************************************
 # WGCNA ========================================================================
@@ -1351,16 +1432,82 @@ sum_kdfk = do.call('rbind', res)
 #*******************************************************************************
 # Diff Cor =====================================================================
 #*******************************************************************************
-df2 = data.table::fread("~/scratch/d_tooth/data/all_ind_cor.csv", data.table = F)
-ind_counts = lapply(colnames(df2)[2:ncol(df2)], function(x) rowSums(plk_subject@assays$RNA@counts[,which(plk_subject$subject == x)] > 0))
+plk_subject$my_sub = paste0(plk_subject$subject, "_", plk_subject$cond)
+df2 = data.table::fread("~/scratch/d_tooth/data/all_ind_cond_cor.csv", data.table = F)
+ind_counts = lapply(colnames(df2)[2:ncol(df2)], function(x) rowSums(plk_subject@assays$RNA@counts[,which(plk_subject$my_sub == x)] > 0))
 ind_counts = do.call("cbind", ind_counts)
 colnames(ind_counts) = colnames(df2)[2:ncol(df2)]
 df2[,c("gene1", "gene2")] = reshape2::colsplit(df2$id, "_", c('1', '2'))
+my_sub_tot_counts = data.frame(table(plk_subject$my_sub))
 
-df_exp = df2[,c('id', 'gene1', 'gene2', 'plk1_1', 'plk1_2')]
-ind_exp = ind_counts[,c("plk1_1", "plk1_2")]
-big_genes = rowSums(ind_exp > 5)
-big_genes = names(big_genes)[which(big_genes == ncol(df_exp)-3)]
-df_exp = df_exp[which(df_exp$gene1 %in% big_genes & df_exp$gene2 %in% big_genes),]
-df_exp = df_exp[which(df_exp$gene1 != df_exp$gene2),]
+all_dif_cor = data.frame()
+for (this_exp in exps) {
+  print(this_exp)
+  this_my_sub = colnames(df2)[which(grepl(this_exp, colnames(df2)))]
+  df_exp = df2[,c('id', 'gene1', 'gene2', this_my_sub)]
+  
+  # Find genes expressed in at least 5 cells in all subjects
+  ind_exp = ind_counts[,this_my_sub]
+  big_genes = rowSums(ind_exp > 5)
+  big_genes = names(big_genes)[which(big_genes == ncol(df_exp)-3)]
+  df_exp = df_exp[which(df_exp$gene1 %in% big_genes & df_exp$gene2 %in% big_genes),]
+  df_exp = df_exp[which(df_exp$gene1 != df_exp$gene2),]
+  df_exp$min_gene1_pos = apply(ind_exp[match(df_exp$gene1, rownames(ind_exp)),], 1, min)
+  df_exp$min_gene2_pos = apply(ind_exp[match(df_exp$gene2, rownames(ind_exp)),], 1, min)
+  df_exp$min_gene_pos = apply(df_exp[,c("min_gene1_pos", "min_gene2_pos")], 1, min)
+  
+  # Find gene-combos where all subjects are up in one condition
+  plk_max = apply(df_exp[,which(endsWith(colnames(df_exp), "plk"))], 1, max)
+  plk_min = apply(df_exp[,which(endsWith(colnames(df_exp), "plk"))], 1, min)
+  con_max = apply(df_exp[,which(endsWith(colnames(df_exp), "con"))], 1, max)
+  con_min = apply(df_exp[,which(endsWith(colnames(df_exp), "con"))], 1, min)
+  con_up_idx = which(con_min > plk_max)
+  plk_up_idx = which(plk_min > con_max)
+  df_exp = df_exp[c(con_up_idx, plk_up_idx),]
+  df_exp$up_cond = c(rep("con", length(con_up_idx)), rep("plk", length(plk_up_idx)))
+  
+  # Find the minimum difference in correlations
+  df_exp$up_dist = con_min[c(con_up_idx, plk_up_idx)] - plk_max[c(con_up_idx, plk_up_idx)]
+  df_exp$up_dist[which(df_exp$up_cond == "plk")] = plk_min[plk_up_idx] - con_max[plk_up_idx]
+  
+  # Find the mean difference in correlations
+  df_exp$mean_dif = rowMeans(df_exp[,which(endsWith(colnames(df_exp), "con"))]) - rowMeans(df_exp[,which(endsWith(colnames(df_exp), "plk"))]) 
+  df_exp$mean_dif[which(df_exp$up_cond == "plk")] = rowMeans(df_exp[which(df_exp$up_cond == "plk"),which(endsWith(colnames(df_exp), "plk"))]) - rowMeans(df_exp[which(df_exp$up_cond == "plk"),which(endsWith(colnames(df_exp), "con"))]) 
+  
+  # Add in the sample size
+  for (j in this_my_sub) { df_exp[,paste0(j, "_counts")] = my_sub_tot_counts$Freq[which(my_sub_tot_counts$Var1 == j)] }
+  
+  # Perform Correlation Significance Test on all combinations of subjects
+  plk_cols = this_my_sub[which(endsWith(this_my_sub, "plk"))]
+  con_cols = this_my_sub[which(endsWith(this_my_sub, "con"))]
+  for (plk_sub in plk_cols) {
+    for (con_sub in con_cols) {
+      this_p = unlist(parallel::mclapply(1:nrow(df_exp), function(x) r_to_p(df_exp[x, plk_sub], df_exp[x, con_sub], df_exp[x, paste0(plk_sub, "_counts")], df_exp[x, paste0(con_sub, "_counts")]), mc.cores = 20))
+      df_exp[,paste0(plk_sub, "_", con_sub, "_p")] = this_p
+      df_exp[,paste0(plk_sub, "_", con_sub, "_bh")] = p.adjust(this_p, method = 'BH')
+    }
+  }
+  bh_cols = colnames(df_exp)[which(grepl("bh", colnames(df_exp)))]
+  df_exp_sig = df_exp[which( rowSums(df_exp[,bh_cols] < 0.05) == length(bh_cols) ),]
+  df_exp_sig$bh_max = apply(df_exp_sig[,bh_cols], 1, max)
+  df_exp_sig$mean_plk_cor = rowMeans(df_exp_sig[,plk_cols])
+  df_exp_sig$mean_con_cor = rowMeans(df_exp_sig[,con_cols])
+  df_exp_sig$exp = this_exp
+  all_dif_cor = rbind(all_dif_cor, df_exp_sig[,c("exp", "id", "gene1", "gene2", "min_gene_pos", "mean_plk_cor", "mean_con_cor", "up_cond", "mean_dif", "up_dist", "bh_max")])
+}
+all_dif_cor$hgnc1 = gene_info$human[match(all_dif_cor$gene1, gene_info$seurat_name)]
+all_dif_cor$hgnc2 = gene_info$human[match(all_dif_cor$gene2, gene_info$seurat_name)]
+write.csv(all_dif_cor, "~/scratch/d_tooth/results/cor_more_pos_bh.csv")
 
+r_to_p = function(r1, r2, n1, n2) {
+  # Compare Two Correlation Values using Fisher's Z Transformation Method.
+  #' @param r1 correlation 1
+  #' @param r2 correlation 2
+  #' @param n1 number of samples used for correlation 1
+  #' @param n2 number of samples used for correlation 2
+  z1 = .5 * (log(1+r1) - log(1-r1))
+  z2 = .5 * (log(1+r2) - log(1-r2))
+  z3 =(z1 - z2) / sqrt( (1 / (n1 - 3)) + (1 / (n2 - 3)) )
+  p = 2*pnorm(-abs(z3))
+  return(p)
+}
