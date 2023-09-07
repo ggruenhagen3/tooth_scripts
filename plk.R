@@ -541,6 +541,7 @@ ggplot(s.clust.pdenom.melt, aes(x = Condition, y = value, color = Cluster, fill 
 dev.off()
 
 # Check for plk vs control cluster proportion differences by experiment
+t_order = c (1, 9, 12, 19, 26, 27, 34, 10, 14, 15, 16, 17, 28, 31, 35, 0, 4, 8, 13, 20, 32, 2, 3, 5, 11, 21, 23, 22, 29, 7, 25, 38, 41, 42, 45, 6, 18, 30, 39, 37, 46, 48, 33, 36, 44, 24, 40, 43, 47, 49)
 for (this_exp in unique(plk$exp)) {
   this_cells = colnames(plk)[which(plk$exp == this_exp)]
   plk.cluster.mat = as.matrix(table(plk$seurat_clusters[this_cells], plk$cond[this_cells]))
@@ -553,6 +554,7 @@ for (this_exp in unique(plk$exp)) {
   s.clust.cdenom.melt$label_y = s.clust.cdenom.melt$value / 2
   s.clust.cdenom.melt$label_y[which(s.clust.cdenom.melt$Condition == "con")] = 1 - (s.clust.cdenom.melt$value[which(s.clust.cdenom.melt$Condition == "con")]/2)
   # s.clust.cdenom.melt2 = s.clust.cdenom.melt %>% arrange(Cluster, Condition) %>% group_by(Cluster) %>% mutate(label_y = cumsum(value))
+  s.clust.cdenom.melt$Cluster = factor(s.clust.cdenom.melt$Cluster, levels = t_order)
   
   Cairo::Cairo(paste0("~/research/tooth/results/plkall_", this_exp, "_cluster_prop_by_plk.png"), width = 3000, height = 800, res = 200)
   print(ggplot(s.clust.cdenom.melt, aes(x = Cluster, y = value, fill = Condition)) + geom_bar(stat = 'identity') + theme_bw() + scale_y_continuous(expand = c(0,0)) + geom_text(aes(y = label_y, label = num), color = "white"))
