@@ -135,16 +135,18 @@ def main():
     global cluster_set
     perm_num, num_perm, output_folder, no_perm, dataset, do_abs, cor_only = parseArgs()
 
+# Find gene-gene correlations in all individuals
 sct = scanpy.read("/storage/home/hcoda1/6/ggruenhagen3/scratch/d_tooth/data/plkall_sct_040523.h5ad")
 sct = sct[sct.obs['subject_num'] != "NA",]
 gene_labels = sct.var_names
 cluster_labels = sct.obs['seurat_clusters']
+sct.obs['subject_cond'] = sct.obs['subject'] + '_' + sct.obs['cond']
+
 
 df_list = []
-# dict_list = []
-for ind in np.sort(sct.obs['subject'].unique()):
+for ind in np.sort(sct.obs['subject_cond'].unique()):
     print(ind)
-    sct_ind = sct[sct.obs['subject'] == ind,]
+    sct_ind = sct[sct.obs['subject_cond'] == ind,]
     this_mat = sct_ind.X.T
     cor = pandas.DataFrame(data=sparse_corrcoef(this_mat.todense()), index=sct.var_names, columns=sct.var_names)
     # le_zero_mask = np.array(cor[cor.le()] > 0)[0]
@@ -163,6 +165,32 @@ for ind in np.sort(sct.obs['subject'].unique()):
 df2 = pandas.concat(df_list, axis=1, join = "inner")
 df2.columns = np.sort(sct.obs['subject'].unique())
 df2.to_csv('/storage/home/hcoda1/6/ggruenhagen3/scratch/d_tooth/data/all_ind_cor.csv')
+
+df_list = []
+plk60_inds = ['plk60_1_con', 'plk60_1_plk', 'plk60_2_con', 'plk60_2_plk', 'plk60_3_con', 'plk60_3_plk', 'plk60_4_con', 'plk60_4_plk']
+for ind in plk60_inds:
+    print(ind)
+    sct_ind = sct[(sct.obs['subject_cond'] == ind) & (sct.obs['seurat_clusters'] == 19),]
+    this_mat = sct_ind.X.T
+    this_mat_bin = sct_ind.raw.X.T
+    nonzero_idx = np.nonzero(this_mat_bin)
+    this_mat_bin[nonzero_idx[0], nonzero_idx[1]] = 1
+    this_mat_bin_counts = this_mat_bin.sum(axis=1)
+    # this_mat_bin_counts[np.where(this_mat_bin_counts > 5)]
+    # sct_ind.var_names[np.where(this_mat_bin_counts > 5)[0]]
+    this_mat = this_mat[np.where(this_mat_bin_counts > 5)[0],]
+    cor = pandas.DataFrame(data=sparse_corrcoef(this_mat.todense()), index=sct_ind.var_names[np.where(this_mat_bin_counts > 5)[0]], columns=sct_ind.var_names[np.where(this_mat_bin_counts > 5)[0]])
+    df = cor.where(np.triu(np.ones(cor.shape)).astype(np.bool))
+    df = df.stack().reset_index()
+    df.columns = ['gene1', 'gene2', 'cor']
+    df['id'] = df['gene1'] + '_' + df['gene2']
+    df.index = df['id']
+    df = df.drop(['gene1', 'gene2', 'id'], axis=1)
+    df_list.append(df['cor'])
+
+df2 = pandas.concat(df_list, axis=1, join="inner")
+df2.columns = np.sort(plk60_inds)
+df2.to_csv('/storage/home/hcoda1/6/ggruenhagen3/scratch/d_tooth/data/plk60_in_19_ind_cor.csv')
 
     cluster_set = list(set(cluster_labels))
 
