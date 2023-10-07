@@ -68,8 +68,8 @@ for (this_clust in sort(unique(obj$seurat_clusters))) {
   } else {
     message(paste0("Performing glmmSeq on cluster ", this_clust))
     my_formula = ~ cond*exp + (1|subject)
-    res = fastGlmm(obj, this_cells, my_formula = my_formula, my_formula2 = ~ subject, calc_pct = F, return_means=T, do_contrasts=T, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv")) 
-    if (!is.null(res)) { 
+    res = fastGlmm(obj, this_cells, my_formula = my_formula, my_formula2 = ~ subject, calc_pct = F, return_means=T, do_contrasts=T, num_cores = 24, out_path = paste0(glmm_out_dir, "cluster_", this_clust, ".csv"))
+    if (!is.null(res)) {
       res$gene = rownames(res)
       res$cluster = this_clust
       big_res = rbind(res, big_res)

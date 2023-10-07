@@ -139,12 +139,13 @@ sct = scanpy.read("/storage/home/hcoda1/6/ggruenhagen3/scratch/d_tooth/data/plka
 sct = sct[sct.obs['subject_num'] != "NA",]
 gene_labels = sct.var_names
 cluster_labels = sct.obs['seurat_clusters']
+sct.obs['my_sub'] = sct.obs['subject'] + '_' + sct.obs['cond']
 
 df_list = []
 # dict_list = []
-for ind in np.sort(sct.obs['subject'].unique()):
+for ind in np.sort(sct.obs['my_sub'].unique()):
     print(ind)
-    sct_ind = sct[sct.obs['subject'] == ind,]
+    sct_ind = sct[sct.obs['my_sub'] == ind,]
     this_mat = sct_ind.X.T
     cor = pandas.DataFrame(data=sparse_corrcoef(this_mat.todense()), index=sct.var_names, columns=sct.var_names)
     # le_zero_mask = np.array(cor[cor.le()] > 0)[0]
@@ -161,7 +162,7 @@ for ind in np.sort(sct.obs['subject'].unique()):
     df_list.append(df['cor'])
 
 df2 = pandas.concat(df_list, axis=1, join = "inner")
-df2.columns = np.sort(sct.obs['subject'].unique())
+df2.columns = np.sort(sct.obs['my_sub'].unique())
 df2.to_csv('/storage/home/hcoda1/6/ggruenhagen3/scratch/d_tooth/data/all_ind_cor.csv')
 
     cluster_set = list(set(cluster_labels))

@@ -42,6 +42,7 @@ library(DESeq2)
 library(glmGamPoi)
 library(scran)
 library(BiocParallel)
+library(emmeans)
 
 #*******************************************************************************
 # Load Objects =================================================================
