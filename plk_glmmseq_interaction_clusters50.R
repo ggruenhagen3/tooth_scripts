@@ -48,7 +48,7 @@ library(BiocParallel)
 #*******************************************************************************
 message('Loading Objects')
 gene_info = read.csv(paste0(gene_info_path, "gene_info_3.csv"))
-plk = readRDS(paste0(data_dir, "plkall_053023.rds"))
+plk = readRDS(paste0(data_dir, "plk_newUMAP.rds"))
 plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
 
 #*******************************************************************************
@@ -58,10 +58,10 @@ obj = plk_subject
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
 big_res = data.frame()
-glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_interaction_clusters50/"
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_interaction_clusters50_110423/"
 
-for (this_clust in sort(unique(obj$seurat_clusters))) {
-  this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
+for (this_clust in sort(unique(obj$secondary_cell))) {
+  this_cells = colnames(obj)[which(obj$secondary_cell == this_clust)]
   pair_count = table(obj$pair[this_cells])
   if (length(pair_count) < n_pairs || any(pair_count < 3)) {
     message(paste0("There are not 3 cells present from all pairs in cluster ", this_clust))
