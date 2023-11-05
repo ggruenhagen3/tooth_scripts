@@ -50,11 +50,12 @@ message('Loading Objects')
 gene_info = read.csv(paste0(gene_info_path, "gene_info_3.csv"))
 plk = readRDS(paste0(data_dir, "plk_newUMAP.rds"))
 plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
+plk = subset(plk, cells = colnames(plk)[which(colnames(plk) %in% colnames(plk_subject))])
 
 #*******************************************************************************
 # Load Objects =================================================================
 #*******************************************************************************
-obj = plk_subject
+obj = plk
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
 big_res = data.frame()
