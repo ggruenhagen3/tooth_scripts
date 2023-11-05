@@ -48,22 +48,23 @@ library(BiocParallel)
 #*******************************************************************************
 message('Loading Objects')
 gene_info = read.csv(paste0(gene_info_path, "gene_info_3.csv"))
-plk = readRDS(paste0(data_dir, "plkall_053023.rds"))
+plk = readRDS(paste0(data_dir, "plk_newUMAP.rds"))
 plk_subject = readRDS(paste0(data_dir, "plkall_subject_053023.rds"))
+plk = subset(plk, cells = colnames(plk)[which(colnames(plk) %in% colnames(plk_subject))])
 
 #*******************************************************************************
 # Load Objects =================================================================
 #*******************************************************************************
 message('Starting glmmseq analysis')
-obj = subset(plk_subject, cells = colnames(plk_subject)[which(plk_subject$exp == "plk3")])
+obj = subset(plk, cells = colnames(plk)[which(plk$exp == "plk3")])
 obj$pair = obj$subject
 n_pairs = length(unique(obj$pair))
 n_cond  = length(unique(obj$cond))
 big_res = data.frame()
-glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50/"
+glmm_out_dir = "~/scratch/d_tooth/results/plk_glmmseq_plk3_clusters50_110423/"
 
-for (this_clust in sort(unique(obj$seurat_clusters))) {
-  this_cells = colnames(obj)[which(obj$seurat_clusters == this_clust)]
+for (this_clust in sort(unique(obj$secondary_cell))) {
+  this_cells = colnames(obj)[which(obj$secondary_cell == this_clust)]
   pair_count = table(obj$pair[this_cells])
   cond_count = table(obj$cond[this_cells])
   if (length(pair_count) < n_pairs || any(pair_count < 3)) {
